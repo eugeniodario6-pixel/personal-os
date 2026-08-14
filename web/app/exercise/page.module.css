@@ -1,0 +1,172 @@
+.main {
+  padding: 20px 16px 100px;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.headerLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerDate {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.sessionPill {
+  font-size: 11px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.cardMargin {
+  margin-bottom: 12px;
+}
+
+.sessionTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.restDay {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 8px 0;
+}
+
+.exerciseList {
+  list-style: none;
+}
+
+.exerciseRow {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.exerciseRow:hover {
+  opacity: 0.85;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--void-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.checked {
+  background: var(--positive);
+  border-color: var(--positive);
+}
+
+.checkmark {
+  font-size: 11px;
+  color: #0B0B0C;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.exName {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: color 0.15s;
+}
+
+.exDone {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.setsReps {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.summary {
+  font-size: 11px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.weekRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dayPill {
+  flex: 1;
+  min-width: 36px;
+  height: 28px;
+  border-radius: 20px;
+  background: var(--void-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+}
+
+.dayPillActive {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+
+.dayPillComplete {
+  background: var(--positive);
+  border-color: var(--positive);
+  color: #0B0B0C;
+}
+
+.dayPillPast {
+  background: var(--neutral-fill);
+  border-color: var(--neutral-fill);
+  color: var(--bg);
+}
+
+.dayPillFuture {
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-secondary);
+  opacity: 0.6;
+}

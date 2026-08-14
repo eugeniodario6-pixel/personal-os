@@ -1,0 +1,40 @@
+.macro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.value {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.target {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.track {
+  height: 3px;
+  background: var(--void-fill);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}

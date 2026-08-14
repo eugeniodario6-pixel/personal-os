@@ -1,59 +1,67 @@
-import type { Metadata } from 'next'
-import { IBM_Plex_Mono, Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata, Viewport } from 'next';
+import { JetBrains_Mono } from 'next/font/google';
+import './globals.css';
+import Nav from '@/components/Nav';
 
-const ibmPlexMono = IBM_Plex_Mono({
-  weight: ['400', '600'],
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-ibm-plex-mono',
+  weight: ['400', '500'],
+  variable: '--font-mono',
   display: 'swap',
-})
+});
 
-const inter = Inter({
-  weight: ['400', '500', '700'],
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-})
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0B0B0C' },
+    { media: '(prefers-color-scheme: light)', color: '#F2F2F2' },
+  ],
+};
 
 export const metadata: Metadata = {
   title: 'Personal OS',
-  description: 'Daily nutrition & body composition tracker',
+  description: 'Personal health tracker — meals, calories, exercise',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black',
+    statusBarStyle: 'black-translucent',
     title: 'Personal OS',
   },
-  other: {
-    'mobile-web-app-capable': 'yes',
-  },
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${ibmPlexMono.variable} ${inter.variable}`}>
+    <html lang="en" className={jetbrainsMono.variable}>
       <head>
-        <meta name="theme-color" content="#000000" />
-        <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('theme');
+                  if (stored === 'light' || stored === 'dark') {
+                    document.documentElement.setAttribute('data-theme', stored);
+                  } else {
+                    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+                  }
+                } catch(e) {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                }
+              })();
+            `,
+          }}
+        />
       </head>
-      <body
-        style={{
-          background: '#000000',
-          color: '#F0F0F0',
-          margin: 0,
-          padding: 0,
-        }}
-      >
+      <body>
         {children}
+        <Nav />
       </body>
     </html>
-  )
+  );
 }

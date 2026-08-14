@@ -1,5 +1,3 @@
 {
-  "rewrites": [
-    { "source": "/api/proxy/:path*", "destination": "https://api-seven-ebon-33.vercel.app/api/:path*" }
-  ]
+  "framework": "nextjs"
 }

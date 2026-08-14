@@ -1,11 +1,10 @@
 {
   "name": "Personal OS",
   "short_name": "PersonalOS",
-  "description": "Daily nutrition & body composition tracker",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#0B0B0C",
+  "theme_color": "#0B0B0C",
   "orientation": "portrait",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
