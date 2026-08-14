@@ -1,0 +1,9 @@
+{
+  "name": "Personal OS",
+  "short_name": "Personal OS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait"
+}
