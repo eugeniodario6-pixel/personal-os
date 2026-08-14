@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+.env.secrets
+*.env
+.expo/
+dist/
+.next/
+ios/
+android/
+*.orig.*
+web-build/

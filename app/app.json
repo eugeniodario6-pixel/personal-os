@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Personal OS",
+    "slug": "personal-os",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "personal-os",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.garcia.personalos",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Personal OS reads your weight from Apple Health to track your body composition progress.",
+        "NSHealthUpdateUsageDescription": "Personal OS may write weight data back to Apple Health."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-health",
+        {
+          "isClinicalDataEnabled": false
+        }
+      ]
+    ]
+  }
+}

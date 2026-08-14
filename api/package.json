@@ -1,0 +1,17 @@
+{
+  "name": "personal-os-api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@supabase/supabase-js": "^2"
+  }
+}
