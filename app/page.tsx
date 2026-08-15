@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { db, todayISO, toggleHabitCompletion, getHabitStreak, seedDatabase, type Habit, type Insight, type MeditationSession } from '@/lib/db';
+import {
+  getProfile, getHabits, getHabitCompletions, getHabitStreak,
+  getMeditationSessions, getMeditationLogs, getTodayMacros,
+  getWorkoutLogs, getInsights, toggleHabitCompletion, seedUserData,
+  todayISO, type Habit, type MeditationSession, type Insight,
+} from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 const MONO = "'IBM Plex Mono', monospace";
 const label = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -18,64 +24,70 @@ export default function TodayPage() {
   const [insight, setInsight] = useState<Insight | null>(null);
   const [suggested, setSuggested] = useState<MeditationSession | null>(null);
   const [dateStr, setDateStr] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    await seedDatabase();
-    const today = todayISO();
-    setDateStr(new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase());
+    try {
+      await seedUserData();
+      const today = todayISO();
+      setDateStr(new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase());
 
-    const [logs, prof, activeHabits, completions, workouts, medLogs, insights, sessions] = await Promise.all([
-      db.meal_log.where('date').equals(today).toArray(),
-      db.profile.get(1),
-      db.habit.where('active').equals(1).toArray(),
-      db.habit_completion.where('date').equals(today).toArray(),
-      db.workout_log.where('date').equals(today).toArray(),
-      db.meditation_log.where('date').equals(today).toArray(),
-      db.insight.where('shown').equals(1).toArray(),
-      db.meditation_session.toArray(),
-    ]);
+      const [macros, profile, activeHabits, completions, workouts, medLogs, insights, sessions] = await Promise.all([
+        getTodayMacros(),
+        getProfile(),
+        getHabits(),
+        getHabitCompletions(today),
+        getWorkoutLogs(today),
+        getMeditationLogs(today),
+        getInsights(),
+        getMeditationSessions(),
+      ]);
 
-    // Calories
-    let cal = 0;
-    for (const log of logs) {
-      const food = await db.food_item.get(log.food_item_id);
-      if (food) cal += food.calories * (log.quantity / food.serving_size);
+      setCalories(Math.round(macros.calories));
+      setCalorieTarget(profile?.calorie_target ?? 2000);
+
+      const completedIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
+      const habitData = await Promise.all(activeHabits.map(async h => ({
+        ...h,
+        done: completedIds.has(h.id),
+        streak: await getHabitStreak(h.id),
+      })));
+      setHabits(habitData);
+
+      setWorkoutsToday(workouts.length);
+      setMedDone(medLogs.some(m => m.completed));
+      setInsight(insights[0] ?? null);
+
+      const loggedIds = new Set(medLogs.map(m => m.session_id));
+      const unplayed = sessions.find(s => !loggedIds.has(s.id));
+      setSuggested(unplayed ?? sessions[0] ?? null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
     }
-    setCalories(Math.round(cal));
-    setCalorieTarget(prof?.calorie_target ?? 2000);
-
-    // Habits
-    const completedIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
-    const habitData = await Promise.all(activeHabits.map(async h => ({
-      ...h,
-      done: completedIds.has(h.id),
-      streak: await getHabitStreak(h.id),
-    })));
-    setHabits(habitData);
-
-    setWorkoutsToday(workouts.length);
-    setMedDone(medLogs.some(m => m.completed));
-
-    // Insight
-    setInsight(insights[0] ?? null);
-
-    // Suggested session
-    const loggedIds = new Set(medLogs.map(m => m.session_id));
-    const unplayed = sessions.find(s => !loggedIds.has(s.id));
-    setSuggested(unplayed ?? sessions[0] ?? null);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const toggle = async (habitId: number) => {
+  const toggle = async (habitId: string) => {
     await toggleHabitCompletion(habitId);
     await load();
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
   };
 
   const habitDone = habits.filter(h => h.done).length;
   const habitTotal = habits.length;
   const calPct = Math.min((calories / calorieTarget) * 100, 100);
   const habitPct = habitTotal > 0 ? Math.min((habitDone / habitTotal) * 100, 100) : 0;
+
+  if (loading) {
+    return <div style={{ padding: '2rem', color: '#444', fontFamily: MONO, fontSize: '0.75rem' }}>LOADING...</div>;
+  }
 
   return (
     <div style={{ fontFamily: MONO }}>
@@ -85,7 +97,10 @@ export default function TodayPage() {
           <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#888', margin: 0, marginBottom: '0.25rem' }}>{dateStr}</p>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>TODAY</h1>
         </div>
-        <button onClick={() => router.push('/log')} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: '#000', color: '#fff', cursor: 'pointer' }}>+ LOG</button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => router.push('/log')} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: '#000', color: '#fff', cursor: 'pointer' }}>+ LOG</button>
+          <button onClick={handleSignOut} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: '2px solid #222', background: '#000', color: '#444', cursor: 'pointer' }}>OUT</button>
+        </div>
       </div>
 
       {/* Status grid */}

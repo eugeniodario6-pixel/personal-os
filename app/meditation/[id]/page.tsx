@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { db, todayISO, type MeditationSession } from '@/lib/db';
+import { getMeditationSession, addMeditationLog, todayISO, type MeditationSession } from '@/lib/db';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -19,7 +19,7 @@ export default function MeditationPlayerPage() {
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const load = useCallback(async () => {
-    const s = await db.meditation_session.get(parseInt(id));
+    const s = await getMeditationSession(id);
     setSession(s ?? null);
   }, [id]);
 
@@ -45,7 +45,6 @@ export default function MeditationPlayerPage() {
     setElapsed(0);
     setDone(false);
 
-    // Speech synthesis
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
       const lines = (session.instructions ?? '').split('\n').filter(Boolean);
@@ -67,10 +66,8 @@ export default function MeditationPlayerPage() {
           clearInterval(intervalRef.current!);
           setRunning(false);
           setDone(true);
-          window.speechSynthesis?.cancel();
-          // Log completion
-          db.meditation_log.add({
-            id: undefined as unknown as number,
+          if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+          addMeditationLog({
             session_id: session.id,
             date: todayISO(),
             completed: true,
@@ -89,8 +86,7 @@ export default function MeditationPlayerPage() {
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
     setRunning(false);
     if (session && elapsed > 0) {
-      await db.meditation_log.add({
-        id: undefined as unknown as number,
+      await addMeditationLog({
         session_id: session.id,
         date: todayISO(),
         completed: false,
@@ -153,7 +149,7 @@ export default function MeditationPlayerPage() {
         </div>
 
         {!running && !done && instructions.length > 0 && (
-          <div style={{ border: '2px solid #111', padding: '1rem', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ border: '2px solid #111', padding: '1rem', width: '100%', boxSizing: 'border-box' as const }}>
             <p style={{ ...lbl, marginBottom: '0.5rem' }}>INSTRUCTIONS</p>
             {instructions.map((line, i) => (
               <p key={i} style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#888', lineHeight: 1.6 }}>{line}</p>

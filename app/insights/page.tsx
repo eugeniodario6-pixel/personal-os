@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { db, todayISO } from '@/lib/db';
+import { getMealLogs, getWorkoutLogs, getWorkoutHistory, getHabits, getHabitCompletions, getMeditationLogs, getInsights, todayISO } from '@/lib/db';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -22,22 +22,28 @@ export default function InsightsPage() {
       dates.push(d.toISOString().slice(0, 10));
     }
 
-    const [mealLogs, workoutLogs, habitCompletions, activeHabits, medLogs, insightRows] = await Promise.all([
-      db.meal_log.where('date').anyOf(dates).toArray(),
-      db.workout_log.where('date').anyOf(dates).toArray(),
-      db.habit_completion.where('date').anyOf(dates).toArray(),
-      db.habit.where('active').equals(1).toArray(),
-      db.meditation_log.where('date').anyOf(dates).toArray(),
-      db.insight.where('shown').equals(1).toArray(),
+    const [activeHabits, insightRows] = await Promise.all([
+      getHabits(),
+      getInsights(),
     ]);
+
+    // Fetch per-date data
+    const mealLogArrays = await Promise.all(dates.map(d => getMealLogs(d)));
+    const workoutLogArrays = await Promise.all(dates.map(d => getWorkoutLogs(d)));
+    const habitCompletionArrays = await Promise.all(dates.map(d => getHabitCompletions(d)));
+    const medLogArrays = await Promise.all(dates.map(d => getMeditationLogs(d)));
+
+    const mealLogs = mealLogArrays.flat();
+    const workoutLogs = workoutLogArrays.flat();
+    const habitCompletions = habitCompletionArrays.flat();
+    const medLogs = medLogArrays.flat();
 
     // Avg calories
     let totalCal = 0;
     for (const log of mealLogs) {
-      const food = await db.food_item.get(log.food_item_id);
-      if (food) totalCal += food.calories * (log.quantity / food.serving_size);
+      if (log.food) totalCal += log.food.calories * (log.quantity / log.food.serving_size);
     }
-    const avgCal = dates.length > 0 ? Math.round(totalCal / days) : 0;
+    const avgCal = days > 0 ? Math.round(totalCal / days) : 0;
 
     // Habit completion %
     const totalPossible = activeHabits.length * days;

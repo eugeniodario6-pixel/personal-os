@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { db, todayISO, type FoodItem, type MealLog, type Profile } from '@/lib/db';
+import { getMealLogs, addFoodItem, addMealLog, deleteMealLog, getProfile, todayISO, type FoodItem, type MealLog } from '@/lib/db';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
 const border2 = '2px solid #444';
 
-interface MealLogWithFood extends MealLog { food: FoodItem | undefined; }
+interface MealLogWithFood extends MealLog { food: FoodItem | null; }
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 type Mode = 'log' | 'add';
 
@@ -17,9 +17,9 @@ function NutritionContent() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(searchParams.get('action') === 'add' ? 'add' : 'log');
   const [logs, setLogs] = useState<MealLogWithFood[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [calorieTarget, setCalorieTarget] = useState(2000);
+  const [macroTargets, setMacroTargets] = useState({ protein: 150, carbs: 200, fat: 65 });
 
-  // Add form
   const [addName, setAddName] = useState('');
   const [addBrand, setAddBrand] = useState('');
   const [addCalories, setAddCalories] = useState('');
@@ -34,13 +34,12 @@ function NutritionContent() {
 
   const loadData = useCallback(async () => {
     const today = todayISO();
-    const [rawLogs, prof] = await Promise.all([
-      db.meal_log.where('date').equals(today).reverse().sortBy('logged_at'),
-      db.profile.get(1),
-    ]);
-    const enriched = await Promise.all(rawLogs.map(async l => ({ ...l, food: await db.food_item.get(l.food_item_id) })));
-    setLogs(enriched);
-    setProfile(prof ?? null);
+    const [rawLogs, profile] = await Promise.all([getMealLogs(today), getProfile()]);
+    setLogs(rawLogs);
+    if (profile) {
+      setCalorieTarget(profile.calorie_target);
+      setMacroTargets(profile.macro_targets);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -49,26 +48,28 @@ function NutritionContent() {
     setAddError('');
     if (!addName.trim()) { setAddError('NAME REQUIRED'); return; }
     if (!addCalories) { setAddError('CALORIES REQUIRED'); return; }
-    const foodId = await db.food_item.add({
-      id: undefined as unknown as number,
-      external_id: null, name: addName.trim(), brand: addBrand.trim() || null,
-      barcode: null, serving_unit: addServingUnit, serving_size: parseFloat(addServing) || 100,
-      calories: parseFloat(addCalories) || 0, protein: parseFloat(addProtein) || 0,
-      carbs: parseFloat(addCarbs) || 0, fat: parseFloat(addFat) || 0, is_favorite: false,
-    });
-    await db.meal_log.add({
-      id: undefined as unknown as number, date: todayISO(), meal_type: addMealType,
-      food_item_id: foodId as number, quantity: parseFloat(addQuantity) || 1,
-      logged_at: new Date().toISOString(), source: 'manual',
-    });
-    setAddName(''); setAddBrand(''); setAddCalories(''); setAddProtein('');
-    setAddCarbs(''); setAddFat(''); setAddServing('100'); setAddQuantity('1');
-    await loadData();
-    setMode('log');
-    router.replace('/nutrition');
+    try {
+      const foodId = await addFoodItem({
+        external_id: null, name: addName.trim(), brand: addBrand.trim() || null,
+        barcode: null, serving_unit: addServingUnit, serving_size: parseFloat(addServing) || 100,
+        calories: parseFloat(addCalories) || 0, protein: parseFloat(addProtein) || 0,
+        carbs: parseFloat(addCarbs) || 0, fat: parseFloat(addFat) || 0, is_favorite: false,
+      });
+      await addMealLog({
+        date: todayISO(), meal_type: addMealType, food_item_id: foodId,
+        quantity: parseFloat(addQuantity) || 1, logged_at: new Date().toISOString(), source: 'manual',
+      });
+      setAddName(''); setAddBrand(''); setAddCalories(''); setAddProtein('');
+      setAddCarbs(''); setAddFat(''); setAddServing('100'); setAddQuantity('1');
+      await loadData();
+      setMode('log');
+      router.replace('/nutrition');
+    } catch (e) {
+      setAddError('FAILED TO SAVE. TRY AGAIN.');
+    }
   };
 
-  const handleDelete = async (id: number) => { await db.meal_log.delete(id); await loadData(); };
+  const handleDelete = async (id: string) => { await deleteMealLog(id); await loadData(); };
 
   const totals = logs.reduce((acc, l) => {
     if (!l.food) return acc;
@@ -76,14 +77,11 @@ function NutritionContent() {
     return { calories: acc.calories + l.food.calories * r, protein: acc.protein + l.food.protein * r, carbs: acc.carbs + l.food.carbs * r, fat: acc.fat + l.food.fat * r };
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-  const calTarget = profile?.calorie_target ?? 2000;
-  const calPct = Math.min((totals.calories / calTarget) * 100, 100);
-
+  const calPct = Math.min((totals.calories / calorieTarget) * 100, 100);
   const inputStyle = { width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' as const };
 
   return (
     <div style={{ fontFamily: MONO }}>
-      {/* Header */}
       <div style={{ padding: '1rem', borderBottom: border2, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div>
           <p style={{ ...lbl, marginBottom: '0.25rem' }}>NUTRITION</p>
@@ -95,31 +93,29 @@ function NutritionContent() {
         </button>
       </div>
 
-      {/* Totals bar */}
       <div style={{ padding: '0.75rem 1rem', borderBottom: border2, background: '#111' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
           <span style={lbl}>TODAY&apos;S TOTAL</span>
-          <span style={{ fontSize: '0.75rem', color: '#888' }}>/ {calTarget} KCAL</span>
+          <span style={{ fontSize: '0.75rem', color: '#888' }}>/ {calorieTarget} KCAL</span>
         </div>
         <div style={{ fontSize: '3rem', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff', marginBottom: '0.5rem' }}>{Math.round(totals.calories)}</div>
         <div style={{ height: 4, background: '#000', border: '1px solid #444', marginBottom: '0.75rem' }}>
           <div style={{ height: '100%', background: '#fff', width: `${calPct}%` }} />
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          {[{ label: 'PROTEIN', val: totals.protein, target: profile?.macro_targets?.protein },
-            { label: 'CARBS', val: totals.carbs, target: profile?.macro_targets?.carbs },
-            { label: 'FAT', val: totals.fat, target: profile?.macro_targets?.fat }].map(m => (
+          {[{ label: 'PROTEIN', val: totals.protein, target: macroTargets.protein },
+            { label: 'CARBS', val: totals.carbs, target: macroTargets.carbs },
+            { label: 'FAT', val: totals.fat, target: macroTargets.fat }].map(m => (
             <div key={m.label} style={{ flex: 1 }}>
               <p style={lbl}>{m.label}</p>
               <p style={{ margin: 0, fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>
-                {Math.round(m.val)}g{m.target ? <span style={{ color: '#444', fontSize: '0.65rem' }}> /{m.target}g</span> : null}
+                {Math.round(m.val)}g<span style={{ color: '#444', fontSize: '0.65rem' }}> /{m.target}g</span>
               </p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ADD mode */}
       {mode === 'add' && (
         <div style={{ padding: '1rem' }}>
           <p style={{ ...lbl, marginBottom: '1rem' }}>ADD FOOD MANUALLY</p>
@@ -157,7 +153,6 @@ function NutritionContent() {
         </div>
       )}
 
-      {/* LOG mode */}
       {mode === 'log' && (
         <>
           <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid #111' }}><span style={lbl}>TODAY&apos;S LOG</span></div>

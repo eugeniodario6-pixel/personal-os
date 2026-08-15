@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { db, todayISO, toggleHabitCompletion, getHabitStreak, type Habit } from '@/lib/db';
+import { getHabits, addHabit, deactivateHabit, getHabitCompletions, toggleHabitCompletion, getHabitStreak, todayISO, type Habit } from '@/lib/db';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -11,14 +11,14 @@ export default function HabitsPage() {
   const [mode, setMode] = useState<'list' | 'add'>('list');
   const [habits, setHabits] = useState<(Habit & { done: boolean; streak: number })[]>([]);
   const [addName, setAddName] = useState('');
-  const [addAfter, setAddAfter] = useState<number | ''>('');
+  const [addAfter, setAddAfter] = useState<string | ''>('');
   const [addError, setAddError] = useState('');
 
   const load = useCallback(async () => {
     const today = todayISO();
     const [all, completions] = await Promise.all([
-      db.habit.where('active').equals(1).toArray(),
-      db.habit_completion.where('date').equals(today).toArray(),
+      getHabits(),
+      getHabitCompletions(today),
     ]);
     const completedIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
     const enriched = await Promise.all(all.map(async h => ({
@@ -31,23 +31,21 @@ export default function HabitsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const toggle = async (id: number) => {
+  const toggle = async (id: string) => {
     await toggleHabitCompletion(id);
     await load();
   };
 
-  const deleteHabit = async (id: number) => {
-    await db.habit.update(id, { active: false });
+  const deleteHabit = async (id: string) => {
+    await deactivateHabit(id);
     await load();
   };
 
   const save = async () => {
     setAddError('');
     if (!addName.trim()) { setAddError('NAME REQUIRED'); return; }
-    await db.habit.add({
-      id: undefined as unknown as number,
+    await addHabit({
       name: addName.trim(),
-      schedule: { type: 'daily' },
       active: true,
       stacked_after_habit_id: addAfter !== '' ? addAfter : null,
       streak_freeze_available: 0,
@@ -79,12 +77,12 @@ export default function HabitsPage() {
             <div>
               <p style={{ ...lbl, marginBottom: '0.25rem' }}>HABIT NAME *</p>
               <input value={addName} onChange={e => setAddName(e.target.value)} placeholder="E.G. MORNING WALK"
-                style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' }} />
+                style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' as const }} />
             </div>
             <div>
               <p style={{ ...lbl, marginBottom: '0.25rem' }}>STACKED AFTER (OPTIONAL)</p>
-              <select value={addAfter} onChange={e => setAddAfter(e.target.value ? parseInt(e.target.value) : '')}
-                style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' }}>
+              <select value={addAfter} onChange={e => setAddAfter(e.target.value)}
+                style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' as const }}>
                 <option value="">NONE — STANDALONE HABIT</option>
                 {habits.map(h => <option key={h.id} value={h.id}>AFTER: {h.name.toUpperCase()}</option>)}
               </select>
@@ -108,7 +106,7 @@ export default function HabitsPage() {
                 <span style={{ flex: 1, fontSize: '0.875rem', color: h.done ? '#000' : '#fff', textDecoration: h.done ? 'line-through' : 'none' }}>{h.name}</span>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: h.done ? '#444' : '#888' }}>{h.streak} DAY{h.streak !== 1 ? 'S' : ''}</span>
               </button>
-              <button onClick={() => deleteHabit(h.id)} style={{ background: 'none', border: 'none', color: h.done ? '#444' : '#444', cursor: 'pointer', fontSize: '1rem', fontFamily: MONO, padding: '0.875rem 1rem' }}>✕</button>
+              <button onClick={() => deleteHabit(h.id)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '1rem', fontFamily: MONO, padding: '0.875rem 1rem' }}>✕</button>
             </div>
           ))}
         </>

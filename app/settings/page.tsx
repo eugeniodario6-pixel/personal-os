@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { db, type Profile } from '@/lib/db';
+import { getProfile, upsertProfile } from '@/lib/db';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -17,9 +17,10 @@ export default function SettingsPage() {
   const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
   const [nonNumeric, setNonNumeric] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const prof = await db.profile.get(1);
+    const prof = await getProfile();
     if (prof) {
       setCalTarget(String(prof.calorie_target));
       setProtein(String(prof.macro_targets.protein));
@@ -29,39 +30,27 @@ export default function SettingsPage() {
       setUnits(prof.units);
       setNonNumeric(prof.non_numeric_mode);
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const save = async () => {
-    const existing = await db.profile.get(1);
-    const data: Profile = {
-      id: 1,
+    await upsertProfile({
       calorie_target: parseInt(calTarget) || 2000,
       macro_targets: { protein: parseInt(protein) || 150, carbs: parseInt(carbs) || 200, fat: parseInt(fat) || 65 },
       weight_goal: weightGoal ? parseFloat(weightGoal) : null,
       units,
       non_numeric_mode: nonNumeric,
-      timezone: existing?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-    };
-    if (existing) { await db.profile.update(1, data); } else { await db.profile.add(data); }
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const exportData = async () => {
-    const [profile, food_item, meal_log, workout_template, workout_log, habit, habit_completion, meditation_session, meditation_log, insight] = await Promise.all([
-      db.profile.toArray(), db.food_item.toArray(), db.meal_log.toArray(),
-      db.workout_template.toArray(), db.workout_log.toArray(), db.habit.toArray(),
-      db.habit_completion.toArray(), db.meditation_session.toArray(),
-      db.meditation_log.toArray(), db.insight.toArray(),
-    ]);
-    const blob = new Blob([JSON.stringify({ profile, food_item, meal_log, workout_template, workout_log, habit, habit_completion, meditation_session, meditation_log, insight }, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `personal-os-export-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click(); URL.revokeObjectURL(url);
-  };
+  if (loading) {
+    return <div style={{ padding: '2rem', color: '#444', fontFamily: MONO, fontSize: '0.75rem' }}>LOADING...</div>;
+  }
 
   return (
     <div style={{ fontFamily: MONO }}>
@@ -71,8 +60,6 @@ export default function SettingsPage() {
       </div>
 
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-        {/* Daily Goals */}
         <section>
           <p style={{ ...lbl, marginBottom: '0.75rem' }}>DAILY GOALS</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -106,27 +93,16 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Display */}
         <section>
           <p style={{ ...lbl, marginBottom: '0.75rem' }}>DISPLAY</p>
           <button onClick={() => setNonNumeric(!nonNumeric)}
-            style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: nonNumeric ? '#fff' : '#000', border: border2, cursor: 'pointer', fontFamily: MONO, boxSizing: 'border-box' }}>
+            style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: nonNumeric ? '#fff' : '#000', border: border2, cursor: 'pointer', fontFamily: MONO, boxSizing: 'border-box' as const }}>
             <span style={{ fontSize: '0.875rem', fontWeight: 700, color: nonNumeric ? '#000' : '#fff' }}>NON-NUMERIC MODE</span>
             <span style={{ fontSize: '0.875rem', fontWeight: 700, color: nonNumeric ? '#000' : '#fff' }}>{nonNumeric ? '[X]' : '[ ]'}</span>
           </button>
           <p style={{ ...lbl, marginTop: '0.5rem', color: '#444' }}>HIDES CALORIE + WEIGHT NUMBERS APP-WIDE</p>
         </section>
 
-        {/* Data */}
-        <section>
-          <p style={{ ...lbl, marginBottom: '0.75rem' }}>DATA</p>
-          <button onClick={exportData}
-            style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: '#000', border: '2px solid #444', color: '#888', cursor: 'pointer', fontFamily: MONO }}>
-            EXPORT DATA → JSON
-          </button>
-        </section>
-
-        {/* Save */}
         <button onClick={save}
           style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: saved ? '#888' : '#fff', color: '#000', border: border2, cursor: 'pointer', fontFamily: MONO }}>
           {saved ? 'SAVED ✓' : 'SAVE SETTINGS'}

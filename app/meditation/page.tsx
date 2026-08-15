@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { db, todayISO, type MeditationSession } from '@/lib/db';
+import { getMeditationSessions, getMeditationLogs, todayISO, type MeditationSession } from '@/lib/db';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -12,15 +12,15 @@ const CATS = ['ALL', 'BREATHING', 'BODY SCAN', 'SLEEP', 'STRESS RELEASE', 'FOCUS
 export default function MeditationPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<MeditationSession[]>([]);
-  const [loggedIds, setLoggedIds] = useState<Set<number>>(new Set());
+  const [loggedIds, setLoggedIds] = useState<Set<string>>(new Set());
   const [cat, setCat] = useState('ALL');
   const [suggested, setSuggested] = useState<MeditationSession | null>(null);
 
   const load = useCallback(async () => {
     const today = todayISO();
     const [all, logs] = await Promise.all([
-      db.meditation_session.toArray(),
-      db.meditation_log.where('date').equals(today).toArray(),
+      getMeditationSessions(),
+      getMeditationLogs(today),
     ]);
     const ids = new Set(logs.map(l => l.session_id));
     setLoggedIds(ids);
@@ -63,6 +63,10 @@ export default function MeditationPage() {
         ))}
       </div>
 
+      {sessions.length === 0 && (
+        <div style={{ padding: '2rem 1rem', color: '#444', fontSize: '0.75rem' }}>LOADING SESSIONS...</div>
+      )}
+
       {filtered.map(s => {
         const done = loggedIds.has(s.id);
         return (
@@ -73,7 +77,7 @@ export default function MeditationPage() {
               <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: done ? '#000' : '#fff' }}>{s.name}</p>
               <p style={{ ...lbl, marginTop: '0.2rem' }}>{s.category.toUpperCase()} · {s.duration_min} MIN</p>
             </div>
-            <span style={{ color: done ? '#444' : '#444', fontSize: '1rem' }}>→</span>
+            <span style={{ color: '#444', fontSize: '1rem' }}>→</span>
           </button>
         );
       })}

@@ -1,9 +1,14 @@
-import Dexie, { type EntityTable } from 'dexie';
+// ── Supabase-backed data layer ─────────────────────────────────────────────
+// Replaces the previous Dexie/IndexedDB implementation.
+// All data is persisted in Supabase Postgres, scoped per authenticated user.
+
+import { supabase } from './supabase';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface Profile {
-  id: number;
+  id: string;
+  user_id: string;
   calorie_target: number;
   macro_targets: { protein: number; carbs: number; fat: number };
   weight_goal: number | null;
@@ -13,7 +18,8 @@ export interface Profile {
 }
 
 export interface FoodItem {
-  id: number;
+  id: string;
+  user_id: string;
   external_id: string | null;
   name: string;
   brand: string | null;
@@ -28,17 +34,19 @@ export interface FoodItem {
 }
 
 export interface MealLog {
-  id: number;
+  id: string;
+  user_id: string;
   date: string;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  food_item_id: number;
+  food_item_id: string;
   quantity: number;
   logged_at: string;
   source: 'barcode' | 'photo' | 'search' | 'manual';
 }
 
 export interface WorkoutTemplate {
-  id: number;
+  id: string;
+  user_id: string;
   name: string;
   category: string;
   default_duration_min: number;
@@ -46,9 +54,10 @@ export interface WorkoutTemplate {
 }
 
 export interface WorkoutLog {
-  id: number;
+  id: string;
+  user_id: string;
   date: string;
-  template_id: number | null;
+  template_id: string | null;
   name: string;
   duration_min: number;
   intensity: 'low' | 'moderate' | 'high';
@@ -58,24 +67,25 @@ export interface WorkoutLog {
 }
 
 export interface Habit {
-  id: number;
+  id: string;
+  user_id: string;
   name: string;
-  schedule: object;
   active: boolean;
-  stacked_after_habit_id: number | null;
+  stacked_after_habit_id: string | null;
   streak_freeze_available: number;
   created_at: string;
 }
 
 export interface HabitCompletion {
-  id: number;
-  habit_id: number;
+  id: string;
+  user_id: string;
+  habit_id: string;
   date: string;
   completed_at: string | null;
 }
 
 export interface MeditationSession {
-  id: number;
+  id: string;
   name: string;
   category: string;
   duration_min: number;
@@ -84,8 +94,9 @@ export interface MeditationSession {
 }
 
 export interface MeditationLog {
-  id: number;
-  session_id: number;
+  id: string;
+  user_id: string;
+  session_id: string;
   date: string;
   completed: boolean;
   duration_actual_min: number;
@@ -93,7 +104,8 @@ export interface MeditationLog {
 }
 
 export interface Insight {
-  id: number;
+  id: string;
+  user_id: string;
   metric_a: string;
   metric_b: string;
   relationship: string;
@@ -103,249 +115,222 @@ export interface Insight {
   shown: boolean;
 }
 
-// ── Database ───────────────────────────────────────────────────────────────
-
-class PersonalOSDatabase extends Dexie {
-  profile!: EntityTable<Profile, 'id'>;
-  food_item!: EntityTable<FoodItem, 'id'>;
-  meal_log!: EntityTable<MealLog, 'id'>;
-  workout_template!: EntityTable<WorkoutTemplate, 'id'>;
-  workout_log!: EntityTable<WorkoutLog, 'id'>;
-  habit!: EntityTable<Habit, 'id'>;
-  habit_completion!: EntityTable<HabitCompletion, 'id'>;
-  meditation_session!: EntityTable<MeditationSession, 'id'>;
-  meditation_log!: EntityTable<MeditationLog, 'id'>;
-  insight!: EntityTable<Insight, 'id'>;
-
-  constructor() {
-    super('PersonalOS');
-    this.version(1).stores({
-      profile: '++id',
-      food_item: '++id, external_id, barcode, name, is_favorite',
-      meal_log: '++id, date, meal_type, food_item_id, logged_at',
-      workout_template: '++id, name, category',
-      workout_log: '++id, date, template_id, logged_at',
-      habit: '++id, active, stacked_after_habit_id',
-      habit_completion: '++id, habit_id, date',
-      meditation_session: '++id, category',
-      meditation_log: '++id, session_id, date, logged_at',
-      insight: '++id, shown, generated_at',
-    });
-  }
-}
-
-export const db = new PersonalOSDatabase();
-
-// ── Seed Data ──────────────────────────────────────────────────────────────
-
-const MEDITATION_SESSIONS: Omit<MeditationSession, 'id'>[] = [
-  {
-    name: 'Box breathing',
-    category: 'Breathing',
-    duration_min: 4,
-    audio_url: null,
-    instructions:
-      'Sit upright, feet flat, hands resting on your knees.\nBreathe in through the nose for 4 counts.\nHold for 4 counts.\nBreathe out through the mouth for 4 counts.\nHold for 4 counts.\nRepeat. If your mind wanders, just come back to the count — that\'s the whole practice, not a failure of it.',
-  },
-  {
-    name: '4-7-8 wind-down',
-    category: 'Breathing',
-    duration_min: 5,
-    audio_url: null,
-    instructions:
-      'Exhale completely through your mouth.\nInhale through the nose for 4 counts.\nHold for 7 counts.\nExhale through the mouth for 8 counts, with a soft whoosh sound.\nRepeat for 4 full rounds, then let your breath return to normal and sit in the stillness for the rest of the time.',
-  },
-  {
-    name: 'Full body scan',
-    category: 'Body scan',
-    duration_min: 10,
-    audio_url: null,
-    instructions:
-      'Lie down or sit back. Close your eyes.\nBring attention to your feet — just notice, don\'t change anything.\nMove slowly upward: ankles, calves, knees, thighs, hips.\nContinue through your stomach, chest, hands, arms, shoulders.\nNotice your neck, jaw, face, scalp.\nTake one full breath, scanning the whole body at once.\nOpen your eyes when ready — no need to rush it.',
-  },
-  {
-    name: 'Quick tension release',
-    category: 'Body scan',
-    duration_min: 6,
-    audio_url: null,
-    instructions:
-      'Starting at your shoulders, tense them up toward your ears for 5 seconds, then release. Notice the difference.\nDo the same with your hands (clench, then open), your jaw (clench, then soften), and your legs (press feet into the floor, then let go).\nFinish with one slow breath through the whole body, top to bottom.',
-  },
-  {
-    name: 'Wind-down for sleep',
-    category: 'Sleep',
-    duration_min: 8,
-    audio_url: null,
-    instructions:
-      'Lie down, lights off or dim.\nLet your breath slow on its own — don\'t force it.\nPicture your body getting heavier, part by part, starting at your feet.\nIf a thought shows up, picture setting it down beside the bed — you can pick it back up tomorrow.\nNo need to finish this session awake. Falling asleep partway through is a success, not an interruption.',
-  },
-  {
-    name: '3am reset',
-    category: 'Sleep',
-    duration_min: 5,
-    audio_url: null,
-    instructions:
-      'If you\'ve woken in the night: don\'t check the time again.\nBreathe in for 4, out for 6 — the longer exhale signals your body to settle.\nKeep your eyes closed even if you don\'t feel sleepy yet. Rest is still rest.',
-  },
-  {
-    name: 'Between-meetings reset',
-    category: 'Stress release',
-    duration_min: 3,
-    audio_url: null,
-    instructions:
-      'Feet flat on the floor. Unclench your jaw.\nTake one breath and notice where you\'re holding tension right now.\nBreathe into that spot for 5 breaths.\nRoll your shoulders back once. Open your eyes. Go.',
-  },
-  {
-    name: 'Naming the noise',
-    category: 'Stress release',
-    duration_min: 7,
-    audio_url: null,
-    instructions:
-      'Sit and let your mind run without steering it.\nWhen a thought arrives, silently label it: \'planning,\' \'worry,\' \'memory,\' \'nothing.\'\nDon\'t argue with it — just name it and let it pass.\nBy the end, most of what felt urgent will have quieted on its own.',
-  },
-  {
-    name: 'Pre-work primer',
-    category: 'Focus',
-    duration_min: 5,
-    audio_url: null,
-    instructions:
-      'Sit with your work already in view, but don\'t start yet.\nThree breaths, counting each exhale.\nState (silently or out loud) the one thing you\'re about to focus on.\nBegin.',
-  },
-  {
-    name: 'Single-point focus',
-    category: 'Focus',
-    duration_min: 10,
-    audio_url: null,
-    instructions:
-      'Pick one object in the room, or your own breath.\nHold attention there. When it drifts — and it will — bring it back without judgment.\nThis is a rep, not a failure state. Ten minutes of drifting-and-returning is the actual workout.',
-  },
-];
-
-const DEFAULT_WORKOUT_TEMPLATES: Omit<WorkoutTemplate, 'id'>[] = [
-  { name: 'Morning Run', category: 'Cardio', default_duration_min: 30, default_intensity: 'moderate' },
-  { name: 'HIIT', category: 'Cardio', default_duration_min: 20, default_intensity: 'high' },
-  { name: 'Upper Body', category: 'Strength', default_duration_min: 45, default_intensity: 'moderate' },
-  { name: 'Lower Body', category: 'Strength', default_duration_min: 45, default_intensity: 'moderate' },
-  { name: 'Full Body', category: 'Strength', default_duration_min: 60, default_intensity: 'moderate' },
-  { name: 'Yoga', category: 'Flexibility', default_duration_min: 30, default_intensity: 'low' },
-  { name: 'Walk', category: 'Cardio', default_duration_min: 45, default_intensity: 'low' },
-  { name: 'Cycling', category: 'Cardio', default_duration_min: 60, default_intensity: 'moderate' },
-];
-
-const DEFAULT_HABITS: Omit<Habit, 'id'>[] = [
-  {
-    name: 'Morning water',
-    schedule: { type: 'daily' },
-    active: true,
-    stacked_after_habit_id: null,
-    streak_freeze_available: 0,
-    created_at: new Date().toISOString(),
-  },
-  {
-    name: 'Read 20 pages',
-    schedule: { type: 'daily' },
-    active: true,
-    stacked_after_habit_id: null,
-    streak_freeze_available: 0,
-    created_at: new Date().toISOString(),
-  },
-  {
-    name: 'No screens before bed',
-    schedule: { type: 'daily' },
-    active: true,
-    stacked_after_habit_id: null,
-    streak_freeze_available: 0,
-    created_at: new Date().toISOString(),
-  },
-];
-
-export async function seedDatabase(): Promise<void> {
-  // Only seed if empty
-  const sessionCount = await db.meditation_session.count();
-  if (sessionCount > 0) return;
-
-  await db.transaction('rw', [db.profile, db.meditation_session, db.workout_template, db.habit], async () => {
-    // Profile
-    const profileCount = await db.profile.count();
-    if (profileCount === 0) {
-      await db.profile.add({
-        id: 1,
-        calorie_target: 2000,
-        macro_targets: { protein: 150, carbs: 200, fat: 65 },
-        weight_goal: null,
-        units: 'metric',
-        non_numeric_mode: false,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
-    }
-
-    // Meditation sessions
-    await db.meditation_session.bulkAdd(MEDITATION_SESSIONS as MeditationSession[]);
-
-    // Workout templates
-    await db.workout_template.bulkAdd(DEFAULT_WORKOUT_TEMPLATES as WorkoutTemplate[]);
-
-    // Default habits
-    await db.habit.bulkAdd(DEFAULT_HABITS as Habit[]);
-  });
-}
-
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function getTodayMacros(): Promise<{
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}> {
-  const today = todayISO();
-  const logs = await db.meal_log.where('date').equals(today).toArray();
-  const result = { calories: 0, protein: 0, carbs: 0, fat: 0 };
-  for (const log of logs) {
-    const food = await db.food_item.get(log.food_item_id);
-    if (!food) continue;
-    const ratio = log.quantity / food.serving_size;
-    result.calories += food.calories * ratio;
-    result.protein += food.protein * ratio;
-    result.carbs += food.carbs * ratio;
-    result.fat += food.fat * ratio;
-  }
-  return result;
+async function getUserId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  return user.id;
 }
 
-export async function getTodayHabitStatus(): Promise<{ completed: number; total: number }> {
-  const today = todayISO();
-  const activeHabits = await db.habit.where('active').equals(1).toArray();
-  const completions = await db.habit_completion.where('date').equals(today).toArray();
-  const completedIds = new Set(
-    completions.filter((c) => c.completed_at !== null).map((c) => c.habit_id)
-  );
+// ── Profile ────────────────────────────────────────────────────────────────
+
+export async function getProfile(): Promise<Profile | null> {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('profile')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+  if (error || !data) return null;
   return {
-    completed: activeHabits.filter((h) => completedIds.has(h.id)).length,
-    total: activeHabits.length,
+    id: data.id,
+    user_id: data.user_id,
+    calorie_target: data.calorie_target,
+    macro_targets: {
+      protein: data.macro_protein,
+      carbs: data.macro_carbs,
+      fat: data.macro_fat,
+    },
+    weight_goal: data.weight_goal,
+    units: data.units,
+    non_numeric_mode: data.non_numeric_mode,
+    timezone: data.timezone,
   };
 }
 
-export async function toggleHabitCompletion(habitId: number): Promise<void> {
+export async function upsertProfile(p: Omit<Profile, 'id' | 'user_id'>): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('profile').upsert({
+    user_id: userId,
+    calorie_target: p.calorie_target,
+    macro_protein: p.macro_targets.protein,
+    macro_carbs: p.macro_targets.carbs,
+    macro_fat: p.macro_targets.fat,
+    weight_goal: p.weight_goal,
+    units: p.units,
+    non_numeric_mode: p.non_numeric_mode,
+    timezone: p.timezone,
+  }, { onConflict: 'user_id' });
+}
+
+// ── Food Items ─────────────────────────────────────────────────────────────
+
+export async function addFoodItem(item: Omit<FoodItem, 'id' | 'user_id'>): Promise<string> {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('food_item')
+    .insert({ ...item, user_id: userId })
+    .select('id')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed to add food item');
+  return data.id;
+}
+
+export async function getFoodItem(id: string): Promise<FoodItem | null> {
+  const { data } = await supabase.from('food_item').select('*').eq('id', id).single();
+  return data ?? null;
+}
+
+// ── Meal Log ───────────────────────────────────────────────────────────────
+
+export async function addMealLog(entry: Omit<MealLog, 'id' | 'user_id'>): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('meal_log').insert({ ...entry, user_id: userId });
+}
+
+export async function getMealLogs(date: string): Promise<(MealLog & { food: FoodItem | null })[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('meal_log')
+    .select('*, food:food_item(*)')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .order('logged_at', { ascending: false });
+  return (data ?? []).map(row => ({
+    ...row,
+    food: row.food ?? null,
+  }));
+}
+
+export async function deleteMealLog(id: string): Promise<void> {
+  await supabase.from('meal_log').delete().eq('id', id);
+}
+
+export async function getTodayMacros(): Promise<{ calories: number; protein: number; carbs: number; fat: number }> {
+  const logs = await getMealLogs(todayISO());
+  return logs.reduce((acc, l) => {
+    if (!l.food) return acc;
+    const r = l.quantity / l.food.serving_size;
+    return {
+      calories: acc.calories + l.food.calories * r,
+      protein: acc.protein + l.food.protein * r,
+      carbs: acc.carbs + l.food.carbs * r,
+      fat: acc.fat + l.food.fat * r,
+    };
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+}
+
+// ── Workout Templates ──────────────────────────────────────────────────────
+
+export async function getWorkoutTemplates(): Promise<WorkoutTemplate[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('workout_template')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at');
+  return data ?? [];
+}
+
+export async function addWorkoutTemplate(t: Omit<WorkoutTemplate, 'id' | 'user_id'>): Promise<string> {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('workout_template')
+    .insert({ ...t, user_id: userId })
+    .select('id')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed');
+  return data.id;
+}
+
+// ── Workout Log ────────────────────────────────────────────────────────────
+
+export async function addWorkoutLog(entry: Omit<WorkoutLog, 'id' | 'user_id'>): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('workout_log').insert({ ...entry, user_id: userId });
+}
+
+export async function getWorkoutLogs(date: string): Promise<WorkoutLog[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('workout_log')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .order('logged_at');
+  return data ?? [];
+}
+
+export async function getWorkoutHistory(limit = 30): Promise<WorkoutLog[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('workout_log')
+    .select('*')
+    .eq('user_id', userId)
+    .order('logged_at', { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function deleteWorkoutLog(id: string): Promise<void> {
+  await supabase.from('workout_log').delete().eq('id', id);
+}
+
+// ── Habits ─────────────────────────────────────────────────────────────────
+
+export async function getHabits(): Promise<Habit[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('habit')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('active', true)
+    .order('created_at');
+  return data ?? [];
+}
+
+export async function addHabit(h: Omit<Habit, 'id' | 'user_id'>): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('habit').insert({ ...h, user_id: userId });
+}
+
+export async function deactivateHabit(id: string): Promise<void> {
+  await supabase.from('habit').update({ active: false }).eq('id', id);
+}
+
+export async function getHabitCompletions(date: string): Promise<HabitCompletion[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('habit_completion')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date);
+  return data ?? [];
+}
+
+export async function toggleHabitCompletion(habitId: string): Promise<void> {
+  const userId = await getUserId();
   const today = todayISO();
-  const existing = await db.habit_completion
-    .where('[habit_id+date]')
-    .equals([habitId, today])
-    .first();
+  const { data: existing } = await supabase
+    .from('habit_completion')
+    .select('*')
+    .eq('habit_id', habitId)
+    .eq('date', today)
+    .single();
 
   if (existing) {
-    if (existing.completed_at) {
-      await db.habit_completion.update(existing.id, { completed_at: null });
-    } else {
-      await db.habit_completion.update(existing.id, { completed_at: new Date().toISOString() });
-    }
+    await supabase
+      .from('habit_completion')
+      .update({ completed_at: existing.completed_at ? null : new Date().toISOString() })
+      .eq('id', existing.id);
   } else {
-    await db.habit_completion.add({
-      id: undefined as unknown as number,
+    await supabase.from('habit_completion').insert({
+      user_id: userId,
       habit_id: habitId,
       date: today,
       completed_at: new Date().toISOString(),
@@ -353,26 +338,142 @@ export async function toggleHabitCompletion(habitId: number): Promise<void> {
   }
 }
 
-export async function getHabitStreak(habitId: number): Promise<number> {
-  const completions = await db.habit_completion
-    .where('habit_id')
-    .equals(habitId)
-    .and((c) => c.completed_at !== null)
-    .toArray();
+export async function getHabitStreak(habitId: string): Promise<number> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('habit_completion')
+    .select('date, completed_at')
+    .eq('user_id', userId)
+    .eq('habit_id', habitId)
+    .not('completed_at', 'is', null)
+    .order('date', { ascending: false });
 
-  const completedDates = new Set(completions.map((c) => c.date));
+  if (!data) return 0;
+  const completedDates = new Set(data.map(c => c.date));
   let streak = 0;
   const today = new Date();
-
   for (let i = 0; i < 365; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const iso = d.toISOString().slice(0, 10);
-    if (completedDates.has(iso)) {
-      streak++;
-    } else {
-      break;
-    }
+    if (completedDates.has(iso)) streak++;
+    else break;
   }
   return streak;
+}
+
+export async function getTodayHabitStatus(): Promise<{ completed: number; total: number }> {
+  const habits = await getHabits();
+  const completions = await getHabitCompletions(todayISO());
+  const completedIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
+  return { completed: habits.filter(h => completedIds.has(h.id)).length, total: habits.length };
+}
+
+// ── Meditation Sessions ────────────────────────────────────────────────────
+
+export async function getMeditationSessions(): Promise<MeditationSession[]> {
+  const { data } = await supabase.from('meditation_session').select('*').order('created_at');
+  return data ?? [];
+}
+
+export async function getMeditationSession(id: string): Promise<MeditationSession | null> {
+  const { data } = await supabase.from('meditation_session').select('*').eq('id', id).single();
+  return data ?? null;
+}
+
+// ── Meditation Log ─────────────────────────────────────────────────────────
+
+export async function getMeditationLogs(date: string): Promise<MeditationLog[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('meditation_log')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date);
+  return data ?? [];
+}
+
+export async function addMeditationLog(entry: Omit<MeditationLog, 'id' | 'user_id'>): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('meditation_log').insert({ ...entry, user_id: userId });
+}
+
+// ── Insights ───────────────────────────────────────────────────────────────
+
+export async function getInsights(): Promise<Insight[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('insight')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('shown', true)
+    .order('generated_at', { ascending: false });
+  return data ?? [];
+}
+
+// ── Seed default workout templates for new users ───────────────────────────
+
+const DEFAULT_WORKOUT_TEMPLATES = [
+  { name: 'Morning Run', category: 'Cardio', default_duration_min: 30, default_intensity: 'moderate' as const },
+  { name: 'HIIT', category: 'Cardio', default_duration_min: 20, default_intensity: 'high' as const },
+  { name: 'Upper Body', category: 'Strength', default_duration_min: 45, default_intensity: 'moderate' as const },
+  { name: 'Lower Body', category: 'Strength', default_duration_min: 45, default_intensity: 'moderate' as const },
+  { name: 'Full Body', category: 'Strength', default_duration_min: 60, default_intensity: 'moderate' as const },
+  { name: 'Yoga', category: 'Flexibility', default_duration_min: 30, default_intensity: 'low' as const },
+  { name: 'Walk', category: 'Cardio', default_duration_min: 45, default_intensity: 'low' as const },
+  { name: 'Cycling', category: 'Cardio', default_duration_min: 60, default_intensity: 'moderate' as const },
+];
+
+const DEFAULT_HABITS = [
+  { name: 'Morning water', active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
+  { name: 'Read 20 pages', active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
+  { name: 'No screens before bed', active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
+];
+
+export async function seedUserData(): Promise<void> {
+  const userId = await getUserId();
+
+  // Check if templates exist
+  const { count: tCount } = await supabase
+    .from('workout_template')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (!tCount || tCount === 0) {
+    await supabase.from('workout_template').insert(
+      DEFAULT_WORKOUT_TEMPLATES.map(t => ({ ...t, user_id: userId }))
+    );
+  }
+
+  // Check if habits exist
+  const { count: hCount } = await supabase
+    .from('habit')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (!hCount || hCount === 0) {
+    await supabase.from('habit').insert(
+      DEFAULT_HABITS.map(h => ({ ...h, user_id: userId }))
+    );
+  }
+
+  // Ensure profile exists
+  const { count: pCount } = await supabase
+    .from('profile')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (!pCount || pCount === 0) {
+    await supabase.from('profile').insert({
+      user_id: userId,
+      calorie_target: 2000,
+      macro_protein: 150,
+      macro_carbs: 200,
+      macro_fat: 65,
+      weight_goal: null,
+      units: 'metric',
+      non_numeric_mode: false,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+  }
 }

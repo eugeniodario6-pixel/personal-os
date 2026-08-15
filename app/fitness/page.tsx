@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { db, todayISO, type WorkoutTemplate, type WorkoutLog } from '@/lib/db';
+import { getWorkoutTemplates, addWorkoutTemplate, addWorkoutLog, getWorkoutLogs, getWorkoutHistory, deleteWorkoutLog, todayISO, type WorkoutTemplate, type WorkoutLog } from '@/lib/db';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -24,9 +24,9 @@ function FitnessContent() {
   const load = useCallback(async () => {
     const today = todayISO();
     const [tmpl, tLogs, hist] = await Promise.all([
-      db.workout_template.toArray(),
-      db.workout_log.where('date').equals(today).toArray(),
-      db.workout_log.orderBy('logged_at').reverse().limit(30).toArray(),
+      getWorkoutTemplates(),
+      getWorkoutLogs(today),
+      getWorkoutHistory(30),
     ]);
     setTemplates(tmpl);
     setTodayLogs(tLogs);
@@ -36,22 +36,16 @@ function FitnessContent() {
   useEffect(() => { load(); }, [load]);
 
   const logTemplate = async (t: WorkoutTemplate) => {
-    await db.workout_log.add({
-      id: undefined as unknown as number,
-      date: todayISO(),
-      template_id: t.id,
-      name: t.name,
-      duration_min: t.default_duration_min,
-      intensity: t.default_intensity,
-      calories_burned: null,
-      source: 'manual',
-      logged_at: new Date().toISOString(),
+    await addWorkoutLog({
+      date: todayISO(), template_id: t.id, name: t.name,
+      duration_min: t.default_duration_min, intensity: t.default_intensity,
+      calories_burned: null, source: 'manual', logged_at: new Date().toISOString(),
     });
     await load();
   };
 
-  const removeLog = async (id: number) => {
-    await db.workout_log.delete(id);
+  const removeLog = async (id: string) => {
+    await deleteWorkoutLog(id);
     await load();
   };
 
@@ -59,30 +53,23 @@ function FitnessContent() {
     if (!addName.trim()) return;
     const existing = templates.find(t => t.name.toLowerCase() === addName.trim().toLowerCase());
     if (!existing) {
-      await db.workout_template.add({
-        id: undefined as unknown as number,
-        name: addName.trim(),
-        category: addCategory.trim() || 'General',
-        default_duration_min: parseInt(addDuration) || 30,
-        default_intensity: addIntensity,
+      await addWorkoutTemplate({
+        name: addName.trim(), category: addCategory.trim() || 'General',
+        default_duration_min: parseInt(addDuration) || 30, default_intensity: addIntensity,
       });
     }
-    await db.workout_log.add({
-      id: undefined as unknown as number,
-      date: todayISO(),
-      template_id: existing?.id ?? null,
-      name: addName.trim(),
-      duration_min: parseInt(addDuration) || 30,
-      intensity: addIntensity,
-      calories_burned: null,
-      source: 'manual',
-      logged_at: new Date().toISOString(),
+    await addWorkoutLog({
+      date: todayISO(), template_id: existing?.id ?? null, name: addName.trim(),
+      duration_min: parseInt(addDuration) || 30, intensity: addIntensity,
+      calories_burned: null, source: 'manual', logged_at: new Date().toISOString(),
     });
     setAddName(''); setAddCategory(''); setAddDuration('30'); setAddIntensity('moderate');
     await load();
     setMode('view');
     router.replace('/fitness');
   };
+
+  const inputStyle = { width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' as const };
 
   return (
     <div style={{ fontFamily: MONO }}>
@@ -102,14 +89,14 @@ function FitnessContent() {
           <p style={{ ...lbl, marginBottom: '1rem' }}>LOG WORKOUT</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div><p style={{ ...lbl, marginBottom: '0.25rem' }}>NAME *</p>
-              <input value={addName} onChange={e => setAddName(e.target.value)} placeholder="E.G. MORNING RUN" style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' }} /></div>
+              <input value={addName} onChange={e => setAddName(e.target.value)} placeholder="E.G. MORNING RUN" style={inputStyle} /></div>
             <div><p style={{ ...lbl, marginBottom: '0.25rem' }}>CATEGORY</p>
-              <input value={addCategory} onChange={e => setAddCategory(e.target.value)} placeholder="E.G. CARDIO" style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' }} /></div>
+              <input value={addCategory} onChange={e => setAddCategory(e.target.value)} placeholder="E.G. CARDIO" style={inputStyle} /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
               <div><p style={{ ...lbl, marginBottom: '0.25rem' }}>DURATION (MIN)</p>
-                <input type="number" value={addDuration} onChange={e => setAddDuration(e.target.value)} min="1" style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' }} /></div>
+                <input type="number" value={addDuration} onChange={e => setAddDuration(e.target.value)} min="1" style={inputStyle} /></div>
               <div><p style={{ ...lbl, marginBottom: '0.25rem' }}>INTENSITY</p>
-                <select value={addIntensity} onChange={e => setAddIntensity(e.target.value as 'low' | 'moderate' | 'high')} style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' }}>
+                <select value={addIntensity} onChange={e => setAddIntensity(e.target.value as 'low' | 'moderate' | 'high')} style={inputStyle}>
                   <option value="low">LOW</option>
                   <option value="moderate">MODERATE</option>
                   <option value="high">HIGH</option>
