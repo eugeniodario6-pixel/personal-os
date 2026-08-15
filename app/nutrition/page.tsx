@@ -25,7 +25,7 @@ interface FoodResult {
   serving_unit: string;
 }
 
-async function searchFatSecret(query: string): Promise<FoodResult[]> {
+async function searchFood(query: string): Promise<FoodResult[]> {
   const res = await fetch(`/api/food-search?q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error('Search failed');
   const data = await res.json();
@@ -74,7 +74,7 @@ function NutritionContent() {
     if (!query.trim()) return;
     setSearching(true); setSearchError(''); setResults([]); setSelected(null);
     try {
-      const r = await searchFatSecret(query.trim());
+      const r = await searchFood(query.trim());
       if (r.length === 0) setSearchError('NO RESULTS. TRY A DIFFERENT NAME OR ENTER MANUALLY.');
       setResults(r);
     } catch {
