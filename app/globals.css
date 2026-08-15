@@ -2,14 +2,6 @@
 
 /* ── Design tokens ── */
 :root {
-  --bg: #000000;
-  --bg-dark: #111111;
-  --bg-mid: #1a1a1a;
-  --fg: #ffffff;
-  --fg-muted: #888888;
-  --fg-dim: #444444;
-  --border-color: #333333;
-  --border: 2px solid #333333;
   --black: #000000;
   --white: #ffffff;
   --gray-dark: #111111;
@@ -19,17 +11,6 @@
   --amber: #F5A623;
   --border-heavy: 2px solid #333333;
   --border-light: 1px solid #1a1a1a;
-}
-
-[data-theme="light"] {
-  --bg: #ffffff;
-  --bg-dark: #f0f0f0;
-  --bg-mid: #e8e8e8;
-  --fg: #000000;
-  --fg-muted: #555555;
-  --fg-dim: #999999;
-  --border-color: #cccccc;
-  --border: 2px solid #cccccc;
 }
 
 /* ── Reset ── */
@@ -45,8 +26,8 @@
 html,
 body {
   height: 100%;
-  background: var(--bg);
-  color: var(--fg);
+  background: #000000;
+  color: #ffffff;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 14px;
   line-height: 1.4;
