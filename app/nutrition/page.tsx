@@ -26,26 +26,10 @@ interface FoodResult {
 }
 
 async function searchFatSecret(query: string): Promise<FoodResult[]> {
-  const res = await fetch(`/api/food/search?q=${encodeURIComponent(query)}`);
+  const res = await fetch(`/api/food-search?q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error('Search failed');
   const data = await res.json();
-  return (data.results ?? []).map((f: {
-    name: string;
-    brand: string;
-    cal100: number;
-    protein100: number;
-    carbs100: number;
-    fat100: number;
-  }) => ({
-    name: f.name,
-    brand: f.brand,
-    calories: f.cal100,
-    protein: f.protein100,
-    carbs: f.carbs100,
-    fat: f.fat100,
-    serving_size: 100,
-    serving_unit: 'g',
-  }));
+  return data.foods ?? [];
 }
 
 function NutritionContent() {
