@@ -11,8 +11,8 @@ import { hapticSuccess } from '@/lib/haptic';
 import StreakBadge from '@/components/StreakBadge';
 
 const MONO = "'IBM Plex Mono', monospace";
-const border2 = '2px solid #444';
-const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
+const border2 = '2px solid var(--border-color)';
+const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: 'var(--fg-muted)', margin: 0 };
 
 interface DayData {
   iso: string;
@@ -140,7 +140,7 @@ export default function WeekPage() {
   };
 
   if (loading) {
-    return <div style={{ padding: '2rem', color: '#444', fontFamily: MONO, fontSize: '0.75rem' }}>LOADING...</div>;
+    return <div style={{ padding: '2rem', color: 'var(--fg-dim)', fontFamily: MONO, fontSize: '0.75rem' }}>LOADING...</div>;
   }
 
   return (
@@ -148,69 +148,69 @@ export default function WeekPage() {
       {/* Header */}
       <div style={{ padding: '1rem', borderBottom: border2 }}>
         <p style={{ ...lbl, marginBottom: '0.25rem' }}>{weekRange}</p>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>WEEK REVIEW</h1>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--fg)' }}>WEEK REVIEW</h1>
       </div>
 
       {/* Big weekly score */}
-      <div style={{ padding: '1.5rem 1rem', borderBottom: border2, background: '#000' }}>
+      <div style={{ padding: '1.5rem 1rem', borderBottom: border2, background: 'var(--bg)' }}>
         <p style={{ ...lbl, marginBottom: '0.25rem' }}>WEEKLY AVG SCORE</p>
-        <div className="animate-fadeIn" style={{ fontSize: '5rem', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: '#fff' }}>
+        <div className="animate-fadeIn" style={{ fontSize: '5rem', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--fg)' }}>
           {weeklyAvgScore}
         </div>
-        <p style={{ fontSize: '0.65rem', color: '#888', margin: '0.25rem 0 0.75rem', fontWeight: 700, letterSpacing: '0.2em' }}>/100</p>
-        <div style={{ height: 4, background: '#111', border: '1px solid #444' }}>
+        <p style={{ fontSize: '0.65rem', color: 'var(--fg-muted)', margin: '0.25rem 0 0.75rem', fontWeight: 700, letterSpacing: '0.2em' }}>/100</p>
+        <div style={{ height: 4, background: 'var(--bg-dark)', border: '1px solid var(--border-color)' }}>
           <div className="progress-fill" style={{ width: `${weeklyAvgScore}%` }} />
         </div>
       </div>
 
       {/* 7-day grid */}
       <div style={{ borderBottom: border2 }}>
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--bg-dark)' }}>
           <span style={lbl}>DAILY BREAKDOWN</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #111' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid var(--bg-dark)' }}>
           {days.map((d) => {
             const allDone = d.habitTotal > 0 && d.habitDone === d.habitTotal;
             return (
               <div
                 key={d.iso}
                 style={{
-                  borderRight: '1px solid #111',
+                  borderRight: '1px solid var(--bg-dark)',
                   padding: '0.75rem 0.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: '0.35rem',
-                  background: allDone ? '#fff' : '#000',
-                  color: allDone ? '#000' : '#fff',
+                  background: allDone ? 'var(--fg)' : 'var(--bg)',
+                  color: allDone ? 'var(--bg)' : 'var(--fg)',
                 }}
               >
                 <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.05em' }}>{d.dayInit}</span>
-                <span style={{ fontSize: '0.55rem', color: allDone ? '#444' : '#555' }}>
+                <span style={{ fontSize: '0.55rem', color: allDone ? 'var(--bg-mid)' : 'var(--fg-dim)' }}>
                   {d.habitDone}/{d.habitTotal}
                 </span>
                 <span style={{ fontSize: '0.6rem' }} title="Workout">{d.hadWorkout ? '●' : '○'}</span>
-                <span style={{ fontSize: '0.6rem', color: allDone ? '#444' : '#555' }} title="Meditation">{d.hadMed ? '◆' : '◇'}</span>
+                <span style={{ fontSize: '0.6rem', color: allDone ? 'var(--bg-mid)' : 'var(--fg-dim)' }} title="Meditation">{d.hadMed ? '◆' : '◇'}</span>
               </div>
             );
           })}
         </div>
         <div style={{ padding: '0.5rem 1rem', display: 'flex', gap: '1rem' }}>
-          <span style={{ fontSize: '0.55rem', color: '#555' }}>● workout ◆ meditation</span>
-          <span style={{ fontSize: '0.55rem', color: '#555' }}>inverted = all habits done</span>
+          <span style={{ fontSize: '0.55rem', color: 'var(--fg-dim)' }}>● workout ◆ meditation</span>
+          <span style={{ fontSize: '0.55rem', color: 'var(--fg-dim)' }}>inverted = all habits done</span>
         </div>
       </div>
 
       {/* Streak summary */}
       <div style={{ borderBottom: border2 }}>
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--bg-dark)' }}>
           <span style={lbl}>TOP STREAKS</span>
         </div>
         {topHabits.length === 0 ? (
-          <div style={{ padding: '1rem', color: '#444', fontSize: '0.75rem' }}>NO HABITS YET</div>
+          <div style={{ padding: '1rem', color: 'var(--fg-dim)', fontSize: '0.75rem' }}>NO HABITS YET</div>
         ) : topHabits.map(h => (
-          <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
-            <span style={{ fontSize: '0.875rem', color: '#fff' }}>{h.name}</span>
+          <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid var(--bg-dark)' }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--fg)' }}>{h.name}</span>
             <StreakBadge streak={h.streak} />
           </div>
         ))}
@@ -218,15 +218,15 @@ export default function WeekPage() {
 
       {/* Workouts this week */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: border2 }}>
-        <div style={{ borderRight: '1px solid #444', padding: '1rem' }}>
+        <div style={{ borderRight: '1px solid var(--border-color)', padding: '1rem' }}>
           <p style={{ ...lbl, marginBottom: '0.5rem' }}>WORKOUTS</p>
-          <p style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: '#fff', margin: 0 }}>{weekWorkouts.length}</p>
-          <p style={{ fontSize: '0.65rem', color: '#888', margin: '0.25rem 0 0' }}>{totalWorkoutMins} MINS TOTAL</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--fg)', margin: 0 }}>{weekWorkouts.length}</p>
+          <p style={{ fontSize: '0.65rem', color: 'var(--fg-muted)', margin: '0.25rem 0 0' }}>{totalWorkoutMins} MINS TOTAL</p>
         </div>
         <div style={{ padding: '1rem' }}>
           <p style={{ ...lbl, marginBottom: '0.5rem' }}>MEDITATIONS</p>
-          <p style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: '#fff', margin: 0 }}>{weekMeds.length}</p>
-          <p style={{ fontSize: '0.65rem', color: '#888', margin: '0.25rem 0 0' }}>THIS WEEK</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--fg)', margin: 0 }}>{weekMeds.length}</p>
+          <p style={{ fontSize: '0.65rem', color: 'var(--fg-muted)', margin: '0.25rem 0 0' }}>THIS WEEK</p>
         </div>
       </div>
 
@@ -241,8 +241,8 @@ export default function WeekPage() {
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            background: copied ? '#fff' : '#000',
-            color: copied ? '#000' : '#fff',
+            background: copied ? 'var(--fg)' : 'var(--bg)',
+            color: copied ? 'var(--bg)' : 'var(--fg)',
             border: border2,
             cursor: 'pointer',
             fontFamily: MONO,

@@ -2,14 +2,35 @@
 
 /* ── Design tokens ── */
 :root {
+  --bg: #000000;
+  --bg-dark: #111111;
+  --bg-mid: #1a1a1a;
+  --fg: #ffffff;
+  --fg-muted: #888888;
+  --fg-dim: #444444;
+  --border-color: #444444;
+  --border-strong: #ffffff;
+  --border: 2px solid #444444;
+  --border-hi: 2px solid #ffffff;
+  --input-bg: #000000;
+  --scrollbar-thumb: #444444;
   --black: #000000;
   --white: #ffffff;
-  --gray-dark: #111111;
-  --gray-mid: #444444;
-  --gray-light: #888888;
-  --border: 2px solid #000000;
-  --border-mid: 2px solid #444444;
-  --border-light: 2px solid #888888;
+}
+
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-dark: #f0f0f0;
+  --bg-mid: #e8e8e8;
+  --fg: #000000;
+  --fg-muted: #555555;
+  --fg-dim: #999999;
+  --border-color: #cccccc;
+  --border-strong: #000000;
+  --border: 2px solid #cccccc;
+  --border-hi: 2px solid #000000;
+  --input-bg: #ffffff;
+  --scrollbar-thumb: #cccccc;
 }
 
 /* ── Reset ── */
@@ -25,13 +46,14 @@
 html,
 body {
   height: 100%;
-  background: #000000;
-  color: #ffffff;
+  background: var(--bg);
+  color: var(--fg);
   font-family: 'IBM Plex Mono', monospace;
   font-size: 14px;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background 200ms ease, color 200ms ease;
 }
 
 /* Tasteful motion defaults */
@@ -80,7 +102,7 @@ h3 { font-size: 1.125rem; font-weight: 700; }
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #888888;
+  color: var(--fg-muted);
 }
 
 .number-large {
@@ -108,58 +130,58 @@ h3 { font-size: 1.125rem; font-weight: 700; }
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.6rem 1rem;
-  border: 2px solid #ffffff;
-  background: #000000;
-  color: #ffffff;
+  border: 2px solid var(--fg);
+  background: var(--bg);
+  color: var(--fg);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
 }
 
 .btn:hover {
-  background: #111111;
+  background: var(--bg-dark);
 }
 
 .btn:active,
 .btn-active {
-  background: #ffffff;
-  color: #000000;
+  background: var(--fg);
+  color: var(--bg);
 }
 
 .btn-primary {
-  background: #ffffff;
-  color: #000000;
-  border: 2px solid #ffffff;
+  background: var(--fg);
+  color: var(--bg);
+  border: 2px solid var(--fg);
 }
 
 .btn-primary:hover,
 .btn-primary:active {
-  background: #888888;
-  color: #000000;
+  background: var(--fg-muted);
+  color: var(--bg);
 }
 
 .btn-ghost {
-  border-color: #444444;
-  color: #888888;
+  border-color: var(--border-color);
+  color: var(--fg-muted);
 }
 
 .btn-ghost:hover,
 .btn-ghost:active {
-  border-color: #ffffff;
-  color: #ffffff;
-  background: #111111;
+  border-color: var(--fg);
+  color: var(--fg);
+  background: var(--bg-dark);
 }
 
 .btn-danger {
-  border-color: #888888;
-  color: #888888;
+  border-color: var(--fg-muted);
+  color: var(--fg-muted);
 }
 
 .btn-danger:hover,
 .btn-danger:active {
-  border-color: #ffffff;
-  color: #ffffff;
-  background: #111111;
+  border-color: var(--fg);
+  color: var(--fg);
+  background: var(--bg-dark);
 }
 
 /* ── Inputs ── */
@@ -168,9 +190,9 @@ select,
 textarea {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 0.875rem;
-  background: #000000;
-  color: #ffffff;
-  border: 2px solid #444444;
+  background: var(--input-bg);
+  color: var(--fg);
+  border: 2px solid var(--border-color);
   padding: 0.5rem 0.75rem;
   width: 100%;
   outline: none;
@@ -179,32 +201,32 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #ffffff;
+  border-color: var(--fg);
 }
 
 select option {
-  background: #111111;
-  color: #ffffff;
+  background: var(--bg-dark);
+  color: var(--fg);
 }
 
 /* ── Cards ── */
 .card {
-  border: 2px solid #444444;
+  border: 2px solid var(--border-color);
   padding: 1rem;
-  background: #000000;
+  background: var(--bg);
 }
 
 .card-inset {
-  border: 2px solid #111111;
-  background: #111111;
+  border: 2px solid var(--bg-dark);
+  background: var(--bg-dark);
   padding: 1rem;
 }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #000000; }
-::-webkit-scrollbar-thumb { background: #444444; }
-::-webkit-scrollbar-thumb:hover { background: #888888; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
 
 /* ── Layout ── */
 .page {
@@ -214,13 +236,13 @@ select option {
 
 .section {
   padding: 1rem;
-  border-bottom: 1px solid #111111;
+  border-bottom: 1px solid var(--bg-dark);
 }
 
 /* ── Dividers ── */
 hr {
   border: none;
-  border-top: 1px solid #111111;
+  border-top: 1px solid var(--bg-dark);
 }
 
 /* ── Checkbox text-style ── */
@@ -234,7 +256,7 @@ hr {
 /* ── Tab / Mode switcher ── */
 .tab-bar {
   display: flex;
-  border-bottom: 2px solid #444444;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .tab {
@@ -246,37 +268,37 @@ hr {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   text-align: center;
-  color: #888888;
+  color: var(--fg-muted);
   border: none;
-  background: #000000;
+  background: var(--bg);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
 }
 
 .tab.active {
-  color: #ffffff;
-  border-bottom: 2px solid #ffffff;
+  color: var(--fg);
+  border-bottom: 2px solid var(--fg);
 }
 
 /* ── Progress bar (brutalist) ── */
 .progress-bar {
   height: 6px;
-  background: #111111;
-  border: 1px solid #444444;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #ffffff;
+  background: var(--fg);
   transition: width 600ms cubic-bezier(0.4,0,0.2,1);
 }
 
 /* ── Status grid cell ── */
 .stat-cell {
-  border: 2px solid #444444;
+  border: 2px solid var(--border-color);
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
