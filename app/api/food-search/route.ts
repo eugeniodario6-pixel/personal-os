@@ -1,118 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-let cachedToken: { token: string; expires: number } | null = null;
+// Whole-food keywords that indicate a generic/unprocessed item
+const WHOLE_FOOD_TERMS = [
+  'raw', 'cooked', 'boiled', 'grilled', 'roasted', 'steamed', 'baked',
+  'fresh', 'whole', 'lean', 'ground', 'generic', 'usda',
+];
 
-async function getFatSecretToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expires) {
-    return cachedToken.token;
-  }
-
-  const clientId = process.env.FATSECRET_CLIENT_ID;
-  const clientSecret = process.env.FATSECRET_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error(`Missing credentials: ID=${!!clientId} SECRET=${!!clientSecret}`);
-  }
-
-  const res = await fetch('https://oauth.fatsecret.com/connect/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: clientId,
-      client_secret: clientSecret,
-      scope: 'basic',
-    }).toString(),
-  });
-
-  const text = await res.text();
-  let data: any;
-  try { data = JSON.parse(text); } catch { throw new Error(`Token parse error: ${text.slice(0, 200)}`); }
-  if (!data.access_token) throw new Error(`No token: ${JSON.stringify(data)}`);
-
-  cachedToken = {
-    token: data.access_token,
-    expires: Date.now() + ((data.expires_in ?? 86400) - 60) * 1000,
-  };
-  return cachedToken.token;
+function isWholeFood(name: string, brands: string): boolean {
+  if (brands) return false; // has a brand = processed
+  const lower = name.toLowerCase();
+  // Single-word foods are usually whole foods (beef, apple, rice)
+  if (lower.split(' ').length <= 2) return true;
+  return WHOLE_FOOD_TERMS.some(t => lower.includes(t));
 }
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q');
-
-  // Debug endpoint
-  if (query === '__debug') {
-    try {
-      const token = await getFatSecretToken();
-      // Quick test search
-      const testRes = await fetch(
-        `https://platform.fatsecret.com/rest/foods/search/v1?search_expression=apple&format=json&max_results=2`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const testData = await testRes.json();
-      return NextResponse.json({
-        hasId: !!process.env.FATSECRET_CLIENT_ID,
-        hasSecret: !!process.env.FATSECRET_CLIENT_SECRET,
-        tokenOk: true,
-        searchStatus: testRes.status,
-        rawResponse: JSON.stringify(testData).slice(0, 500),
-      });
-    } catch (e: any) {
-      return NextResponse.json({ error: e.message, hasId: !!process.env.FATSECRET_CLIENT_ID, hasSecret: !!process.env.FATSECRET_CLIENT_SECRET });
-    }
-  }
-
   if (!query?.trim()) return NextResponse.json({ foods: [] });
 
   try {
-    const token = await getFatSecretToken();
+    const url = `https://world.openfoodfacts.org/cgi/search.pl` +
+      `?search_terms=${encodeURIComponent(query.trim())}` +
+      `&search_simple=1&action=process&json=1&page_size=20` +
+      `&fields=product_name,generic_name,brands,nutriments,serving_size,food_groups_tags` +
+      `&lc=en&cc=za&sort_by=unique_scans_n`;
 
-    const url = `https://platform.fatsecret.com/rest/foods/search/v1?search_expression=${encodeURIComponent(query.trim())}&format=json&max_results=10`;
     const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 'User-Agent': 'PersonalOS/1.0' },
     });
 
-    const text = await res.text();
-    let data: any;
-    try { data = JSON.parse(text); } catch { throw new Error(`Parse error: ${text.slice(0, 300)}`); }
+    const data = await res.json();
+    const products = data.products ?? [];
 
-    if (data.error) throw new Error(`FatSecret error: ${JSON.stringify(data.error)}`);
-
-    const raw = data?.foods?.food ?? [];
-    const items = Array.isArray(raw) ? raw : [raw];
-
-    const foods = items
-      .filter((f: any) => f.food_name)
-      .map((f: any) => {
-        const desc: string = f.food_description ?? '';
-        const cal   = parseFloat(desc.match(/Calories:\s*([\d.]+)/i)?.[1] ?? '0');
-        const fat   = parseFloat(desc.match(/Fat:\s*([\d.]+)/i)?.[1] ?? '0');
-        const carbs = parseFloat(desc.match(/Carbs:\s*([\d.]+)/i)?.[1] ?? '0');
-        const prot  = parseFloat(desc.match(/Protein:\s*([\d.]+)/i)?.[1] ?? '0');
-        const per   = desc.match(/Per\s+([\d.]+)\s*(\w+)/i);
-        const servingSize = per ? parseFloat(per[1]) : 100;
-        const servingUnit = per ? per[2].toLowerCase() : 'g';
-        const isGeneric = f.food_type === 'Generic';
+    const foods = products
+      .filter((p: any) => {
+        const name = p.product_name || p.generic_name;
+        const cal = p.nutriments?.['energy-kcal_100g'];
+        return name && cal && cal > 0;
+      })
+      .map((p: any) => {
+        const name = (p.product_name || p.generic_name || '').trim();
+        const brand = (p.brands || '').split(',')[0].trim();
+        const cal   = Math.round(p.nutriments['energy-kcal_100g'] ?? 0);
+        const prot  = Math.round((p.nutriments['proteins_100g'] ?? 0) * 10) / 10;
+        const carbs = Math.round((p.nutriments['carbohydrates_100g'] ?? 0) * 10) / 10;
+        const fat   = Math.round((p.nutriments['fat_100g'] ?? 0) * 10) / 10;
+        const whole = isWholeFood(name, brand);
         return {
-          id: f.food_id,
-          name: f.food_name,
-          brand: f.brand_name ?? '',
-          type: f.food_type ?? 'Generic',
-          isGeneric,
-          calories: Math.round(cal),
-          protein: Math.round(prot * 10) / 10,
-          carbs:   Math.round(carbs * 10) / 10,
-          fat:     Math.round(fat * 10) / 10,
-          serving_size: servingSize,
-          serving_unit: servingUnit,
+          name,
+          brand,
+          isGeneric: whole,
+          calories: cal,
+          protein: prot,
+          carbs,
+          fat,
+          serving_size: 100,
+          serving_unit: 'g',
         };
       })
-      // Whole foods first, branded second
+      // Whole foods first, then by calorie data quality
       .sort((a: any, b: any) => {
         if (a.isGeneric && !b.isGeneric) return -1;
         if (!a.isGeneric && b.isGeneric) return 1;
         return 0;
       })
+      // Deduplicate by name
+      .filter((item: any, idx: number, arr: any[]) =>
+        arr.findIndex(x => x.name.toLowerCase() === item.name.toLowerCase()) === idx
+      )
       .slice(0, 10);
 
     return NextResponse.json({ foods });
