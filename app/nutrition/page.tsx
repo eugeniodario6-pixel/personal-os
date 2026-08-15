@@ -78,7 +78,7 @@ function NutritionContent() {
     setResults([]);
     try {
       const res = await fetch(
-        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments`
+        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments&lc=en&cc=za`
       );
       const data = await res.json() as { products?: OFFProduct[] };
       const products: OFFProduct[] = data.products ?? [];
