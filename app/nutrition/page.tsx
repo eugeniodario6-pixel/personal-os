@@ -25,14 +25,26 @@ interface FoodResult {
   serving_unit: string;
 }
 
+// Matches French/non-English accented characters common in OFF database
+const FRENCH_PATTERN = /[éèêëàâùûüôîïçœæ]/i;
+
+function isEnglish(name: string): boolean {
+  return !FRENCH_PATTERN.test(name);
+}
+
 async function searchOpenFoodFacts(query: string): Promise<FoodResult[]> {
-  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10&fields=product_name,brands,nutriments,serving_size&lc=en`;
+  // Fetch 40 results so we have enough after filtering out French ones
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=40&fields=product_name,brands,nutriments,serving_size&lc=en&cc=us`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Search failed');
   const data = await res.json();
   return (data.products ?? [])
-    .filter((p: any) => p.product_name && p.nutriments?.['energy-kcal_100g'])
-    .slice(0, 8)
+    .filter((p: any) =>
+      p.product_name &&
+      p.nutriments?.['energy-kcal_100g'] > 0 &&
+      isEnglish(p.product_name)
+    )
+    .slice(0, 10)
     .map((p: any) => ({
       name: p.product_name,
       brand: p.brands ?? '',
