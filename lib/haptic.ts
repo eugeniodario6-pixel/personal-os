@@ -1,9 +1,10 @@
-export function haptic(style: 'light' | 'medium' | 'heavy' = 'light') {
-  if (typeof window === 'undefined') return;
-  const patterns: Record<string, number[]> = {
-    light:  [10],
-    medium: [20],
-    heavy:  [30],
-  };
-  try { navigator.vibrate?.(patterns[style]); } catch {}
+export function haptic(pattern: number | number[] = 10) {
+  if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
 }
+
+export const hapticLight = () => haptic(8);
+export const hapticMedium = () => haptic(15);
+export const hapticHeavy = () => haptic([20, 10, 20]);
+export const hapticSuccess = () => haptic([10, 50, 10]);
