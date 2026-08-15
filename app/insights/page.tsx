@@ -1,24 +1,18 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { db, todayISO, type Insight } from '@/lib/db';
+import { db, todayISO } from '@/lib/db';
 
-type Period = 'week' | 'month';
-
-interface Summary {
-  label: string;
-  value: string;
-  sub?: string;
-}
+const MONO = "'IBM Plex Mono', monospace";
+const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
+const border2 = '2px solid #444';
 
 export default function InsightsPage() {
-  const [period, setPeriod] = useState<Period>('week');
-  const [insights, setInsights] = useState<Insight[]>([]);
-  const [summaries, setSummaries] = useState<Summary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dataPoints, setDataPoints] = useState(0);
+  const [period, setPeriod] = useState<'week' | 'month'>('week');
+  const [summaries, setSummaries] = useState<{ label: string; sub: string; value: string }[]>([]);
+  const [insights, setInsights] = useState<{ text: string; meta: string }[]>([]);
 
-  const loadData = useCallback(async () => {
+  const load = useCallback(async () => {
     const today = new Date();
     const days = period === 'week' ? 7 : 30;
     const dates: string[] = [];
@@ -27,175 +21,88 @@ export default function InsightsPage() {
       d.setDate(d.getDate() - i);
       dates.push(d.toISOString().slice(0, 10));
     }
-    const dateSet = new Set(dates);
 
-    const [allInsights, mealLogs, workoutLogs, habitCompletions, medLogs, allFoods, allHabits] =
-      await Promise.all([
-        db.insight.orderBy('generated_at').reverse().limit(20).toArray(),
-        db.meal_log.filter((l) => dateSet.has(l.date)).toArray(),
-        db.workout_log.filter((l) => dateSet.has(l.date)).toArray(),
-        db.habit_completion.filter((c) => dateSet.has(c.date) && c.completed_at !== null).toArray(),
-        db.meditation_log.filter((l) => dateSet.has(l.date)).toArray(),
-        db.food_item.toArray(),
-        db.habit.toArray(),
-      ]);
+    const [mealLogs, workoutLogs, habitCompletions, activeHabits, medLogs, insightRows] = await Promise.all([
+      db.meal_log.where('date').anyOf(dates).toArray(),
+      db.workout_log.where('date').anyOf(dates).toArray(),
+      db.habit_completion.where('date').anyOf(dates).toArray(),
+      db.habit.where('active').equals(1).toArray(),
+      db.meditation_log.where('date').anyOf(dates).toArray(),
+      db.insight.where('shown').equals(1).toArray(),
+    ]);
 
-    setInsights(allInsights);
-
-    // Compute summaries
-    const foodMap = new Map(allFoods.map((f) => [f.id, f]));
-    let totalCals = 0;
+    // Avg calories
+    let totalCal = 0;
     for (const log of mealLogs) {
-      const food = foodMap.get(log.food_item_id);
-      if (food) {
-        totalCals += food.calories * (log.quantity / food.serving_size);
-      }
+      const food = await db.food_item.get(log.food_item_id);
+      if (food) totalCal += food.calories * (log.quantity / food.serving_size);
     }
+    const avgCal = dates.length > 0 ? Math.round(totalCal / days) : 0;
 
-    const avgCals = mealLogs.length > 0 ? Math.round(totalCals / days) : 0;
-    const totalWorkouts = workoutLogs.length;
-    const totalWorkoutMin = workoutLogs.reduce((a, l) => a + l.duration_min, 0);
-    const activeHabits = allHabits.filter((h) => h.active);
-    const possibleCompletions = activeHabits.length * days;
-    const habitPct = possibleCompletions > 0 ? Math.round((habitCompletions.length / possibleCompletions) * 100) : 0;
-    const totalMedMin = medLogs.reduce((a, l) => a + l.duration_actual_min, 0);
-    const medSessions = medLogs.length;
+    // Habit completion %
+    const totalPossible = activeHabits.length * days;
+    const completed = habitCompletions.filter(c => c.completed_at).length;
+    const habitPct = totalPossible > 0 ? Math.round((completed / totalPossible) * 100) : 0;
 
-    const computed: Summary[] = [
-      { label: 'AVG DAILY CALORIES', value: avgCals > 0 ? `${avgCals} KCAL` : '—', sub: `${mealLogs.length} MEALS LOGGED` },
-      { label: 'WORKOUTS', value: String(totalWorkouts), sub: `${totalWorkoutMin} MIN TOTAL` },
-      { label: 'HABIT COMPLETION', value: `${habitPct}%`, sub: `${habitCompletions.length} / ${possibleCompletions} CHECKS` },
-      { label: 'MEDITATION', value: medSessions > 0 ? `${medSessions} SESSIONS` : '—', sub: `${totalMedMin} MIN TOTAL` },
-    ];
+    setSummaries([
+      { label: 'AVG CALORIES / DAY', sub: `OVER ${days} DAYS`, value: `${avgCal} KCAL` },
+      { label: 'WORKOUTS', sub: `LAST ${days} DAYS`, value: String(workoutLogs.length) },
+      { label: 'HABITS COMPLETION', sub: `${completed} OF ${totalPossible} POSSIBLE`, value: `${habitPct}%` },
+      { label: 'MEDITATION SESSIONS', sub: `LAST ${days} DAYS`, value: String(medLogs.filter(m => m.completed).length) },
+    ]);
 
-    setSummaries(computed);
-    setDataPoints(mealLogs.length + workoutLogs.length + habitCompletions.length + medLogs.length);
-    setLoading(false);
+    setInsights(insightRows.map(i => ({
+      text: i.relationship,
+      meta: `${i.data_points} DATA POINTS · ${Math.round(i.confidence * 100)}% CONFIDENCE`,
+    })));
   }, [period]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', fontFamily: "'IBM Plex Mono', monospace", color: '#444', fontSize: '0.75rem' }}>
-        LOADING...
-      </div>
-    );
-  }
-
-  const showInsights = dataPoints >= 5;
+  useEffect(() => { load(); }, [load]);
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ padding: '1rem', borderBottom: '2px solid #444' }}>
-        <p className="label" style={{ marginBottom: '0.25rem' }}>INSIGHTS</p>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', fontFamily: "'IBM Plex Mono', monospace" }}>DATA</h1>
+    <div style={{ fontFamily: MONO }}>
+      <div style={{ padding: '1rem', borderBottom: border2 }}>
+        <p style={{ ...lbl, marginBottom: '0.25rem' }}>INSIGHTS</p>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>DATA</h1>
       </div>
 
-      {/* Period switcher */}
-      <div className="tab-bar">
-        <button className={`tab ${period === 'week' ? 'active' : ''}`} onClick={() => setPeriod('week')}>
-          THIS WEEK
-        </button>
-        <button className={`tab ${period === 'month' ? 'active' : ''}`} onClick={() => setPeriod('month')}>
-          THIS MONTH
-        </button>
+      <div style={{ display: 'flex', borderBottom: border2 }}>
+        {(['week', 'month'] as const).map(p => (
+          <button key={p} onClick={() => setPeriod(p)}
+            style={{ flex: 1, padding: '0.6rem 1rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', textAlign: 'center', border: 'none', background: '#000', cursor: 'pointer', marginBottom: -2, color: period === p ? '#fff' : '#444', borderBottom: `2px solid ${period === p ? '#fff' : '#444'}`, fontFamily: MONO }}>
+            {p === 'week' ? 'THIS WEEK' : 'THIS MONTH'}
+          </button>
+        ))}
       </div>
 
-      {/* Summary table */}
-      <div style={{ borderBottom: '2px solid #444' }}>
+      <div style={{ borderBottom: border2 }}>
         <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
-          <span className="label">SUMMARY — {period === 'week' ? '7 DAYS' : '30 DAYS'}</span>
+          <span style={lbl}>SUMMARY — {period === 'week' ? 'THIS WEEK' : 'THIS MONTH'}</span>
         </div>
-        {summaries.map((s, i) => (
-          <div
-            key={s.label}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '0.875rem 1rem',
-              borderBottom: i < summaries.length - 1 ? '1px solid #111' : 'none',
-            }}
-          >
+        {summaries.map(s => (
+          <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1rem', borderBottom: '1px solid #111' }}>
             <div>
-              <p className="label" style={{ marginBottom: '0.2rem' }}>{s.label}</p>
-              {s.sub && <p style={{ fontSize: '0.65rem', color: '#444', fontFamily: "'IBM Plex Mono', monospace" }}>{s.sub}</p>}
+              <p style={lbl}>{s.label}</p>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: '#444' }}>{s.sub}</p>
             </div>
-            <span
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontWeight: 700,
-                fontSize: '1.125rem',
-                color: '#fff',
-              }}
-            >
-              {s.value}
-            </span>
+            <span style={{ fontWeight: 700, fontSize: '1.125rem', color: '#fff' }}>{s.value}</span>
           </div>
         ))}
       </div>
 
-      {/* Insight cards — only when ≥5 data points */}
-      {showInsights && insights.length > 0 && (
-        <div>
-          <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
-            <span className="label">DISCOVERED PATTERNS</span>
+      <div>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
+          <span style={lbl}>DISCOVERED PATTERNS</span>
+        </div>
+        {insights.length === 0 ? (
+          <div style={{ padding: '1.5rem 1rem', color: '#444', fontSize: '0.75rem' }}>NOT ENOUGH DATA YET — KEEP LOGGING.</div>
+        ) : insights.map((i, idx) => (
+          <div key={idx} style={{ padding: '1rem', borderBottom: '1px solid #111', borderLeft: '3px solid #444' }}>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: '#fff', lineHeight: 1.6 }}>{i.text}</p>
+            <p style={lbl}>{i.meta}</p>
           </div>
-          {insights.map((insight) => (
-            <div
-              key={insight.id}
-              style={{
-                padding: '1rem',
-                borderBottom: '1px solid #111',
-                borderLeft: '3px solid #444',
-                marginLeft: '0',
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '0.875rem',
-                  color: '#fff',
-                  lineHeight: 1.6,
-                  marginBottom: '0.5rem',
-                }}
-              >
-                {insight.relationship}
-              </p>
-              <p className="label">
-                {insight.metric_a} × {insight.metric_b} · {insight.data_points} DATA POINTS · {Math.round(insight.confidence * 100)}% CONFIDENCE
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* No data state */}
-      {!showInsights && (
-        <div style={{ padding: '2rem 1rem' }}>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem', color: '#444', lineHeight: 1.8 }}>
-            LOG AT LEAST 5 DATA POINTS ACROSS NUTRITION, WORKOUTS, HABITS, OR MEDITATION TO UNLOCK PATTERN DISCOVERY.
-          </p>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.65rem', color: '#111', marginTop: '1rem' }}>
-            CURRENT: {dataPoints} DATA POINTS
-          </p>
-          <div style={{ marginTop: '1rem', height: '4px', background: '#111', border: '1px solid #444' }}>
-            <div style={{ height: '100%', background: '#444', width: `${Math.min(dataPoints / 5 * 100, 100)}%` }} />
-          </div>
-        </div>
-      )}
-
-      {showInsights && insights.length === 0 && (
-        <div style={{ padding: '2rem 1rem' }}>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem', color: '#444', lineHeight: 1.8 }}>
-            PATTERNS WILL APPEAR HERE AS YOU BUILD MORE HISTORY. KEEP LOGGING.
-          </p>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
