@@ -3,7 +3,6 @@ import { IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import Nav from '@/components/Nav';
 import SWRegister from './sw-register';
-import { ThemeProvider } from '@/lib/theme';
 
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ['latin'],
@@ -39,19 +38,11 @@ export default function RootLayout({
     <html lang="en" className={ibmPlexMono.variable}>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        <script dangerouslySetInnerHTML={{ __html: `
-  try {
-    var t = localStorage.getItem('pos-theme');
-    if (t) document.documentElement.setAttribute('data-theme', t);
-  } catch(e) {}
-` }} />
       </head>
       <body style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-        <ThemeProvider>
-          <SWRegister />
-          <main className="page">{children}</main>
-          <Nav />
-        </ThemeProvider>
+        <SWRegister />
+        <main className="page">{children}</main>
+        <Nav />
       </body>
     </html>
   );
