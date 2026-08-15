@@ -1,62 +1,123 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const FRENCH_CHARS = /[éèêëàâùûüôîïçœæÉÈÊËÀÂÙÛÜÔÎÏÇŒÆ]/;
+let cachedToken: { token: string; expires: number } | null = null;
 
-interface OFFProduct {
-  product_name?: string;
-  product_name_en?: string;
-  brands?: string;
-  nutriments?: {
-    'energy-kcal_100g'?: number;
-    proteins_100g?: number;
-    carbohydrates_100g?: number;
-    fat_100g?: number;
+async function getFatSecretToken(): Promise<string> {
+  if (cachedToken && Date.now() < cachedToken.expires) {
+    return cachedToken.token;
+  }
+
+  const clientId = process.env.FATSECRET_CLIENT_ID;
+  const clientSecret = process.env.FATSECRET_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error(`Missing credentials: ID=${!!clientId} SECRET=${!!clientSecret}`);
+  }
+
+  const res = await fetch('https://oauth.fatsecret.com/connect/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: clientId,
+      client_secret: clientSecret,
+      scope: 'basic',
+    }).toString(),
+  });
+
+  const text = await res.text();
+  let data: any;
+  try { data = JSON.parse(text); } catch { throw new Error(`Token parse error: ${text.slice(0, 200)}`); }
+  if (!data.access_token) throw new Error(`No token: ${JSON.stringify(data)}`);
+
+  cachedToken = {
+    token: data.access_token,
+    expires: Date.now() + ((data.expires_in ?? 86400) - 60) * 1000,
   };
+  return cachedToken.token;
 }
 
 export async function GET(request: NextRequest) {
-  const query = request.nextUrl.searchParams.get('q')?.trim();
-  if (!query) return NextResponse.json({ foods: [] });
+  const query = request.nextUrl.searchParams.get('q');
+
+  // Debug endpoint
+  if (query === '__debug') {
+    try {
+      const token = await getFatSecretToken();
+      // Quick test search
+      const testRes = await fetch(
+        `https://platform.fatsecret.com/rest/foods/search/v1?search_expression=apple&format=json&max_results=2`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const testData = await testRes.json();
+      return NextResponse.json({
+        hasId: !!process.env.FATSECRET_CLIENT_ID,
+        hasSecret: !!process.env.FATSECRET_CLIENT_SECRET,
+        tokenOk: true,
+        searchStatus: testRes.status,
+        rawResponse: JSON.stringify(testData).slice(0, 500),
+      });
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message, hasId: !!process.env.FATSECRET_CLIENT_ID, hasSecret: !!process.env.FATSECRET_CLIENT_SECRET });
+    }
+  }
+
+  if (!query?.trim()) return NextResponse.json({ foods: [] });
 
   try {
-    // Use the English-language OFF endpoint, fetch 40 so we have buffer after filtering
-    const url = `https://world.openfoodfacts.org/cgi/search.pl` +
-      `?search_terms=${encodeURIComponent(query)}` +
-      `&search_simple=1&action=process&json=1` +
-      `&page_size=40` +
-      `&fields=product_name,product_name_en,brands,nutriments` +
-      `&lc=en&cc=us`;
+    const token = await getFatSecretToken();
 
+    const url = `https://platform.fatsecret.com/rest/foods/search/v1?search_expression=${encodeURIComponent(query.trim())}&format=json&max_results=10`;
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'PersonalOS/1.0 (personal health app)' },
-      next: { revalidate: 300 }, // cache 5 min server-side
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!res.ok) throw new Error(`OFF returned ${res.status}`);
-    const data = await res.json();
-    const products: OFFProduct[] = data.products ?? [];
+    const text = await res.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch { throw new Error(`Parse error: ${text.slice(0, 300)}`); }
 
-    const foods = products
-      .map(p => {
-        // Prefer English name if available
-        const name = (p.product_name_en?.trim() || p.product_name?.trim() || '').slice(0, 80);
-        const cal = Math.round(p.nutriments?.['energy-kcal_100g'] ?? 0);
-        const protein = Math.round((p.nutriments?.proteins_100g ?? 0) * 10) / 10;
-        const carbs = Math.round((p.nutriments?.carbohydrates_100g ?? 0) * 10) / 10;
-        const fat = Math.round((p.nutriments?.fat_100g ?? 0) * 10) / 10;
-        const brand = p.brands?.split(',')[0]?.trim() ?? '';
-        return { name, brand, calories: cal, protein, carbs, fat };
+    if (data.error) throw new Error(`FatSecret error: ${JSON.stringify(data.error)}`);
+
+    const raw = data?.foods?.food ?? [];
+    const items = Array.isArray(raw) ? raw : [raw];
+
+    const foods = items
+      .filter((f: any) => f.food_name)
+      .map((f: any) => {
+        const desc: string = f.food_description ?? '';
+        const cal   = parseFloat(desc.match(/Calories:\s*([\d.]+)/i)?.[1] ?? '0');
+        const fat   = parseFloat(desc.match(/Fat:\s*([\d.]+)/i)?.[1] ?? '0');
+        const carbs = parseFloat(desc.match(/Carbs:\s*([\d.]+)/i)?.[1] ?? '0');
+        const prot  = parseFloat(desc.match(/Protein:\s*([\d.]+)/i)?.[1] ?? '0');
+        const per   = desc.match(/Per\s+([\d.]+)\s*(\w+)/i);
+        const servingSize = per ? parseFloat(per[1]) : 100;
+        const servingUnit = per ? per[2].toLowerCase() : 'g';
+        const isGeneric = f.food_type === 'Generic';
+        return {
+          id: f.food_id,
+          name: f.food_name,
+          brand: f.brand_name ?? '',
+          type: f.food_type ?? 'Generic',
+          isGeneric,
+          calories: Math.round(cal),
+          protein: Math.round(prot * 10) / 10,
+          carbs:   Math.round(carbs * 10) / 10,
+          fat:     Math.round(fat * 10) / 10,
+          serving_size: servingSize,
+          serving_unit: servingUnit,
+        };
       })
-      .filter(f =>
-        f.name.length > 0 &&       // has a name
-        f.calories > 0 &&          // has calorie data
-        !FRENCH_CHARS.test(f.name) // no French accent characters
-      )
-      .slice(0, 12);
+      // Whole foods first, branded second
+      .sort((a: any, b: any) => {
+        if (a.isGeneric && !b.isGeneric) return -1;
+        if (!a.isGeneric && b.isGeneric) return 1;
+        return 0;
+      })
+      .slice(0, 10);
 
     return NextResponse.json({ foods });
-  } catch (err) {
-    console.error('[food-search]', err);
-    return NextResponse.json({ error: 'Search failed', foods: [] }, { status: 500 });
+  } catch (err: any) {
+    console.error('[food-search]', err.message);
+    return NextResponse.json({ error: err.message, foods: [] }, { status: 500 });
   }
 }

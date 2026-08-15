@@ -15,8 +15,11 @@ type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 type Mode = 'log' | 'search' | 'manual';
 
 interface FoodResult {
+  id: string;
   name: string;
   brand: string;
+  type: string;
+  isGeneric: boolean;
   calories: number;
   protein: number;
   carbs: number;
@@ -25,7 +28,7 @@ interface FoodResult {
   serving_unit: string;
 }
 
-async function searchFood(query: string): Promise<FoodResult[]> {
+async function searchFatSecret(query: string): Promise<FoodResult[]> {
   const res = await fetch(`/api/food-search?q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error('Search failed');
   const data = await res.json();
@@ -74,7 +77,7 @@ function NutritionContent() {
     if (!query.trim()) return;
     setSearching(true); setSearchError(''); setResults([]); setSelected(null);
     try {
-      const r = await searchFood(query.trim());
+      const r = await searchFatSecret(query.trim());
       if (r.length === 0) setSearchError('NO RESULTS. TRY A DIFFERENT NAME OR ENTER MANUALLY.');
       setResults(r);
     } catch {
@@ -229,13 +232,16 @@ function NutritionContent() {
             <button
               key={i}
               onClick={() => { haptic('light'); setSelected(r); setQuery(r.name); setResults([]); }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0.875rem 1.25rem', background: '#000', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', textAlign: 'left', fontFamily: MONO }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0.875rem 1.25rem', background: r.isGeneric ? '#000' : '#050505', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', textAlign: 'left', fontFamily: MONO, opacity: r.isGeneric ? 1 : 0.7 }}
             >
               <div>
-                <p style={{ margin: 0, fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>{r.name}</p>
-                {r.brand && <p style={{ ...lbl, marginTop: '0.15rem' }}>{r.brand}</p>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.1rem' }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: r.isGeneric ? '#fff' : '#888', fontSize: '0.875rem' }}>{r.name}</p>
+                  {r.isGeneric && <span style={{ fontSize: '0.45rem', fontWeight: 700, letterSpacing: '0.15em', color: '#F5A623', border: '1px solid #F5A623', padding: '0.1rem 0.3rem' }}>WHOLE</span>}
+                </div>
+                {r.brand && <p style={{ ...lbl, color: '#333' }}>{r.brand}</p>}
               </div>
-              <p style={{ margin: 0, fontWeight: 700, color: '#F5A623', fontSize: '0.875rem', whiteSpace: 'nowrap', marginLeft: '1rem' }}>
+              <p style={{ margin: 0, fontWeight: 700, color: r.isGeneric ? '#F5A623' : '#555', fontSize: '0.875rem', whiteSpace: 'nowrap', marginLeft: '1rem' }}>
                 {r.calories} kcal
               </p>
             </button>
