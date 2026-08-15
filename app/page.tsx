@@ -1,337 +1,297 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { getTodayPlan } from '@/lib/exercises'
+import { useEffect, useState, useCallback } from 'react';
+import {
+  db,
+  seedDatabase,
+  todayISO,
+  getTodayMacros,
+  getTodayHabitStatus,
+  getHabitStreak,
+  type Habit,
+  type HabitCompletion,
+  type MeditationSession,
+  type Insight,
+  type Profile,
+} from '@/lib/db';
+import StatusGrid from '@/components/StatusGrid';
+import QuickAdd from '@/components/QuickAdd';
+import HabitRow from '@/components/HabitRow';
+import Link from 'next/link';
 
-interface Meal {
-  id: string
-  name: string
-  calories: number
-  protein_g: number
-  carbs_g: number
-  fat_g: number
-  date: string
-}
-
-interface ExerciseLog {
-  exercise_key: string
-  completed: boolean
-}
-
-const TARGET = {
-  calories: 1800,
-  protein_g: 185,
-  carbs_g: 45,
-  fat_g: 98,
-}
-
-const card: React.CSSProperties = {
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: 16,
-  padding: 20,
-}
-
-const label: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 400,
-  color: 'var(--muted)',
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-}
-
-const rowBase: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '14px 0',
+interface HabitWithStatus {
+  habit: Habit;
+  streak: number;
+  completed: boolean;
 }
 
 export default function TodayPage() {
-  const [meals, setMeals] = useState<Meal[]>([])
-  const [loading, setLoading] = useState(true)
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-  const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set())
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const [habitStatus, setHabitStatus] = useState({ completed: 0, total: 0 });
+  const [habits, setHabits] = useState<HabitWithStatus[]>([]);
+  const [workoutsToday, setWorkoutsToday] = useState(0);
+  const [meditationToday, setMeditationToday] = useState(0);
+  const [suggestedSession, setSuggestedSession] = useState<MeditationSession | null>(null);
+  const [insight, setInsight] = useState<Insight | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const todayPlan = getTodayPlan()
+  const loadData = useCallback(async () => {
+    await seedDatabase();
 
-  useEffect(() => {
-    const current = document.documentElement.getAttribute('data-theme')
-    setTheme(current === 'light' ? 'light' : 'dark')
-  }, [])
+    const today = todayISO();
+    const [prof, mac, habitStat, activeHabits, completions, workouts, medLogs, sessions, insights] =
+      await Promise.all([
+        db.profile.get(1),
+        getTodayMacros(),
+        getTodayHabitStatus(),
+        db.habit.where('active').equals(1).toArray(),
+        db.habit_completion.where('date').equals(today).toArray(),
+        db.workout_log.where('date').equals(today).toArray(),
+        db.meditation_log.where('date').equals(today).toArray(),
+        db.meditation_session.toArray(),
+        db.insight.where('shown').equals(0).limit(1).toArray(),
+      ]);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [mealsRes, exerciseRes] = await Promise.all([
-          fetch('/api/meals?date=today'),
-          fetch('/api/exercise?date=today'),
-        ])
-        const mealsData = await mealsRes.json() as Meal[]
-        const exerciseData = await exerciseRes.json() as ExerciseLog[]
-        setMeals(Array.isArray(mealsData) ? mealsData : [])
-        const done = new Set(
-          exerciseData.filter((e) => e.completed).map((e) => e.exercise_key)
-        )
-        setCompletedKeys(done)
-      } catch {
-        // silent
-      } finally {
-        setLoading(false)
+    setProfile(prof ?? null);
+    setMacros(mac);
+    setHabitStatus(habitStat);
+    setWorkoutsToday(workouts.length);
+    setMeditationToday(medLogs.reduce((a, l) => a + l.duration_actual_min, 0));
+
+    // Build habit rows with streak data
+    const completionMap = new Map<number, HabitCompletion>();
+    for (const c of completions) {
+      if (!completionMap.has(c.habit_id) || c.completed_at) {
+        completionMap.set(c.habit_id, c);
       }
     }
-    void fetchData()
-  }, [])
 
-  const totals = meals.reduce(
-    (acc, m) => ({
-      calories: acc.calories + (m.calories ?? 0),
-      protein_g: acc.protein_g + (m.protein_g ?? 0),
-      carbs_g: acc.carbs_g + (m.carbs_g ?? 0),
-      fat_g: acc.fat_g + (m.fat_g ?? 0),
-    }),
-    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
-  )
+    const habitRows: HabitWithStatus[] = await Promise.all(
+      activeHabits.map(async (h) => {
+        const c = completionMap.get(h.id);
+        const streak = await getHabitStreak(h.id);
+        return { habit: h, streak, completed: !!c?.completed_at };
+      })
+    );
+    setHabits(habitRows);
 
-  const remaining = TARGET.calories - totals.calories
-  const calorieProgress = Math.min(100, (totals.calories / TARGET.calories) * 100)
+    // Suggest a session (pick one not done today)
+    const doneSessions = new Set(medLogs.map((l) => l.session_id));
+    const undone = sessions.filter((s) => !doneSessions.has(s.id));
+    const pick = undone.length > 0 ? undone[Math.floor(Math.random() * undone.length)] : sessions[0];
+    setSuggestedSession(pick ?? null);
 
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    document.documentElement.setAttribute('data-theme', next)
-    localStorage.setItem('theme', next)
-  }
+    // Insight card (only if data exists)
+    setInsight(insights[0] ?? null);
+    setLoading(false);
+  }, []);
 
-  const previewExercises = todayPlan.exercises.slice(0, 3)
-  const doneCount = todayPlan.exercises.filter((e) => completedKeys.has(e.key)).length
-  const totalCount = todayPlan.exercises.length
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  return (
-    <main
-      style={{
-        padding: '24px 24px 80px',
-        maxWidth: 390,
-        margin: '0 auto',
-      }}
-    >
-      {/* Header */}
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).toUpperCase();
+
+  if (loading) {
+    return (
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 32,
+          justifyContent: 'center',
+          height: '100dvh',
+          fontFamily: "'IBM Plex Mono', monospace",
+          color: '#444',
+          fontSize: '0.75rem',
+          letterSpacing: '0.15em',
         }}
       >
-        <span style={label}>today</span>
-        <button
-          onClick={toggleTheme}
+        LOADING...
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div
+        style={{
+          padding: '1rem',
+          borderBottom: '2px solid #444',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div>
+          <p className="label" style={{ marginBottom: '0.25rem' }}>
+            {dateStr}
+          </p>
+          <h1
+            style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: '#fff',
+              fontFamily: "'IBM Plex Mono', monospace",
+            }}
+          >
+            TODAY
+          </h1>
+        </div>
+        <Link href="/log" className="btn" style={{ fontSize: '0.6rem', padding: '0.5rem 0.75rem' }}>
+          + LOG
+        </Link>
+      </div>
+
+      {/* Status Grid */}
+      <StatusGrid
+        calories={macros.calories}
+        calorieTarget={profile?.calorie_target ?? 2000}
+        habitsCompleted={habitStatus.completed}
+        habitsTotal={habitStatus.total}
+        workoutsToday={workoutsToday}
+        meditationToday={meditationToday}
+      />
+
+      {/* Quick Add */}
+      <QuickAdd />
+
+      {/* Habit Checklist */}
+      <div>
+        <div
           style={{
-            width: 32,
-            height: 32,
-            background: 'none',
-            border: 'none',
-            color: 'var(--muted)',
-            fontSize: 14,
-            cursor: 'pointer',
+            padding: '0.75rem 1rem',
+            borderBottom: '1px solid #111',
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? '○' : '●'}
-        </button>
-      </div>
-
-      {/* Calorie block */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ ...label, marginBottom: 8 }}>calories</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontSize: 48, fontWeight: 600, lineHeight: 1 }}>
-            {loading ? '—' : totals.calories}
-          </span>
-          <span style={{ fontSize: 20, fontWeight: 300, color: 'var(--muted)' }}>
-            / {TARGET.calories}
-          </span>
-        </div>
-        <div
-          style={{
-            width: '100%',
-            height: 2,
-            background: 'var(--border)',
-            borderRadius: 1,
-            marginTop: 12,
-            overflow: 'hidden',
           }}
         >
-          <div
-            style={{
-              width: `${calorieProgress}%`,
-              height: '100%',
-              background: 'var(--text)',
-              borderRadius: 1,
-              transition: 'width 0.3s',
-            }}
-          />
-        </div>
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 300,
-            color: 'var(--muted)',
-            marginTop: 6,
-          }}
-        >
-          {loading
-            ? ''
-            : remaining >= 0
-            ? `${remaining} remaining`
-            : `${Math.abs(remaining)} over target`}
-        </div>
-      </div>
-
-      {/* Macros card */}
-      <div style={{ ...card, marginBottom: 12 }}>
-        {(
-          [
-            { key: 'protein_g', label: 'protein', target: TARGET.protein_g },
-            { key: 'carbs_g', label: 'carbs', target: TARGET.carbs_g },
-            { key: 'fat_g', label: 'fat', target: TARGET.fat_g },
-          ] as const
-        ).map((macro, i, arr) => (
-          <div
-            key={macro.key}
-            style={{
-              ...rowBase,
-              borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-            }}
-          >
-            <span style={label}>{macro.label}</span>
-            <span style={{ fontSize: 15 }}>
-              {loading ? '—' : Math.round(totals[macro.key])}g / {macro.target}g
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Meals card */}
-      <div style={{ ...card, marginBottom: 12 }}>
-        <div
-          style={{
-            ...rowBase,
-            paddingTop: 0,
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          <span style={label}>meals</span>
+          <span className="label">HABITS TODAY</span>
           <Link
-            href="/meals"
+            href="/habits"
             style={{
-              fontSize: 11,
-              color: 'var(--muted)',
-              letterSpacing: '0.04em',
+              fontSize: '0.6rem',
+              color: '#444',
+              textDecoration: 'none',
+              letterSpacing: '0.1em',
+              fontFamily: "'IBM Plex Mono', monospace",
             }}
           >
-            add
+            MANAGE →
           </Link>
         </div>
-        {loading ? (
+
+        {habits.length === 0 ? (
           <div
             style={{
-              padding: '20px 0',
-              textAlign: 'center',
-              color: 'var(--muted)',
-              fontSize: 15,
+              padding: '1.5rem 1rem',
+              color: '#444',
+              fontSize: '0.75rem',
+              fontFamily: "'IBM Plex Mono', monospace",
             }}
           >
-            loading
-          </div>
-        ) : meals.length === 0 ? (
-          <div
-            style={{
-              padding: '20px 0',
-              textAlign: 'center',
-              color: 'var(--muted)',
-              fontSize: 15,
-            }}
-          >
-            no meals logged
+            NO ACTIVE HABITS.{' '}
+            <Link href="/habits" style={{ color: '#888', textDecoration: 'underline' }}>
+              ADD ONE →
+            </Link>
           </div>
         ) : (
-          meals.map((meal, i) => (
-            <div
-              key={meal.id}
-              style={{
-                ...rowBase,
-                borderBottom: i < meals.length - 1 ? '1px solid var(--border)' : 'none',
-              }}
-            >
-              <span style={{ fontSize: 15 }}>{meal.name}</span>
-              <span style={{ fontSize: 15, color: 'var(--muted)' }}>{meal.calories}</span>
-            </div>
+          habits.map(({ habit, streak, completed }) => (
+            <HabitRow
+              key={habit.id}
+              habitId={habit.id}
+              name={habit.name}
+              streak={streak}
+              completed={completed}
+              onToggle={loadData}
+            />
           ))
         )}
       </div>
 
-      {/* Exercise card */}
-      <div style={{ ...card, marginTop: 12 }}>
-        <div
-          style={{
-            ...rowBase,
-            paddingTop: 0,
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          <span style={label}>exercise</span>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{todayPlan.session}</span>
-        </div>
-        {todayPlan.exercises.length === 0 ? (
+      {/* Suggested Meditation */}
+      {suggestedSession && (
+        <div style={{ borderTop: '2px solid #444', borderBottom: '2px solid #444', marginTop: '0' }}>
           <div
             style={{
-              padding: '20px 0',
-              textAlign: 'center',
-              color: 'var(--muted)',
-              fontSize: 15,
+              padding: '0.75rem 1rem',
+              borderBottom: '1px solid #111',
             }}
           >
-            rest day
+            <span className="label">SUGGESTED MEDITATION</span>
           </div>
-        ) : (
-          <>
-            {previewExercises.map((ex, i) => (
-              <div
-                key={ex.key}
-                style={{
-                  ...rowBase,
-                  borderBottom:
-                    i < previewExercises.length - 1 ? '1px solid var(--border)' : 'none',
-                }}
-              >
-                <span style={{ fontSize: 15 }}>{ex.name}</span>
-                <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>
-                  {ex.sets}×{ex.reps}
-                </span>
-              </div>
-            ))}
+          <Link
+            href={`/meditation/${suggestedSession.id}`}
+            style={{ textDecoration: 'none', display: 'block' }}
+          >
             <div
               style={{
-                paddingTop: 14,
-                borderTop: '1px solid var(--border)',
+                padding: '1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
               }}
             >
-              <Link
-                href="/exercise"
-                style={{ fontSize: 12, color: 'var(--muted)' }}
-              >
-                {doneCount} / {totalCount} done
-              </Link>
+              <div>
+                <p
+                  style={{
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: '0.875rem',
+                    marginBottom: '0.25rem',
+                  }}
+                >
+                  {suggestedSession.name}
+                </p>
+                <p className="label">
+                  {suggestedSession.category} · {suggestedSession.duration_min} MIN
+                </p>
+              </div>
+              <span style={{ color: '#444', fontSize: '1.25rem' }}>→</span>
             </div>
-          </>
-        )}
-      </div>
-    </main>
-  )
+          </Link>
+        </div>
+      )}
+
+      {/* Insight Card — only when data exists */}
+      {insight && (
+        <div style={{ margin: '0', borderBottom: '2px solid #444' }}>
+          <div
+            style={{
+              padding: '0.75rem 1rem',
+              borderBottom: '1px solid #111',
+            }}
+          >
+            <span className="label">INSIGHT</span>
+          </div>
+          <div style={{ padding: '1rem' }}>
+            <p
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '0.875rem',
+                color: '#fff',
+                lineHeight: 1.5,
+              }}
+            >
+              {insight.relationship}
+            </p>
+            <p
+              className="label"
+              style={{ marginTop: '0.5rem' }}
+            >
+              {insight.metric_a} × {insight.metric_b} · {insight.data_points} DATA POINTS
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

@@ -1,51 +1,49 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import { Suspense } from 'react'
-import './globals.css'
-import Nav from '@/components/Nav'
+import type { Metadata, Viewport } from 'next';
+import { IBM_Plex_Mono } from 'next/font/google';
+import './globals.css';
+import Nav from '@/components/Nav';
+import SWRegister from './sw-register';
 
-const inter = Inter({
+const ibmPlexMono = IBM_Plex_Mono({
   subsets: ['latin'],
-  weight: ['300', '400', '600'],
-  variable: '--font-inter',
-})
+  weight: ['400', '500', '700'],
+  variable: '--font-ibm-plex-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Personal OS',
+  description: 'Your personal health and habit operating system',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
+    title: 'Personal OS',
   },
-}
+};
 
-const themeScript = `
-  (function() {
-    var theme = localStorage.getItem('theme') ||
-      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-    document.documentElement.setAttribute('data-theme', theme);
-  })();
-`
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#000000',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={ibmPlexMono.variable}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <meta name="theme-color" content="#000000" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className={inter.variable}>
-        {children}
-        <Suspense fallback={null}>
-          <Nav />
-        </Suspense>
+      <body style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+        <SWRegister />
+        <main className="page">{children}</main>
+        <Nav />
       </body>
     </html>
-  )
+  );
 }
