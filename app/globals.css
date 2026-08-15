@@ -231,7 +231,7 @@ select option {
 /* ── Layout ── */
 .page {
   min-height: 100dvh;
-  padding-bottom: 5rem; /* nav height */
+  padding-bottom: 2rem;
 }
 
 .section {

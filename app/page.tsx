@@ -12,7 +12,6 @@ import { supabase } from '@/lib/supabase';
 import { calcDailyScore, scoreGrade } from '@/lib/score';
 import { hapticMedium, hapticLight } from '@/lib/haptic';
 import StreakBadge from '@/components/StreakBadge';
-import ThemeToggle from '@/components/ThemeToggle';
 
 const MONO = "'IBM Plex Mono', monospace";
 const label = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: 'var(--fg-muted)', margin: 0 };
@@ -108,13 +107,12 @@ export default function TodayPage() {
         </div>
       </div>
       {/* Header */}
-      <div style={{ padding: '1rem', borderBottom: border2, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+      <div style={{ padding: '1rem', paddingRight: '4rem', borderBottom: border2, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <div>
           <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: 0, marginBottom: '0.25rem' }}>{dateStr}</p>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--fg)' }}>TODAY</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <ThemeToggle />
           <button onClick={() => router.push('/log')} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: 'var(--bg)', color: 'var(--fg)', cursor: 'pointer' }}>+ LOG</button>
           <button onClick={handleSignOut} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: '2px solid var(--bg-dark)', background: 'var(--bg)', color: 'var(--fg-dim)', cursor: 'pointer' }}>OUT</button>
         </div>
