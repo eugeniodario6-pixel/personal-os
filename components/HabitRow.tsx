@@ -3,7 +3,7 @@
 import { toggleHabitCompletion } from '@/lib/db';
 
 interface HabitRowProps {
-  habitId: string;
+  habitId: number;
   name: string;
   streak: number;
   completed: boolean;

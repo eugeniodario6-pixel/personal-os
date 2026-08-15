@@ -44,7 +44,7 @@ function FitnessContent() {
     await load();
   };
 
-  const removeLog = async (id: string) => {
+  const removeLog = async (id: number) => {
     await deleteWorkoutLog(id);
     await load();
   };

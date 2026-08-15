@@ -19,7 +19,7 @@ export default function MeditationPlayerPage() {
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const load = useCallback(async () => {
-    const s = await getMeditationSession(id);
+    const s = await getMeditationSession(parseInt(id));
     setSession(s ?? null);
   }, [id]);
 

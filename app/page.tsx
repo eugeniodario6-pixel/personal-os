@@ -70,7 +70,7 @@ export default function TodayPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const toggle = async (habitId: string) => {
+  const toggle = async (habitId: number) => {
     await toggleHabitCompletion(habitId);
     await load();
   };

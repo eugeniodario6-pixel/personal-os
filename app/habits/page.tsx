@@ -11,7 +11,7 @@ export default function HabitsPage() {
   const [mode, setMode] = useState<'list' | 'add'>('list');
   const [habits, setHabits] = useState<(Habit & { done: boolean; streak: number })[]>([]);
   const [addName, setAddName] = useState('');
-  const [addAfter, setAddAfter] = useState<string | ''>('');
+  const [addAfter, setAddAfter] = useState<number | ''>('');
   const [addError, setAddError] = useState('');
 
   const load = useCallback(async () => {
@@ -31,12 +31,12 @@ export default function HabitsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const toggle = async (id: string) => {
+  const toggle = async (id: number) => {
     await toggleHabitCompletion(id);
     await load();
   };
 
-  const deleteHabit = async (id: string) => {
+  const deleteHabit = async (id: number) => {
     await deactivateHabit(id);
     await load();
   };
@@ -47,7 +47,7 @@ export default function HabitsPage() {
     await addHabit({
       name: addName.trim(),
       active: true,
-      stacked_after_habit_id: addAfter !== '' ? addAfter : null,
+      stacked_after_habit_id: addAfter !== '' ? Number(addAfter) : null,
       streak_freeze_available: 0,
       created_at: new Date().toISOString(),
     });
@@ -81,7 +81,7 @@ export default function HabitsPage() {
             </div>
             <div>
               <p style={{ ...lbl, marginBottom: '0.25rem' }}>STACKED AFTER (OPTIONAL)</p>
-              <select value={addAfter} onChange={e => setAddAfter(e.target.value)}
+              <select value={addAfter} onChange={e => setAddAfter(e.target.value ? Number(e.target.value) : '')}
                 style={{ width: '100%', fontFamily: MONO, fontSize: '0.875rem', background: '#000', color: '#fff', border: '2px solid #444', padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' as const }}>
                 <option value="">NONE — STANDALONE HABIT</option>
                 {habits.map(h => <option key={h.id} value={h.id}>AFTER: {h.name.toUpperCase()}</option>)}

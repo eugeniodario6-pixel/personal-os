@@ -12,7 +12,7 @@ const CATS = ['ALL', 'BREATHING', 'BODY SCAN', 'SLEEP', 'STRESS RELEASE', 'FOCUS
 export default function MeditationPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<MeditationSession[]>([]);
-  const [loggedIds, setLoggedIds] = useState<Set<string>>(new Set());
+  const [loggedIds, setLoggedIds] = useState<Set<number>>(new Set());
   const [cat, setCat] = useState('ALL');
   const [suggested, setSuggested] = useState<MeditationSession | null>(null);
 

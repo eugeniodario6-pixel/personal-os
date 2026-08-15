@@ -1,13 +1,12 @@
 // ── Supabase-backed data layer ─────────────────────────────────────────────
-// Replaces the previous Dexie/IndexedDB implementation.
-// All data is persisted in Supabase Postgres, scoped per authenticated user.
+// All IDs are bigserial integers (number), user_id is UUID (string).
 
 import { supabase } from './supabase';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface Profile {
-  id: string;
+  id: number;
   user_id: string;
   calorie_target: number;
   macro_targets: { protein: number; carbs: number; fat: number };
@@ -18,7 +17,7 @@ export interface Profile {
 }
 
 export interface FoodItem {
-  id: string;
+  id: number;
   user_id: string;
   external_id: string | null;
   name: string;
@@ -34,18 +33,18 @@ export interface FoodItem {
 }
 
 export interface MealLog {
-  id: string;
+  id: number;
   user_id: string;
   date: string;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  food_item_id: string;
+  food_item_id: number;
   quantity: number;
   logged_at: string;
   source: 'barcode' | 'photo' | 'search' | 'manual';
 }
 
 export interface WorkoutTemplate {
-  id: string;
+  id: number;
   user_id: string;
   name: string;
   category: string;
@@ -54,10 +53,10 @@ export interface WorkoutTemplate {
 }
 
 export interface WorkoutLog {
-  id: string;
+  id: number;
   user_id: string;
   date: string;
-  template_id: string | null;
+  template_id: number | null;
   name: string;
   duration_min: number;
   intensity: 'low' | 'moderate' | 'high';
@@ -67,25 +66,25 @@ export interface WorkoutLog {
 }
 
 export interface Habit {
-  id: string;
+  id: number;
   user_id: string;
   name: string;
   active: boolean;
-  stacked_after_habit_id: string | null;
+  stacked_after_habit_id: number | null;
   streak_freeze_available: number;
   created_at: string;
 }
 
 export interface HabitCompletion {
-  id: string;
+  id: number;
   user_id: string;
-  habit_id: string;
+  habit_id: number;
   date: string;
   completed_at: string | null;
 }
 
 export interface MeditationSession {
-  id: string;
+  id: number;
   name: string;
   category: string;
   duration_min: number;
@@ -94,9 +93,9 @@ export interface MeditationSession {
 }
 
 export interface MeditationLog {
-  id: string;
+  id: number;
   user_id: string;
-  session_id: string;
+  session_id: number;
   date: string;
   completed: boolean;
   duration_actual_min: number;
@@ -104,7 +103,7 @@ export interface MeditationLog {
 }
 
 export interface Insight {
-  id: string;
+  id: number;
   user_id: string;
   metric_a: string;
   metric_b: string;
@@ -131,12 +130,12 @@ async function getUserId(): Promise<string> {
 
 export async function getProfile(): Promise<Profile | null> {
   const userId = await getUserId();
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('profile')
     .select('*')
     .eq('user_id', userId)
     .single();
-  if (error || !data) return null;
+  if (!data) return null;
   return {
     id: data.id,
     user_id: data.user_id,
@@ -170,7 +169,7 @@ export async function upsertProfile(p: Omit<Profile, 'id' | 'user_id'>): Promise
 
 // ── Food Items ─────────────────────────────────────────────────────────────
 
-export async function addFoodItem(item: Omit<FoodItem, 'id' | 'user_id'>): Promise<string> {
+export async function addFoodItem(item: Omit<FoodItem, 'id' | 'user_id'>): Promise<number> {
   const userId = await getUserId();
   const { data, error } = await supabase
     .from('food_item')
@@ -181,7 +180,7 @@ export async function addFoodItem(item: Omit<FoodItem, 'id' | 'user_id'>): Promi
   return data.id;
 }
 
-export async function getFoodItem(id: string): Promise<FoodItem | null> {
+export async function getFoodItem(id: number): Promise<FoodItem | null> {
   const { data } = await supabase.from('food_item').select('*').eq('id', id).single();
   return data ?? null;
 }
@@ -201,13 +200,10 @@ export async function getMealLogs(date: string): Promise<(MealLog & { food: Food
     .eq('user_id', userId)
     .eq('date', date)
     .order('logged_at', { ascending: false });
-  return (data ?? []).map(row => ({
-    ...row,
-    food: row.food ?? null,
-  }));
+  return (data ?? []).map(row => ({ ...row, food: row.food ?? null }));
 }
 
-export async function deleteMealLog(id: string): Promise<void> {
+export async function deleteMealLog(id: number): Promise<void> {
   await supabase.from('meal_log').delete().eq('id', id);
 }
 
@@ -237,7 +233,7 @@ export async function getWorkoutTemplates(): Promise<WorkoutTemplate[]> {
   return data ?? [];
 }
 
-export async function addWorkoutTemplate(t: Omit<WorkoutTemplate, 'id' | 'user_id'>): Promise<string> {
+export async function addWorkoutTemplate(t: Omit<WorkoutTemplate, 'id' | 'user_id'>): Promise<number> {
   const userId = await getUserId();
   const { data, error } = await supabase
     .from('workout_template')
@@ -277,7 +273,7 @@ export async function getWorkoutHistory(limit = 30): Promise<WorkoutLog[]> {
   return data ?? [];
 }
 
-export async function deleteWorkoutLog(id: string): Promise<void> {
+export async function deleteWorkoutLog(id: number): Promise<void> {
   await supabase.from('workout_log').delete().eq('id', id);
 }
 
@@ -299,7 +295,7 @@ export async function addHabit(h: Omit<Habit, 'id' | 'user_id'>): Promise<void> 
   await supabase.from('habit').insert({ ...h, user_id: userId });
 }
 
-export async function deactivateHabit(id: string): Promise<void> {
+export async function deactivateHabit(id: number): Promise<void> {
   await supabase.from('habit').update({ active: false }).eq('id', id);
 }
 
@@ -313,7 +309,7 @@ export async function getHabitCompletions(date: string): Promise<HabitCompletion
   return data ?? [];
 }
 
-export async function toggleHabitCompletion(habitId: string): Promise<void> {
+export async function toggleHabitCompletion(habitId: number): Promise<void> {
   const userId = await getUserId();
   const today = todayISO();
   const { data: existing } = await supabase
@@ -338,7 +334,7 @@ export async function toggleHabitCompletion(habitId: string): Promise<void> {
   }
 }
 
-export async function getHabitStreak(habitId: string): Promise<number> {
+export async function getHabitStreak(habitId: number): Promise<number> {
   const userId = await getUserId();
   const { data } = await supabase
     .from('habit_completion')
@@ -372,11 +368,11 @@ export async function getTodayHabitStatus(): Promise<{ completed: number; total:
 // ── Meditation Sessions ────────────────────────────────────────────────────
 
 export async function getMeditationSessions(): Promise<MeditationSession[]> {
-  const { data } = await supabase.from('meditation_session').select('*').order('created_at');
+  const { data } = await supabase.from('meditation_session').select('*').order('id');
   return data ?? [];
 }
 
-export async function getMeditationSession(id: string): Promise<MeditationSession | null> {
+export async function getMeditationSession(id: number): Promise<MeditationSession | null> {
   const { data } = await supabase.from('meditation_session').select('*').eq('id', id).single();
   return data ?? null;
 }
@@ -411,7 +407,7 @@ export async function getInsights(): Promise<Insight[]> {
   return data ?? [];
 }
 
-// ── Seed default workout templates for new users ───────────────────────────
+// ── Seed default data for new users ───────────────────────────────────────
 
 const DEFAULT_WORKOUT_TEMPLATES = [
   { name: 'Morning Run', category: 'Cardio', default_duration_min: 30, default_intensity: 'moderate' as const },
@@ -433,7 +429,6 @@ const DEFAULT_HABITS = [
 export async function seedUserData(): Promise<void> {
   const userId = await getUserId();
 
-  // Check if templates exist
   const { count: tCount } = await supabase
     .from('workout_template')
     .select('*', { count: 'exact', head: true })
@@ -445,7 +440,6 @@ export async function seedUserData(): Promise<void> {
     );
   }
 
-  // Check if habits exist
   const { count: hCount } = await supabase
     .from('habit')
     .select('*', { count: 'exact', head: true })
@@ -457,7 +451,6 @@ export async function seedUserData(): Promise<void> {
     );
   }
 
-  // Ensure profile exists
   const { count: pCount } = await supabase
     .from('profile')
     .select('*', { count: 'exact', head: true })

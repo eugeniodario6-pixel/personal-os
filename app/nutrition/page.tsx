@@ -69,7 +69,7 @@ function NutritionContent() {
     }
   };
 
-  const handleDelete = async (id: string) => { await deleteMealLog(id); await loadData(); };
+  const handleDelete = async (id: number) => { await deleteMealLog(id); await loadData(); };
 
   const totals = logs.reduce((acc, l) => {
     if (!l.food) return acc;
