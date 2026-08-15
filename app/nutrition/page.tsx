@@ -25,36 +25,27 @@ interface FoodResult {
   serving_unit: string;
 }
 
-// Matches French/non-English accented characters common in OFF database
-const FRENCH_PATTERN = /[éèêëàâùûüôîïçœæ]/i;
-
-function isEnglish(name: string): boolean {
-  return !FRENCH_PATTERN.test(name);
-}
-
-async function searchOpenFoodFacts(query: string): Promise<FoodResult[]> {
-  // Fetch 40 results so we have enough after filtering out French ones
-  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=40&fields=product_name,brands,nutriments,serving_size&lc=en&cc=us`;
-  const res = await fetch(url);
+async function searchFatSecret(query: string): Promise<FoodResult[]> {
+  const res = await fetch(`/api/food/search?q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error('Search failed');
   const data = await res.json();
-  return (data.products ?? [])
-    .filter((p: any) =>
-      p.product_name &&
-      p.nutriments?.['energy-kcal_100g'] > 0 &&
-      isEnglish(p.product_name)
-    )
-    .slice(0, 10)
-    .map((p: any) => ({
-      name: p.product_name,
-      brand: p.brands ?? '',
-      calories: Math.round(p.nutriments['energy-kcal_100g'] ?? 0),
-      protein: Math.round((p.nutriments['proteins_100g'] ?? 0) * 10) / 10,
-      carbs:   Math.round((p.nutriments['carbohydrates_100g'] ?? 0) * 10) / 10,
-      fat:     Math.round((p.nutriments['fat_100g'] ?? 0) * 10) / 10,
-      serving_size: 100,
-      serving_unit: 'g',
-    }));
+  return (data.results ?? []).map((f: {
+    name: string;
+    brand: string;
+    cal100: number;
+    protein100: number;
+    carbs100: number;
+    fat100: number;
+  }) => ({
+    name: f.name,
+    brand: f.brand,
+    calories: f.cal100,
+    protein: f.protein100,
+    carbs: f.carbs100,
+    fat: f.fat100,
+    serving_size: 100,
+    serving_unit: 'g',
+  }));
 }
 
 function NutritionContent() {
@@ -99,7 +90,7 @@ function NutritionContent() {
     if (!query.trim()) return;
     setSearching(true); setSearchError(''); setResults([]); setSelected(null);
     try {
-      const r = await searchOpenFoodFacts(query.trim());
+      const r = await searchFatSecret(query.trim());
       if (r.length === 0) setSearchError('NO RESULTS. TRY A DIFFERENT NAME OR ENTER MANUALLY.');
       setResults(r);
     } catch {
