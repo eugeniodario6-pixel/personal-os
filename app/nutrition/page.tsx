@@ -9,8 +9,19 @@ interface MealLogWithFood extends MealLog {
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+type Mode = 'log' | 'search' | 'add';
 
-type Mode = 'log' | 'add' | 'search';
+interface ApiFood {
+  external_id: string;
+  name: string;
+  brand: string | null;
+  serving_size: number;
+  serving_unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
 
 function NutritionContent() {
   const searchParams = useSearchParams();
@@ -18,15 +29,18 @@ function NutritionContent() {
   const initAction = searchParams.get('action');
 
   const [mode, setMode] = useState<Mode>(initAction === 'add' ? 'add' : 'log');
-  const [searchMode, setSearchMode] = useState<'search' | 'recents'>('recents');
   const [logs, setLogs] = useState<MealLogWithFood[]>([]);
-  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [apiResults, setApiResults] = useState<FoodItem[]>([]);
-  const [searching, setSearching] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  // Add form state
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [apiResults, setApiResults] = useState<ApiFood[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedFood, setSelectedFood] = useState<ApiFood | null>(null);
+  const [logQuantity, setLogQuantity] = useState('1');
+  const [logMealType, setLogMealType] = useState<MealType>('lunch');
+
+  // Manual add state
   const [addName, setAddName] = useState('');
   const [addBrand, setAddBrand] = useState('');
   const [addCalories, setAddCalories] = useState('');
@@ -39,69 +53,72 @@ function NutritionContent() {
   const [addMealType, setAddMealType] = useState<MealType>('lunch');
   const [addError, setAddError] = useState('');
 
-  // Log an existing food
-  const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
-  const [logQuantity, setLogQuantity] = useState('1');
-  const [logMealType, setLogMealType] = useState<MealType>('lunch');
-
   const loadData = useCallback(async () => {
     const today = todayISO();
     const [rawLogs, prof] = await Promise.all([
       db.meal_log.where('date').equals(today).reverse().sortBy('logged_at'),
       db.profile.get(1),
     ]);
-
     const enriched = await Promise.all(
-      rawLogs.map(async (l) => ({
-        ...l,
-        food: await db.food_item.get(l.food_item_id),
-      }))
+      rawLogs.map(async (l) => ({ ...l, food: await db.food_item.get(l.food_item_id) }))
     );
     setLogs(enriched);
     setProfile(prof ?? null);
   }, []);
 
-  const loadFoodItems = useCallback(async () => {
-    const recents = await db.food_item.orderBy('name').limit(20).toArray();
-    setFoodItems(recents);
-  }, []);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // FatSecret API search with debounce
+  // Debounced FatSecret search
   useEffect(() => {
-    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
-      setApiResults([]);
-      return;
-    }
+    if (searchQuery.trim().length < 2) { setApiResults([]); return; }
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
         const res = await fetch(`/api/food-search?q=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
         setApiResults(data.foods ?? []);
-      } catch {
-        setApiResults([]);
-      } finally {
-        setSearching(false);
-      }
+      } catch { setApiResults([]); }
+      finally { setSearching(false); }
     }, 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useEffect(() => {
-    if (mode === 'add' || mode === 'search') {
-      loadFoodItems();
-    }
-  }, [mode, loadFoodItems]);
+  const handleLogFood = async () => {
+    if (!selectedFood) return;
+    const foodId = await db.food_item.add({
+      id: undefined as unknown as number,
+      external_id: selectedFood.external_id,
+      name: selectedFood.name,
+      brand: selectedFood.brand,
+      barcode: null,
+      serving_unit: selectedFood.serving_unit,
+      serving_size: selectedFood.serving_size,
+      calories: selectedFood.calories,
+      protein: selectedFood.protein,
+      carbs: selectedFood.carbs,
+      fat: selectedFood.fat,
+      is_favorite: false,
+    });
+    await db.meal_log.add({
+      id: undefined as unknown as number,
+      date: todayISO(),
+      meal_type: logMealType,
+      food_item_id: foodId as number,
+      quantity: parseFloat(logQuantity) || 1,
+      logged_at: new Date().toISOString(),
+      source: 'search',
+    });
+    setSelectedFood(null);
+    setSearchQuery('');
+    setLogQuantity('1');
+    await loadData();
+    setMode('log');
+  };
 
   const handleAddFood = async () => {
     setAddError('');
     if (!addName.trim()) { setAddError('NAME REQUIRED'); return; }
     if (!addCalories) { setAddError('CALORIES REQUIRED'); return; }
-
     const foodId = await db.food_item.add({
       id: undefined as unknown as number,
       external_id: null,
@@ -116,7 +133,6 @@ function NutritionContent() {
       fat: parseFloat(addFat) || 0,
       is_favorite: false,
     });
-
     await db.meal_log.add({
       id: undefined as unknown as number,
       date: todayISO(),
@@ -126,27 +142,8 @@ function NutritionContent() {
       logged_at: new Date().toISOString(),
       source: 'manual',
     });
-
     setAddName(''); setAddBrand(''); setAddCalories(''); setAddProtein('');
-    setAddCarbs(''); setAddFat(''); setAddServing('100'); setAddServingUnit('g');
-    setAddQuantity('1');
-    await loadData();
-    setMode('log');
-  };
-
-  const handleLogExisting = async () => {
-    if (!selectedFood) return;
-    await db.meal_log.add({
-      id: undefined as unknown as number,
-      date: todayISO(),
-      meal_type: logMealType,
-      food_item_id: selectedFood.id,
-      quantity: parseFloat(logQuantity) || 1,
-      logged_at: new Date().toISOString(),
-      source: 'search',
-    });
-    setSelectedFood(null);
-    setLogQuantity('1');
+    setAddCarbs(''); setAddFat(''); setAddServing('100'); setAddServingUnit('g'); setAddQuantity('1');
     await loadData();
     setMode('log');
   };
@@ -178,117 +175,107 @@ function NutritionContent() {
       <div style={{ padding: '1rem', borderBottom: '2px solid #444', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div>
           <p className="label" style={{ marginBottom: '0.25rem' }}>NUTRITION</p>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', fontFamily: "'IBM Plex Mono', monospace" }}>
-            EAT
-          </h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', fontFamily: "'IBM Plex Mono', monospace" }}>EAT</h1>
         </div>
-        <button
-          className="btn"
-          onClick={() => setMode(mode === 'log' ? 'add' : 'log')}
-          style={{ fontSize: '0.6rem', padding: '0.5rem 0.75rem' }}
-        >
-          {mode === 'log' ? '+ ADD' : '← BACK'}
-        </button>
+        {mode === 'log' && (
+          <button className="btn" onClick={() => setMode('add')} style={{ fontSize: '0.6rem', padding: '0.5rem 0.75rem' }}>
+            + MANUAL
+          </button>
+        )}
+        {(mode === 'search' || mode === 'add') && (
+          <button className="btn" onClick={() => { setMode('log'); setSearchQuery(''); setSelectedFood(null); router.replace('/nutrition'); }} style={{ fontSize: '0.6rem', padding: '0.5rem 0.75rem' }}>
+            ← BACK
+          </button>
+        )}
       </div>
 
+      {/* Totals bar — always visible */}
+      <div style={{ padding: '0.75rem 1rem', borderBottom: '2px solid #444', background: '#111' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+          <span className="label">TODAY&apos;S TOTAL</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem', color: '#888' }}>/ {calorieTarget} KCAL</span>
+        </div>
+        <div className="number-large" style={{ color: '#fff', marginBottom: '0.5rem' }}>{Math.round(totals.calories)}</div>
+        <div style={{ height: '4px', background: '#000', border: '1px solid #444', marginBottom: '0.75rem' }}>
+          <div style={{ height: '100%', background: '#fff', width: `${calPct * 100}%` }} />
+        </div>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          {[
+            { label: 'PROTEIN', val: totals.protein, target: profile?.macro_targets?.protein },
+            { label: 'CARBS', val: totals.carbs, target: profile?.macro_targets?.carbs },
+            { label: 'FAT', val: totals.fat, target: profile?.macro_targets?.fat },
+          ].map((m) => (
+            <div key={m.label} style={{ flex: 1 }}>
+              <p className="label">{m.label}</p>
+              <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>
+                {Math.round(m.val)}g
+                {m.target ? <span style={{ color: '#444', fontSize: '0.65rem' }}> /{m.target}g</span> : null}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* LOG mode — search bar + today's log */}
       {mode === 'log' && (
         <>
-          {/* Totals bar */}
-          <div style={{ padding: '0.75rem 1rem', borderBottom: '2px solid #444', background: '#111' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-              <span className="label">TODAY'S TOTAL</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem', color: '#888' }}>
-                / {calorieTarget} KCAL
-              </span>
-            </div>
-            <div className="number-large" style={{ color: '#fff', marginBottom: '0.5rem' }}>
-              {Math.round(totals.calories)}
-            </div>
-            <div style={{ height: '4px', background: '#000', border: '1px solid #444', marginBottom: '0.75rem' }}>
-              <div style={{ height: '100%', background: '#fff', width: `${calPct * 100}%` }} />
-            </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              {[
-                { label: 'PROTEIN', val: totals.protein, target: profile?.macro_targets?.protein },
-                { label: 'CARBS', val: totals.carbs, target: profile?.macro_targets?.carbs },
-                { label: 'FAT', val: totals.fat, target: profile?.macro_targets?.fat },
-              ].map((m) => (
-                <div key={m.label} style={{ flex: 1 }}>
-                  <p className="label">{m.label}</p>
-                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>
-                    {Math.round(m.val)}g
-                    {m.target ? <span style={{ color: '#444', fontSize: '0.65rem' }}> /{m.target}g</span> : null}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: '2px solid #444' }}>
+            <input
+              type="text"
+              placeholder="LOG FOOD..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); if (e.target.value.trim().length >= 2) setMode('search'); }}
+              style={{ width: '100%', textTransform: 'uppercase' }}
+            />
           </div>
-
-          {/* Mode tabs */}
-          <div className="tab-bar">
-            <button className={`tab ${searchMode === 'recents' ? 'active' : ''}`} onClick={() => { setSearchMode('recents'); setMode('log'); }}>
-              TODAY'S LOG
-            </button>
-            <button className={`tab ${searchMode === 'search' ? 'active' : ''}`} onClick={() => { setSearchMode('search'); setMode('search'); }}>
-              SEARCH FOODS
-            </button>
+          <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid #111' }}>
+            <span className="label">TODAY&apos;S LOG</span>
           </div>
-
-          {/* Meal log */}
           {logs.length === 0 ? (
             <div style={{ padding: '2rem 1rem', color: '#444', fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem' }}>
               NOTHING LOGGED YET TODAY.
             </div>
           ) : (
-            <div>
-              {logs.map((log) => {
-                if (!log.food) return null;
-                const r = log.quantity / log.food.serving_size;
-                const cal = Math.round(log.food.calories * r);
-                return (
-                  <div key={log.id} style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.875rem', color: '#fff', fontWeight: 700 }}>
-                        {log.food.name}
-                      </p>
-                      <p className="label">
-                        {log.meal_type.toUpperCase()} · {log.quantity}{log.food.serving_unit} · {cal} KCAL
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteLog(log.id)}
-                      style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '1rem', fontFamily: "'IBM Plex Mono', monospace", padding: '0.25rem' }}
-                    >
-                      ✕
-                    </button>
+            logs.map((log) => {
+              if (!log.food) return null;
+              const r = log.quantity / log.food.serving_size;
+              const cal = Math.round(log.food.calories * r);
+              return (
+                <div key={log.id} style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.875rem', color: '#fff', fontWeight: 700 }}>{log.food.name}</p>
+                    <p className="label">{log.meal_type.toUpperCase()} · {log.quantity}{log.food.serving_unit} · {cal} KCAL</p>
                   </div>
-                );
-              })}
-            </div>
+                  <button onClick={() => handleDeleteLog(log.id)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '1rem', fontFamily: "'IBM Plex Mono', monospace", padding: '0.25rem' }}>✕</button>
+                </div>
+              );
+            })
           )}
         </>
       )}
 
+      {/* SEARCH mode — results from FatSecret */}
       {mode === 'search' && (
-        <div>
-          <div style={{ padding: '1rem', borderBottom: '1px solid #111' }}>
+        <>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: '2px solid #444' }}>
             <input
               type="text"
-              placeholder="SEARCH FOOD..."
+              placeholder="LOG FOOD..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ textTransform: 'uppercase' }}
+              onChange={(e) => { setSearchQuery(e.target.value); if (e.target.value.trim().length < 2) setMode('log'); }}
+              autoFocus
+              style={{ width: '100%', textTransform: 'uppercase' }}
             />
           </div>
-          {/* Search results — API first, then local */}
+
           {!selectedFood && (
-            <div>
+            <>
               {searching && (
                 <div style={{ padding: '1rem', color: '#444', fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem' }}>SEARCHING...</div>
               )}
-              {(searchQuery.trim().length >= 2 ? apiResults : foodItems).map((food, idx) => (
+              {!searching && apiResults.map((food, idx) => (
                 <button
-                  key={food.external_id ?? food.id ?? idx}
+                  key={food.external_id ?? idx}
                   onClick={() => setSelectedFood(food)}
                   style={{ display: 'flex', width: '100%', padding: '0.875rem 1rem', background: '#000', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", textAlign: 'left', justifyContent: 'space-between', alignItems: 'center' }}
                 >
@@ -299,17 +286,20 @@ function NutritionContent() {
                   <span style={{ color: '#444' }}>+</span>
                 </button>
               ))}
-              {!searching && searchQuery.trim().length >= 2 && apiResults.length === 0 && (
+              {!searching && apiResults.length === 0 && searchQuery.trim().length >= 2 && (
                 <div style={{ padding: '1.5rem 1rem', color: '#444', fontSize: '0.75rem', fontFamily: "'IBM Plex Mono', monospace" }}>
-                  NO RESULTS. TRY A DIFFERENT SEARCH.
+                  NO RESULTS. TRY DIFFERENT TERMS OR USE + MANUAL.
                 </div>
               )}
-            </div>
+            </>
           )}
 
-          {selectedFood ? (
+          {selectedFood && (
             <div style={{ padding: '1rem' }}>
               <p className="label" style={{ marginBottom: '0.5rem' }}>LOG: {selectedFood.name.toUpperCase()}</p>
+              <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem', color: '#888', marginBottom: '1rem' }}>
+                {selectedFood.calories} KCAL · {selectedFood.protein}g PRO · {selectedFood.carbs}g CARB · {selectedFood.fat}g FAT per {selectedFood.serving_size}{selectedFood.serving_unit}
+              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div>
                   <p className="label" style={{ marginBottom: '0.25rem' }}>QUANTITY ({selectedFood.serving_unit})</p>
@@ -325,32 +315,22 @@ function NutritionContent() {
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn-primary btn" onClick={handleLogExisting} style={{ flex: 1 }}>LOG IT</button>
+                  <button className="btn-primary btn" onClick={handleLogFood} style={{ flex: 1 }}>LOG IT</button>
                   <button className="btn btn-ghost" onClick={() => setSelectedFood(null)} style={{ flex: 1 }}>CANCEL</button>
                 </div>
               </div>
             </div>
-          ) : (
-            <div>
-
-            </div>
           )}
-          <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid #111' }}>
-            <button className="btn btn-ghost" onClick={() => { setMode('log'); setSearchMode('recents'); router.replace('/nutrition'); }} style={{ width: '100%' }}>
-              ← BACK TO LOG
-            </button>
-          </div>
-        </div>
+        </>
       )}
 
+      {/* ADD mode — manual entry */}
       {mode === 'add' && (
         <div style={{ padding: '1rem' }}>
           <p className="label" style={{ marginBottom: '1rem' }}>ADD FOOD MANUALLY</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {addError && (
-              <p style={{ color: '#fff', background: '#111', border: '1px solid #888', padding: '0.5rem', fontSize: '0.75rem', fontFamily: "'IBM Plex Mono', monospace" }}>
-                ⚠ {addError}
-              </p>
+              <p style={{ color: '#fff', background: '#111', border: '1px solid #888', padding: '0.5rem', fontSize: '0.75rem', fontFamily: "'IBM Plex Mono', monospace" }}>⚠ {addError}</p>
             )}
             <div>
               <p className="label" style={{ marginBottom: '0.25rem' }}>NAME *</p>
