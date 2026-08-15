@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getProfile, upsertProfile } from '@/lib/db';
-import ThemeToggle from '@/components/ThemeToggle';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -96,11 +95,6 @@ export default function SettingsPage() {
 
         <section>
           <p style={{ ...lbl, marginBottom: '0.75rem' }}>DISPLAY</p>
-          <div style={{ marginBottom: '1rem' }}>
-            <p style={{ ...lbl, marginBottom: '0.25rem' }}>THEME</p>
-            <ThemeToggle />
-            <p style={{ ...lbl, marginTop: '0.5rem', color: '#444' }}>SWITCHES BETWEEN DARK AND LIGHT MODE</p>
-          </div>
           <button onClick={() => setNonNumeric(!nonNumeric)}
             style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: nonNumeric ? '#fff' : '#000', border: border2, cursor: 'pointer', fontFamily: MONO, boxSizing: 'border-box' as const }}>
             <span style={{ fontSize: '0.875rem', fontWeight: 700, color: nonNumeric ? '#000' : '#fff' }}>NON-NUMERIC MODE</span>
