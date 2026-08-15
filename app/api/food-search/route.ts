@@ -6,7 +6,6 @@ async function getFatSecretToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expires) {
     return cachedToken.token;
   }
-
   const res = await fetch('https://oauth.fatsecret.com/connect/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -17,40 +16,37 @@ async function getFatSecretToken(): Promise<string> {
       scope: 'basic',
     }),
   });
-
   const data = await res.json();
   if (!data.access_token) throw new Error('Failed to get FatSecret token');
-
   cachedToken = {
     token: data.access_token,
     expires: Date.now() + (data.expires_in - 60) * 1000,
   };
-
   return cachedToken.token;
 }
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q');
-  if (!query) return NextResponse.json({ foods: [] });
+  if (!query?.trim()) return NextResponse.json({ foods: [] });
 
   try {
     const token = await getFatSecretToken();
 
-    const url = new URL('https://platform.fatsecret.com/rest/server.api');
-    url.searchParams.set('method', 'foods.search');
-    url.searchParams.set('search_expression', query);
-    url.searchParams.set('format', 'json');
-    url.searchParams.set('max_results', '10');
-    url.searchParams.set('page_number', '0');
+    // URL-based integration, OAuth 2.0 — foods search v1
+    const url = `https://platform.fatsecret.com/rest/foods/search/v1?search_expression=${encodeURIComponent(query)}&format=json&max_results=10`;
 
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
 
     const data = await res.json();
     const raw = data?.foods?.food ?? [];
-    const foods = (Array.isArray(raw) ? raw : [raw]).map((f: any) => {
-      // Parse "Per 100g - Calories: 52kcal | Fat: 0.17g | Carbs: 13.81g | Protein: 0.26g"
+    const items = Array.isArray(raw) ? raw : [raw];
+
+    const foods = items.map((f: any) => {
       const desc: string = f.food_description ?? '';
       const cal   = parseFloat(desc.match(/Calories:\s*([\d.]+)/i)?.[1] ?? '0');
       const fat   = parseFloat(desc.match(/Fat:\s*([\d.]+)/i)?.[1] ?? '0');
@@ -67,11 +63,10 @@ export async function GET(request: NextRequest) {
         type: f.food_type ?? 'Generic',
         calories: Math.round(cal),
         protein: Math.round(prot * 10) / 10,
-        carbs: Math.round(carbs * 10) / 10,
-        fat: Math.round(fat * 10) / 10,
+        carbs:   Math.round(carbs * 10) / 10,
+        fat:     Math.round(fat * 10) / 10,
         serving_size: servingSize,
         serving_unit: servingUnit,
-        description: desc,
       };
     });
 
