@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/meditation', label: 'MIND' },
   { href: '/insights', label: 'DATA' },
   { href: '/settings', label: 'SET' },
+  { href: '/week', label: 'WEEK' },
 ];
 
 export default function Nav() {

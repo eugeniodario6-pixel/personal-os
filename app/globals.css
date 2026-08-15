@@ -34,13 +34,40 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Kill ALL transitions and animations */
-*,
-*::before,
-*::after {
-  transition: none !important;
-  animation-duration: 0ms !important;
-  animation-delay: 0ms !important;
+/* Tasteful motion defaults */
+* {
+  transition: background 150ms ease, color 150ms ease;
+}
+
+/* Habit rows: fast background transition */
+.habit-row {
+  transition: background 150ms ease, color 150ms ease;
+}
+
+/* Checkboxes: scale pop on active */
+.checkbox-btn:active {
+  transform: scale(1.05);
+}
+
+/* Keyframes */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility classes */
+.animate-pop {
+  animation: pop 200ms ease;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 300ms ease both;
 }
 
 /* ── Typography ── */
@@ -244,7 +271,7 @@ hr {
 .progress-fill {
   height: 100%;
   background: #ffffff;
-  transition: none;
+  transition: width 600ms cubic-bezier(0.4,0,0.2,1);
 }
 
 /* ── Status grid cell ── */

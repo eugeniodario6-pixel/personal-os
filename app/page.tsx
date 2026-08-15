@@ -9,6 +9,9 @@ import {
   todayISO, type Habit, type MeditationSession, type Insight,
 } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
+import { calcDailyScore, scoreGrade } from '@/lib/score';
+import { hapticMedium, hapticLight } from '@/lib/haptic';
+import StreakBadge from '@/components/StreakBadge';
 
 const MONO = "'IBM Plex Mono', monospace";
 const label = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -71,6 +74,7 @@ export default function TodayPage() {
   useEffect(() => { load(); }, [load]);
 
   const toggle = async (habitId: number) => {
+    hapticMedium();
     await toggleHabitCompletion(habitId);
     await load();
   };
@@ -84,6 +88,8 @@ export default function TodayPage() {
   const habitTotal = habits.length;
   const calPct = Math.min((calories / calorieTarget) * 100, 100);
   const habitPct = habitTotal > 0 ? Math.min((habitDone / habitTotal) * 100, 100) : 0;
+  const score = calcDailyScore({ calorieTarget, calories, habitDone, habitTotal, workoutsToday, medDone });
+  const grade = scoreGrade(score);
 
   if (loading) {
     return <div style={{ padding: '2rem', color: '#444', fontFamily: MONO, fontSize: '0.75rem' }}>LOADING...</div>;
@@ -91,6 +97,15 @@ export default function TodayPage() {
 
   return (
     <div style={{ fontFamily: MONO }}>
+      {/* Score Hero */}
+      <div style={{ width: '100%', borderBottom: border2, padding: '1.5rem 1rem', background: '#000' }}>
+        <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#888', margin: '0 0 0.25rem' }}>TODAY&apos;S SCORE</p>
+        <div className="animate-fadeIn" style={{ fontSize: '5rem', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: '#fff' }}>{score}</div>
+        <p style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#888', margin: '0.25rem 0 0.75rem', fontWeight: 700 }}>{grade}</p>
+        <div style={{ height: 4, background: '#111', border: '1px solid #444' }}>
+          <div className="progress-fill" style={{ width: `${score}%` }} />
+        </div>
+      </div>
       {/* Header */}
       <div style={{ padding: '1rem', borderBottom: border2, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <div>
@@ -148,7 +163,7 @@ export default function TodayPage() {
           { label: '+ WORKOUT', path: '/fitness?action=add' },
           { label: '+ MEDITATE', path: '/meditation' },
         ].map((b, i) => (
-          <button key={b.label} onClick={() => router.push(b.path)} style={{ padding: '1rem 0.5rem', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', background: '#000', color: '#fff', border: 'none', borderRight: i < 2 ? '1px solid #444' : 'none', cursor: 'pointer' }}>
+          <button key={b.label} onClick={() => { hapticLight(); router.push(b.path); }} style={{ padding: '1rem 0.5rem', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', background: '#000', color: '#fff', border: 'none', borderRight: i < 2 ? '1px solid #444' : 'none', cursor: 'pointer' }}>
             {b.label}
           </button>
         ))}
@@ -167,7 +182,7 @@ export default function TodayPage() {
           <button key={h.id} onClick={() => toggle(h.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.875rem 1rem', background: h.done ? '#fff' : '#000', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', textAlign: 'left', fontFamily: MONO }}>
             <span style={{ minWidth: '2.5rem', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '0.05em', color: h.done ? '#000' : '#fff' }}>{h.done ? '[X]' : '[ ]'}</span>
             <span style={{ flex: 1, fontSize: '0.875rem', color: h.done ? '#000' : '#fff', textDecoration: h.done ? 'line-through' : 'none' }}>{h.name}</span>
-            <span style={{ fontSize: '0.65rem', color: h.done ? '#444' : '#888' }}>{h.streak}🔥</span>
+            <StreakBadge streak={h.streak} />
           </button>
         ))}
       </div>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getHabits, addHabit, deactivateHabit, getHabitCompletions, toggleHabitCompletion, getHabitStreak, todayISO, type Habit } from '@/lib/db';
+import { hapticMedium, hapticSuccess } from '@/lib/haptic';
+import StreakBadge from '@/components/StreakBadge';
 
 const MONO = "'IBM Plex Mono', monospace";
 const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
@@ -32,6 +34,7 @@ export default function HabitsPage() {
   useEffect(() => { load(); }, [load]);
 
   const toggle = async (id: number) => {
+    hapticMedium();
     await toggleHabitCompletion(id);
     await load();
   };
@@ -51,10 +54,13 @@ export default function HabitsPage() {
       streak_freeze_available: 0,
       created_at: new Date().toISOString(),
     });
+    hapticSuccess();
     setAddName(''); setAddAfter('');
     await load();
     setMode('list');
   };
+
+  const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak), 0);
 
   return (
     <div style={{ fontFamily: MONO }}>
@@ -62,6 +68,9 @@ export default function HabitsPage() {
         <div>
           <p style={{ ...lbl, marginBottom: '0.25rem' }}>HABITS</p>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>HABITS</h1>
+          {bestStreak > 0 && (
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.65rem', color: '#888', fontWeight: 700, letterSpacing: '0.1em' }}>BEST STREAK: {bestStreak} DAYS</p>
+          )}
         </div>
         <button onClick={() => { setMode(mode === 'add' ? 'list' : 'add'); setAddError(''); }}
           style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: mode === 'add' ? '#fff' : '#000', color: mode === 'add' ? '#000' : '#fff', cursor: 'pointer' }}>
@@ -104,7 +113,7 @@ export default function HabitsPage() {
               <button onClick={() => toggle(h.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, padding: '0.875rem 1rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: MONO }}>
                 <span style={{ minWidth: '2.5rem', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '0.05em', color: h.done ? '#000' : '#fff' }}>{h.done ? '[X]' : '[ ]'}</span>
                 <span style={{ flex: 1, fontSize: '0.875rem', color: h.done ? '#000' : '#fff', textDecoration: h.done ? 'line-through' : 'none' }}>{h.name}</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: h.done ? '#444' : '#888' }}>{h.streak} DAY{h.streak !== 1 ? 'S' : ''}</span>
+                <StreakBadge streak={h.streak} />
               </button>
               <button onClick={() => deleteHabit(h.id)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '1rem', fontFamily: MONO, padding: '0.875rem 1rem' }}>✕</button>
             </div>
