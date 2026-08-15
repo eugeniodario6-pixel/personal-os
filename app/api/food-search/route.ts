@@ -34,6 +34,8 @@ export async function GET(req: NextRequest) {
       format: 'json',
       max_results: '10',
       page_number: '0',
+      language: 'en',
+      region: 'US',
     });
 
     const res = await fetch(`${API_URL}?${params}`, {
