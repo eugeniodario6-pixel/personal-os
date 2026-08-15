@@ -22,6 +22,8 @@ function NutritionContent() {
   const [logs, setLogs] = useState<MealLogWithFood[]>([]);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [apiResults, setApiResults] = useState<FoodItem[]>([]);
+  const [searching, setSearching] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
   // Add form state
@@ -60,16 +62,29 @@ function NutritionContent() {
   }, []);
 
   const loadFoodItems = useCallback(async () => {
-    if (searchQuery.trim()) {
-      const items = await db.food_item
-        .filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        .limit(20)
-        .toArray();
-      setFoodItems(items);
-    } else {
-      const recents = await db.food_item.orderBy('name').limit(20).toArray();
-      setFoodItems(recents);
+    const recents = await db.food_item.orderBy('name').limit(20).toArray();
+    setFoodItems(recents);
+  }, []);
+
+  // FatSecret API search with debounce
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setApiResults([]);
+      return;
     }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/food-search?q=${encodeURIComponent(searchQuery)}`);
+        const data = await res.json();
+        setApiResults(data.foods ?? []);
+      } catch {
+        setApiResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   useEffect(() => {
@@ -265,6 +280,33 @@ function NutritionContent() {
               style={{ textTransform: 'uppercase' }}
             />
           </div>
+          {/* Search results — API first, then local */}
+          {!selectedFood && (
+            <div>
+              {searching && (
+                <div style={{ padding: '1rem', color: '#444', fontFamily: "'IBM Plex Mono', monospace", fontSize: '0.75rem' }}>SEARCHING...</div>
+              )}
+              {(searchQuery.trim().length >= 2 ? apiResults : foodItems).map((food, idx) => (
+                <button
+                  key={food.external_id ?? food.id ?? idx}
+                  onClick={() => setSelectedFood(food)}
+                  style={{ display: 'flex', width: '100%', padding: '0.875rem 1rem', background: '#000', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", textAlign: 'left', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <div>
+                    <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.875rem' }}>{food.name}</p>
+                    <p className="label">{food.brand ? `${food.brand} · ` : ''}{food.calories} KCAL / {food.serving_size}{food.serving_unit}</p>
+                  </div>
+                  <span style={{ color: '#444' }}>+</span>
+                </button>
+              ))}
+              {!searching && searchQuery.trim().length >= 2 && apiResults.length === 0 && (
+                <div style={{ padding: '1.5rem 1rem', color: '#444', fontSize: '0.75rem', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  NO RESULTS. TRY A DIFFERENT SEARCH.
+                </div>
+              )}
+            </div>
+          )}
+
           {selectedFood ? (
             <div style={{ padding: '1rem' }}>
               <p className="label" style={{ marginBottom: '0.5rem' }}>LOG: {selectedFood.name.toUpperCase()}</p>
@@ -290,24 +332,7 @@ function NutritionContent() {
             </div>
           ) : (
             <div>
-              {foodItems.map((food) => (
-                <button
-                  key={food.id}
-                  onClick={() => setSelectedFood(food)}
-                  style={{ display: 'flex', width: '100%', padding: '0.875rem 1rem', background: '#000', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", textAlign: 'left', justifyContent: 'space-between', alignItems: 'center' }}
-                >
-                  <div>
-                    <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.875rem' }}>{food.name}</p>
-                    <p className="label">{food.brand ? `${food.brand} · ` : ''}{food.calories} KCAL PER {food.serving_size}{food.serving_unit}</p>
-                  </div>
-                  <span style={{ color: '#444' }}>+</span>
-                </button>
-              ))}
-              {foodItems.length === 0 && (
-                <div style={{ padding: '1.5rem 1rem', color: '#444', fontSize: '0.75rem', fontFamily: "'IBM Plex Mono', monospace" }}>
-                  NO FOODS FOUND. ADD ONE WITH + ADD BUTTON.
-                </div>
-              )}
+
             </div>
           )}
           <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid #111' }}>
