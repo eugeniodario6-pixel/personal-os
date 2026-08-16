@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [protein, setProtein] = useState('150');
   const [carbs, setCarbs] = useState('200');
   const [fat, setFat] = useState('65');
+  const [startingWeight, setStartingWeight] = useState('');
   const [weightGoal, setWeightGoal] = useState('');
   const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
   const [nonNumeric, setNonNumeric] = useState(false);
@@ -37,6 +38,7 @@ export default function SettingsPage() {
       setProtein(String(prof.macro_targets.protein));
       setCarbs(String(prof.macro_targets.carbs));
       setFat(String(prof.macro_targets.fat));
+      setStartingWeight(prof.starting_weight != null ? String(prof.starting_weight) : '');
       setWeightGoal(prof.weight_goal != null ? String(prof.weight_goal) : '');
       setUnits(prof.units);
       setNonNumeric(prof.non_numeric_mode);
@@ -55,6 +57,7 @@ export default function SettingsPage() {
         carbs: parseInt(carbs) || 200,
         fat: parseInt(fat) || 65,
       },
+      starting_weight: startingWeight ? parseFloat(startingWeight) : null,
       weight_goal: weightGoal ? parseFloat(weightGoal) : null,
       units,
       non_numeric_mode: nonNumeric,
@@ -108,6 +111,17 @@ export default function SettingsPage() {
                   <input type="number" value={m.val} onChange={e => m.set(e.target.value)} style={inputStyle} />
                 </div>
               ))}
+            </div>
+            <div>
+              <p style={{ ...lbl, marginBottom: '0.35rem' }}>STARTING WEIGHT (KG)</p>
+              <input
+                type="number"
+                value={startingWeight}
+                onChange={e => setStartingWeight(e.target.value)}
+                placeholder="E.G. 85"
+                style={inputStyle}
+              />
+              <p style={{ ...lbl, marginTop: '0.35rem', color: '#333' }}>YOUR BASELINE — SET ONCE, TRACK PROGRESS FROM HERE</p>
             </div>
             <div>
               <p style={{ ...lbl, marginBottom: '0.35rem' }}>WEIGHT GOAL (KG) — OPTIONAL</p>

@@ -11,6 +11,7 @@ export interface Profile {
   calorie_target: number;
   macro_targets: { protein: number; carbs: number; fat: number };
   weight_goal: number | null;
+  starting_weight: number | null;
   units: 'metric' | 'imperial';
   non_numeric_mode: boolean;
   timezone: string;
@@ -146,6 +147,7 @@ export async function getProfile(): Promise<Profile | null> {
       fat: data.macro_fat,
     },
     weight_goal: data.weight_goal,
+    starting_weight: data.starting_weight ?? null,
     units: data.units,
     non_numeric_mode: data.non_numeric_mode,
     timezone: data.timezone,
@@ -161,6 +163,7 @@ export async function upsertProfile(p: Omit<Profile, 'id' | 'user_id'>): Promise
     macro_carbs: p.macro_targets.carbs,
     macro_fat: p.macro_targets.fat,
     weight_goal: p.weight_goal,
+    starting_weight: p.starting_weight,
     units: p.units,
     non_numeric_mode: p.non_numeric_mode,
     timezone: p.timezone,
