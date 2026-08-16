@@ -18,7 +18,7 @@ function getNutrient(nutrients: any[], id: number): number {
 // ─── Search local Supabase DB ─────────────────────────────────────────────────
 async function searchLocal(query: string) {
   const encoded = encodeURIComponent(`%${query}%`);
-  const url = `${SUPABASE_URL}/rest/v1/sa_foods?select=id,food_group,name,calories,protein_g,carbs_g,fat_g,fiber_g,serving_size,serving_unit&name=ilike.${encoded}&limit=12`;
+  const url = `${SUPABASE_URL}/rest/v1/sa_foods?select=id,food_group,name,calories,protein_g,carbs_g,fat_g,fiber_g,serving_size,serving_unit&name=ilike.${encoded}&limit=50&order=name.asc`;
 
   const res = await fetch(url, {
     headers: {
@@ -29,6 +29,18 @@ async function searchLocal(query: string) {
 
   if (!res.ok) return [];
   const data: any[] = await res.json();
+
+  // Sort: group raw + cooked variants together by base name
+  data.sort((a: any, b: any) => {
+    const baseName = (s: string) => s.replace(/\s*\(.*\)\s*/g, '').trim().toLowerCase();
+    const base = baseName(a.name).localeCompare(baseName(b.name));
+    if (base !== 0) return base;
+    // Within same base: raw before cooked
+    const isRaw = (s: string) => s.toLowerCase().includes('raw');
+    if (isRaw(a.name) && !isRaw(b.name)) return -1;
+    if (!isRaw(a.name) && isRaw(b.name)) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   return data.map(f => ({
     id: String(f.id),
@@ -101,14 +113,14 @@ export async function GET(request: NextRequest) {
 
     // If local has enough results, skip USDA
     let usda: any[] = [];
-    if (local.length < 4) {
+    if (local.length < 6) {
       usda = await searchUSDA(query);
       // Filter out USDA items that duplicate local results
       const localNames = new Set(local.map((f: any) => f.name.toLowerCase()));
       usda = usda.filter((f: any) => !localNames.has(f.name.toLowerCase()));
     }
 
-    const foods = [...local, ...usda].slice(0, 12);
+    const foods = [...local, ...usda].slice(0, 20);
     return NextResponse.json({ foods });
   } catch (err: any) {
     console.error('[food-search]', err.message);
