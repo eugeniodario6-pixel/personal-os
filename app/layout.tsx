@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import { IBM_Plex_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import Nav from '@/components/Nav';
 import SWRegister from './sw-register';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
-const ibmPlexMono = IBM_Plex_Mono({
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-ibm-plex-mono',
+  weight: ['400', '500', '600', '700', '800', '900'],
   display: 'swap',
 });
 
@@ -29,20 +29,26 @@ export const viewport: Viewport = {
   themeColor: '#000000',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={ibmPlexMono.variable}>
+    <html lang="en">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
+        {/* Prevent flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            var saved = localStorage.getItem('theme');
+            var preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', saved || preferred);
+          })();
+        `}} />
       </head>
-      <body style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-        <SWRegister />
-        <main className="page">{children}</main>
-        <Nav />
+      <body className={inter.className}>
+        <ThemeProvider>
+          <SWRegister />
+          <main className="page">{children}</main>
+          <Nav />
+        </ThemeProvider>
       </body>
     </html>
   );
