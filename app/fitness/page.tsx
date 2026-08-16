@@ -79,6 +79,7 @@ function FitnessContent() {
           <p style={{ ...lbl, marginBottom: '0.25rem' }}>FITNESS</p>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>MOVE</h1>
         </div>
+        <Link href="/fitness/plan" style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: '#fff', color: '#000', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>PLAN</Link>
         <Link href="/fitness/calculators" style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: '#000', color: '#fff', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>CALC</Link>
         <button onClick={() => { setMode(mode === 'add' ? 'view' : 'add'); if (mode === 'add') router.replace('/fitness'); }}
           style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: mode === 'add' ? '#fff' : '#000', color: mode === 'add' ? '#000' : '#fff', cursor: 'pointer' }}>

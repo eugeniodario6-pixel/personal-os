@@ -496,3 +496,174 @@ export async function seedUserData(): Promise<void> {
     });
   }
 }
+
+// ── Training Plan ──────────────────────────────────────────────────────────
+
+export interface TrainingWeek {
+  week: number;
+  phase: string;
+  is_deload: boolean;
+  pct_working_max: number | null;
+  strength_prescription: string;
+  cardio_protocol: string;
+  cardio_detail: string;
+  boxing_focus: string;
+  agility_focus: string;
+}
+
+export interface LiftSetup {
+  lift: string;
+  start_weight: number;
+  weekly_increment: number;
+  working_max: number | null;
+}
+
+export interface TrainingSession {
+  id: number;
+  user_id: string;
+  week: number;
+  session_type: 'strength' | 'cardio' | 'boxing' | 'agility';
+  date: string;
+  rpe: number | null;
+  notes: string | null;
+  completed_at: string;
+}
+
+export interface StrengthSet {
+  id: number;
+  session_id: number;
+  exercise_id: string;
+  exercise_name: string;
+  set_number: number;
+  prescribed_weight: number | null;
+  actual_weight: number | null;
+  reps: number | null;
+  rpe: number | null;
+  notes: string | null;
+}
+
+export interface Exercise {
+  id: number;
+  exercise_id: string;
+  name: string;
+  type: string;
+  movement_pattern: string;
+  is_main_lift: boolean;
+  equipment: string;
+  primary_target: string;
+  unit: string;
+  default_prescription: string;
+  cues: string;
+  how_to: string;
+}
+
+// Training plan week
+export async function getTrainingWeek(week: number): Promise<TrainingWeek | null> {
+  const { data } = await supabase.from('training_plan').select('*').eq('week', week).single();
+  return data ?? null;
+}
+
+// Current week number based on programme start date (2026-08-17)
+export function getCurrentTrainingWeek(): number {
+  const start = new Date('2026-08-17');
+  const now = new Date();
+  const diffMs = now.getTime() - start.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return Math.max(1, Math.min(26, Math.floor(diffDays / 7) + 1));
+}
+
+// Lift setup
+export async function getLiftSetup(): Promise<LiftSetup[]> {
+  const userId = await getUserId();
+  const { data } = await supabase.from('lift_setup').select('*').eq('user_id', userId);
+  return data ?? [];
+}
+
+export async function upsertLiftSetup(lifts: Omit<LiftSetup, never>[]): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('lift_setup').upsert(
+    lifts.map(l => ({ ...l, user_id: userId, updated_at: new Date().toISOString() })),
+    { onConflict: 'user_id,lift' }
+  );
+}
+
+export async function updateWorkingMax(lift: string, workingMax: number): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('lift_setup')
+    .update({ working_max: workingMax, updated_at: new Date().toISOString() })
+    .eq('user_id', userId).eq('lift', lift);
+}
+
+// Calculate prescribed weight for a given lift + week
+export function calcPrescribedWeight(lift: LiftSetup, week: TrainingWeek): number | null {
+  if (week.phase === 'Base') {
+    if (week.is_deload) {
+      // 85% of previous week's weight
+      const prevWeight = lift.start_weight + lift.weekly_increment * (week.week - 2);
+      return Math.round(prevWeight * 0.85 / 2.5) * 2.5;
+    }
+    return lift.start_weight + lift.weekly_increment * (week.week - 1);
+  }
+  // Build/Camp/Taper — use % of working max
+  if (week.pct_working_max && lift.working_max) {
+    return Math.round(lift.working_max * week.pct_working_max / 2.5) * 2.5;
+  }
+  return null;
+}
+
+// Training sessions
+export async function createTrainingSession(
+  session: Omit<TrainingSession, 'id' | 'user_id' | 'completed_at'>
+): Promise<number> {
+  const userId = await getUserId();
+  const { data, error } = await supabase.from('training_sessions')
+    .insert({ ...session, user_id: userId })
+    .select('id').single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed to create session');
+  return data.id;
+}
+
+export async function getTrainingSessions(week: number): Promise<TrainingSession[]> {
+  const userId = await getUserId();
+  const { data } = await supabase.from('training_sessions')
+    .select('*').eq('user_id', userId).eq('week', week)
+    .order('completed_at', { ascending: false });
+  return data ?? [];
+}
+
+export async function updateTrainingSession(
+  id: number, patch: Partial<Pick<TrainingSession, 'rpe' | 'notes'>>
+): Promise<void> {
+  await supabase.from('training_sessions').update(patch).eq('id', id);
+}
+
+// Strength sets
+export async function addStrengthSets(sets: Omit<StrengthSet, 'id'>[]): Promise<void> {
+  await supabase.from('strength_sets').insert(sets);
+}
+
+export async function getStrengthSets(sessionId: number): Promise<StrengthSet[]> {
+  const { data } = await supabase.from('strength_sets')
+    .select('*').eq('session_id', sessionId).order('exercise_name').order('set_number');
+  return data ?? [];
+}
+
+// Exercise library
+export async function getExercises(type?: string): Promise<Exercise[]> {
+  let query = supabase.from('exercises').select('*').order('type').order('name');
+  if (type) query = query.eq('type', type);
+  const { data } = await query;
+  return data ?? [];
+}
+
+export async function getExercise(exerciseId: string): Promise<Exercise | null> {
+  const { data } = await supabase.from('exercises').select('*').eq('exercise_id', exerciseId).single();
+  return data ?? null;
+}
+
+// Main lifts only (for strength logging)
+export async function getMainLifts(): Promise<Exercise[]> {
+  const { data } = await supabase.from('exercises')
+    .select('*').eq('is_main_lift', true).order('name');
+  return data ?? [];
+}
