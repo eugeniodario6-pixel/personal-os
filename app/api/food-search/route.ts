@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
     const params = new URLSearchParams({
       api_key: USDA_API_KEY,
       query,
-      pageSize: '20',
-      // Foundation & SR Legacy = generic whole foods; Branded = packaged products
-      dataType: 'Foundation,SR Legacy,Branded',
+      pageSize: '50',
+      // Foundation & SR Legacy = generic whole foods only; Branded excluded
+      dataType: 'Foundation,SR Legacy',
     });
 
     const res = await fetch(`${USDA_URL}?${params}`);
@@ -63,8 +63,6 @@ export async function GET(request: NextRequest) {
         };
       })
       .filter(Boolean)
-      // Generic/whole foods first, then branded
-      .sort((a: any, b: any) => (a.isGeneric === b.isGeneric ? 0 : a.isGeneric ? -1 : 1))
       // Deduplicate by name (case-insensitive)
       .filter((item: any, idx: number, arr: any[]) =>
         arr.findIndex((x: any) => x.name.toLowerCase() === item.name.toLowerCase()) === idx
