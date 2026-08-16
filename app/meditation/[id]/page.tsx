@@ -20,7 +20,6 @@ export default function MeditationPlayerPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
-
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -32,15 +31,14 @@ export default function MeditationPlayerPage() {
   const remaining = Math.max(totalSecs - elapsed, 0);
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
-  const timerText = running || done ? `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}` : 'READY';
+  const timerText = running || done
+    ? `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+    : 'READY';
   const progress = totalSecs > 0 ? Math.min(elapsed / totalSecs, 1) : 0;
 
   const start = () => {
     if (!session) return;
-    setRunning(true);
-    setElapsed(0);
-    setDone(false);
-
+    setRunning(true); setElapsed(0); setDone(false);
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
       const lines = (session.instructions ?? '').split('\n').filter(Boolean);
@@ -55,20 +53,15 @@ export default function MeditationPlayerPage() {
       };
       speakNext();
     }
-
     intervalRef.current = setInterval(() => {
       setElapsed(prev => {
         if (prev + 1 >= totalSecs) {
           clearInterval(intervalRef.current!);
-          setRunning(false);
-          setDone(true);
+          setRunning(false); setDone(true);
           if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
           addMeditationLog({
-            session_id: session.id,
-            date: todayISO(),
-            completed: true,
-            duration_actual_min: session.duration_min,
-            logged_at: new Date().toISOString(),
+            session_id: session.id, date: todayISO(), completed: true,
+            duration_actual_min: session.duration_min, logged_at: new Date().toISOString(),
           });
           return totalSecs;
         }
@@ -83,11 +76,8 @@ export default function MeditationPlayerPage() {
     setRunning(false);
     if (session && elapsed > 0) {
       await addMeditationLog({
-        session_id: session.id,
-        date: todayISO(),
-        completed: false,
-        duration_actual_min: Math.round(elapsed / 60),
-        logged_at: new Date().toISOString(),
+        session_id: session.id, date: todayISO(), completed: false,
+        duration_actual_min: Math.round(elapsed / 60), logged_at: new Date().toISOString(),
       });
     }
     router.push('/meditation');
@@ -96,97 +86,81 @@ export default function MeditationPlayerPage() {
   const instructions = (session?.instructions ?? '').split('\n').filter(Boolean);
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F14', paddingTop: '4rem', paddingBottom: '5rem', fontFamily: 'Inter, sans-serif' }}>
-      {/* Header bar */}
-      <div style={{ margin: '0 1rem 1rem', background: '#17171F', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+
+      {/* Back bar */}
+      <div style={{ padding: '0.75rem var(--pad)', display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={() => { if (running) stop(); else router.push('/meditation'); }}
-          style={{ background: '#1E1E28', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, color: '#7A7A8C', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, padding: '0.4rem 0.875rem', fontFamily: 'Inter, sans-serif' }}
+          className="btn btn-ghost btn-sm"
         >
           ← Back
         </button>
-        <span style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7A7A8C' }}>
-          {session?.category?.toUpperCase() ?? ''}
-        </span>
+        <span className="label">{session?.category ?? ''}</span>
       </div>
 
-      {/* Main centered content */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '2rem', padding: '1rem 1.5rem' }}>
-        {/* Session title */}
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ margin: '0 0 0.4rem', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6366F1' }}>
-            {session?.category?.toUpperCase() ?? ''}
-          </p>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff' }}>
+      {/* Main content */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '65vh', gap: '2rem', padding: '1.5rem var(--pad)' }}>
+
+        {/* Title */}
+        <div style={{ textAlign: 'center' as const }}>
+          <p className="label" style={{ marginBottom: '0.5rem' }}>{session?.category ?? ''} · {session?.duration_min ?? 0} min</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)', margin: 0 }}>
             {session?.name ?? ''}
           </h1>
         </div>
 
-        {/* Timer display */}
+        {/* Done state */}
         {done ? (
-          <div style={{ background: 'linear-gradient(135deg,#6366F1,#818CF8)', borderRadius: 24, padding: '2.5rem 3rem', textAlign: 'center', width: '100%', maxWidth: 360, boxSizing: 'border-box' }}>
-            <div style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>✓</div>
-            <p style={{ margin: '0.75rem 0 0.25rem', fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff' }}>Complete</p>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
+          <div style={{ background: 'var(--text)', borderRadius: 'var(--radius)', padding: '2.5rem 3rem', textAlign: 'center' as const, width: '100%', maxWidth: 360 }}>
+            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>✓</div>
+            <p style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--invert)', margin: '0 0 0.25rem' }}>Complete</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--invert)', opacity: 0.6, margin: 0 }}>
               {session?.duration_min ?? 0} min session finished
             </p>
           </div>
         ) : (
+          /* Timer */
           <div style={{
-            background: '#17171F', border: `1px solid ${running ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.07)'}`,
-            borderRadius: 24, padding: '2.5rem 3rem', textAlign: 'center', width: '100%', maxWidth: 360, boxSizing: 'border-box',
+            background: 'var(--surface)', border: `1px solid ${running ? 'var(--text)' : 'var(--border)'}`,
+            borderRadius: 'var(--radius)', padding: '2.5rem 3rem', textAlign: 'center' as const,
+            width: '100%', maxWidth: 360,
           }}>
-            {/* Giant timer */}
             <div style={{
-              fontSize: 'clamp(5rem, 28vw, 8rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1,
-              background: running ? 'linear-gradient(90deg,#6366F1,#818CF8)' : 'none',
-              WebkitBackgroundClip: running ? 'text' : 'unset',
-              WebkitTextFillColor: running ? 'transparent' : '#fff',
-              color: running ? 'transparent' : '#fff',
+              fontSize: 'clamp(5rem, 28vw, 8rem)', fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 0.9,
+              color: 'var(--text)',
             }}>
               {timerText}
             </div>
-            <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', fontWeight: 500, color: '#7A7A8C' }}>
-              {running ? `${mins}:${String(secs).padStart(2, '0')} remaining` : `${session?.duration_min ?? 0} min session`}
+            <p style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 500 }}>
+              {running ? 'in progress' : `${session?.duration_min ?? 0} min session`}
             </p>
           </div>
         )}
 
-        {/* Progress bar (indigo) */}
+        {/* Progress bar */}
         {running && (
-          <div style={{ width: '100%', maxWidth: 360, height: 5, background: '#25252F', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', borderRadius: 999,
-              background: 'linear-gradient(90deg,#6366F1,#818CF8)',
-              width: `${progress * 100}%`,
-              transition: 'width 1s linear',
-            }} />
+          <div style={{ width: '100%', maxWidth: 360 }}>
+            <div className="progress">
+              <div className="progress-fill" style={{ width: `${progress * 100}%`, transition: 'width 1s linear' }} />
+            </div>
           </div>
         )}
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: '0.75rem', width: '100%', maxWidth: 360 }}>
           {!running && !done && (
-            <button
-              onClick={start}
-              style={{ flex: 1, background: 'linear-gradient(90deg,#6366F1,#818CF8)', color: '#fff', border: 'none', borderRadius: 14, padding: '1rem', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.01em' }}
-            >
+            <button onClick={start} className="btn btn-primary btn-block">
               Start Session
             </button>
           )}
           {running && (
-            <button
-              onClick={stop}
-              style={{ flex: 1, background: '#17171F', color: '#7A7A8C', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
-            >
+            <button onClick={stop} className="btn btn-ghost btn-block">
               Stop
             </button>
           )}
           {done && (
-            <button
-              onClick={() => router.push('/meditation')}
-              style={{ flex: 1, background: '#fff', color: '#000', border: 'none', borderRadius: 14, padding: '1rem', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
-            >
+            <button onClick={() => router.push('/meditation')} className="btn btn-primary btn-block">
               Done →
             </button>
           )}
@@ -194,10 +168,10 @@ export default function MeditationPlayerPage() {
 
         {/* Instructions */}
         {!running && !done && instructions.length > 0 && (
-          <div style={{ background: '#17171F', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.25rem', width: '100%', maxWidth: 360, boxSizing: 'border-box' }}>
-            <p style={{ margin: '0 0 0.75rem', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7A7A8C' }}>INSTRUCTIONS</p>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.25rem', width: '100%', maxWidth: 360 }}>
+            <p className="label" style={{ marginBottom: '0.75rem' }}>Instructions</p>
             {instructions.map((line, i) => (
-              <p key={i} style={{ margin: '0 0 0.4rem', fontSize: '0.85rem', color: '#7A7A8C', lineHeight: 1.6 }}>{line}</p>
+              <p key={i} style={{ margin: '0 0 0.4rem', fontSize: '0.875rem', color: 'var(--text-2)', lineHeight: 1.6 }}>{line}</p>
             ))}
           </div>
         )}
