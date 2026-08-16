@@ -1,46 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TOKEN_URL = 'https://oauth.fatsecret.com/connect/token';
-const API_URL = 'https://platform.fatsecret.com/rest/server.api';
+// USDA FoodData Central — free, no IP restrictions
+// DEMO_KEY: 30 req/min, 50 req/day — request own key at https://fdc.nal.usda.gov/api-key-signup
+const USDA_API_KEY = process.env.USDA_API_KEY || 'DEMO_KEY';
+const USDA_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
 
-let cachedToken: { value: string; expiresAt: number } | null = null;
+// Nutrient IDs we care about
+const NID = {
+  calories: 1008, // Energy (kcal)
+  protein:  1003, // Protein
+  carbs:    1005, // Carbohydrate, by difference
+  fat:      1004, // Total lipid (fat)
+};
 
-async function getToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.value;
-
-  const clientId = process.env.FATSECRET_CLIENT_ID || '91f84c88db6949f6b9f59c7a426721e6';
-  const clientSecret = process.env.FATSECRET_CLIENT_SECRET || 'bf8f48b599aa4a68974c280c58fb121b';
-  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-  const res = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${creds}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: 'grant_type=client_credentials&scope=basic',
-  });
-
-  if (!res.ok) throw new Error(`Auth failed: ${res.status}`);
-  const data = await res.json();
-  cachedToken = { value: data.access_token, expiresAt: Date.now() + (data.expires_in - 60) * 1000 };
-  return cachedToken.value;
-}
-
-// Parse macros from FatSecret description string:
-// "Per 100g - Calories: 165kcal | Fat: 3.57g | Carbs: 0.00g | Protein: 31.02g"
-function parseDescription(desc: string) {
-  const cal     = parseFloat(desc.match(/Calories:\s*([\d.]+)/i)?.[1] ?? '0');
-  const fat     = parseFloat(desc.match(/Fat:\s*([\d.]+)/i)?.[1] ?? '0');
-  const carbs   = parseFloat(desc.match(/Carbs:\s*([\d.]+)/i)?.[1] ?? '0');
-  const protein = parseFloat(desc.match(/Protein:\s*([\d.]+)/i)?.[1] ?? '0');
-
-  // Extract serving size from "Per Xg" or "Per X oz" etc.
-  const perMatch = desc.match(/Per\s+([\d.]+)\s*(\w+)/i);
-  const servingSize = perMatch ? parseFloat(perMatch[1]) : 100;
-  const servingUnit = perMatch ? perMatch[2].toLowerCase() : 'g';
-
-  return { cal, fat, carbs, protein, servingSize, servingUnit };
+function getNutrient(nutrients: any[], id: number): number {
+  return nutrients.find((n: any) => n.nutrientId === id)?.value ?? 0;
 }
 
 export async function GET(request: NextRequest) {
@@ -48,47 +22,50 @@ export async function GET(request: NextRequest) {
   if (!query) return NextResponse.json({ foods: [] });
 
   try {
-    const token = await getToken();
-
     const params = new URLSearchParams({
-      method: 'foods.search',
-      search_expression: query,
-      format: 'json',
-      max_results: '20',
+      api_key: USDA_API_KEY,
+      query,
+      pageSize: '20',
+      // Foundation & SR Legacy = generic whole foods; Branded = packaged products
+      dataType: 'Foundation,SR Legacy,Branded',
     });
 
-    const res = await fetch(`${API_URL}?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+    const res = await fetch(`${USDA_URL}?${params}`);
+    if (!res.ok) throw new Error(`USDA API error: ${res.status}`);
     const data = await res.json();
 
-    const raw: any[] = data?.foods?.food ?? [];
+    const raw: any[] = data?.foods ?? [];
 
     const foods = raw
       .map((f: any) => {
-        const desc = f.food_description ?? '';
-        const { cal, fat, carbs, protein, servingSize, servingUnit } = parseDescription(desc);
+        const nutrients: any[] = f.foodNutrients ?? [];
+        const cal     = Math.round(getNutrient(nutrients, NID.calories));
+        const protein = Math.round(getNutrient(nutrients, NID.protein) * 10) / 10;
+        const carbs   = Math.round(getNutrient(nutrients, NID.carbs) * 10) / 10;
+        const fat     = Math.round(getNutrient(nutrients, NID.fat) * 10) / 10;
+
         if (!cal) return null;
 
+        const isGeneric = f.dataType === 'Foundation' || f.dataType === 'SR Legacy';
+        const brand = f.brandOwner || f.brandName || '';
+
         return {
-          id: f.food_id,
-          name: f.food_name ?? '',
-          brand: f.brand_name ?? '',
-          isGeneric: f.food_type === 'Generic',
-          calories: Math.round(cal),
-          protein: Math.round(protein * 10) / 10,
-          carbs: Math.round(carbs * 10) / 10,
-          fat: Math.round(fat * 10) / 10,
-          serving_size: servingSize,
-          serving_unit: servingUnit,
+          id: String(f.fdcId),
+          name: f.description ?? '',
+          brand: isGeneric ? '' : brand,
+          isGeneric,
+          calories: cal,
+          protein,
+          carbs,
+          fat,
+          serving_size: 100,
+          serving_unit: 'g',
         };
       })
       .filter(Boolean)
-      // Generics first
+      // Generic/whole foods first, then branded
       .sort((a: any, b: any) => (a.isGeneric === b.isGeneric ? 0 : a.isGeneric ? -1 : 1))
-      // Deduplicate by name
+      // Deduplicate by name (case-insensitive)
       .filter((item: any, idx: number, arr: any[]) =>
         arr.findIndex((x: any) => x.name.toLowerCase() === item.name.toLowerCase()) === idx
       )
@@ -97,6 +74,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ foods });
   } catch (err: any) {
     console.error('[food-search]', err.message);
-    return NextResponse.json({ error: err.message, foods: [], debug: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message, foods: [] }, { status: 500 });
   }
 }
