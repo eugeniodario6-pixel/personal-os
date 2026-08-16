@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getWorkoutTemplates, addWorkoutTemplate, addWorkoutLog, getWorkoutLogs, getWorkoutHistory, deleteWorkoutLog, todayISO, type WorkoutTemplate, type WorkoutLog } from '@/lib/db';
 
@@ -78,6 +79,7 @@ function FitnessContent() {
           <p style={{ ...lbl, marginBottom: '0.25rem' }}>FITNESS</p>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>MOVE</h1>
         </div>
+        <Link href="/fitness/calculators" style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: '#000', color: '#fff', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>CALC</Link>
         <button onClick={() => { setMode(mode === 'add' ? 'view' : 'add'); if (mode === 'add') router.replace('/fitness'); }}
           style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.75rem', border: border2, background: mode === 'add' ? '#fff' : '#000', color: mode === 'add' ? '#000' : '#fff', cursor: 'pointer' }}>
           {mode === 'add' ? '← BACK' : '+ LOG'}
