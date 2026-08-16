@@ -863,6 +863,41 @@ export async function toggleGroceryItem(id: number): Promise<void> {
   if (data) await supabase.from('grocery_item').update({ purchased: !data.purchased }).eq('id', id);
 }
 
+// ── Weight Log ──────────────────────────────────────────────────────────────
+
+export interface WeightEntry {
+  id: number;
+  user_id: string;
+  weight_kg: number;
+  logged_at: string;
+  note: string | null;
+}
+
+export async function logWeight(weight_kg: number, note?: string): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('weight_log').upsert({
+    user_id: userId,
+    weight_kg,
+    logged_at: todayISO(),
+    note: note ?? null,
+  }, { onConflict: 'user_id,logged_at' });
+}
+
+export async function getWeightHistory(limit = 52): Promise<WeightEntry[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('weight_log')
+    .select('*')
+    .eq('user_id', userId)
+    .order('logged_at', { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function deleteWeightEntry(id: number): Promise<void> {
+  await supabase.from('weight_log').delete().eq('id', id);
+}
+
 export async function clearPurchasedGroceries(weekOf?: string): Promise<void> {
   const userId = await getUserId();
   const week = weekOf ?? currentWeekOf();
