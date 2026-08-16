@@ -47,7 +47,9 @@ export default function TodayPage() {
       setCalories(Math.round(macros.calories));
       setCalTarget(profile?.calorie_target ?? 2000);
       const doneIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
-      const habitData = await Promise.all(activeHabits.map(async h => ({ ...h, done: doneIds.has(h.id), streak: await getHabitStreak(h.id) })));
+      const habitData = await Promise.all(activeHabits.map(async h => ({
+        ...h, done: doneIds.has(h.id), streak: await getHabitStreak(h.id),
+      })));
       setHabits(habitData);
       setWorkouts(workouts.length);
       setMedDone(medLogs.some(m => m.completed));
@@ -66,194 +68,149 @@ export default function TodayPage() {
   const score     = calcScore(calPct, habitPct, workoutsToday > 0, medDone);
 
   if (loading) return (
-    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F0F14' }}>
-      <p style={{ fontSize: '0.8rem', letterSpacing: '0.15em', color: '#3A3A4A' }}>LOADING...</p>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <p className="label">Loading...</p>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#0F0F14', paddingTop: '4rem', paddingBottom: '5rem', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '5rem', paddingBottom: '5rem' }}>
 
       {/* ── Hero ── */}
-      <div style={{ padding: '1.5rem 1.25rem 1rem' }}>
-        <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', color: '#7A7A8C', marginBottom: '1.5rem' }}>
-          {dateStr}
-        </p>
+      <div style={{ padding: '0 var(--pad) 2rem', borderBottom: '1px solid var(--border)' }}>
+        <p className="label" style={{ marginBottom: '1.5rem' }}>{dateStr}</p>
 
-        {/* Score card */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1E1E28 0%, #17172A 100%)',
-          border: '1px solid rgba(245,158,11,0.2)',
-          borderRadius: 20,
-          padding: '1.75rem',
-          marginBottom: '1rem',
-        }}>
-          <p style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7A7A8C', marginBottom: '0.5rem' }}>
-            Daily Score
-          </p>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', marginBottom: '1rem' }}>
-            <span style={{
-              fontSize: 'clamp(4.5rem, 24vw, 7rem)',
-              fontWeight: 900,
-              letterSpacing: '-0.05em',
-              lineHeight: 0.9,
-              background: 'linear-gradient(135deg, #fff 0%, #F59E0B 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>{score}</span>
-            <div style={{ paddingBottom: '0.5rem' }}>
-              <span style={{ display: 'inline-block', background: 'rgba(245,158,11,0.15)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 999, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em' }}>
-                {scoreLabel(score)}
-              </span>
-              <p style={{ fontSize: '0.65rem', color: '#3A3A4A', marginTop: '0.35rem', fontWeight: 500 }}>out of 100</p>
-            </div>
+        {/* Score */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: 'clamp(5rem, 26vw, 9rem)', fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 0.88, color: 'var(--text)' }}>
+            {score}
           </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginTop: '0.75rem' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, letterSpacing: '0.12em', color: 'var(--text)' }}>
+              {scoreLabel(score)}
+            </span>
+            <span className="label">/ 100 today</span>
+          </div>
+        </div>
 
-          {/* 4-segment bars */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem' }}>
-            {[
-              { label: 'EAT',    val: Math.min(calPct, 100),       grad: 'linear-gradient(90deg,#F59E0B,#F97316)' },
-              { label: 'HABITS', val: Math.min(habitPct, 100),      grad: 'linear-gradient(90deg,#6366F1,#818CF8)' },
-              { label: 'MOVE',   val: workoutsToday > 0 ? 100 : 0, grad: 'linear-gradient(90deg,#10B981,#34D399)' },
-              { label: 'MIND',   val: medDone ? 100 : 0,           grad: 'linear-gradient(90deg,#06B6D4,#67E8F9)' },
-            ].map(seg => (
-              <div key={seg.label}>
-                <div style={{ height: 5, background: '#25252F', borderRadius: 999, overflow: 'hidden', marginBottom: '0.35rem' }}>
-                  <div style={{ height: '100%', width: `${seg.val}%`, background: seg.val > 0 ? seg.grad : 'transparent', borderRadius: 999, transition: 'width 0.5s ease' }} />
-                </div>
-                <p style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.08em', color: seg.val > 0 ? '#7A7A8C' : '#2A2A3A', textTransform: 'uppercase' as const }}>{seg.label}</p>
+        {/* 4 segment bars */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem' }}>
+          {[
+            { label: 'EAT',    val: Math.min(calPct, 100) },
+            { label: 'HABITS', val: Math.min(habitPct, 100) },
+            { label: 'MOVE',   val: workoutsToday > 0 ? 100 : 0 },
+            { label: 'MIND',   val: medDone ? 100 : 0 },
+          ].map(seg => (
+            <div key={seg.label}>
+              <div className="progress" style={{ marginBottom: '0.4rem' }}>
+                <div className="progress-fill" style={{ width: `${seg.val}%` }} />
               </div>
-            ))}
-          </div>
+              <p className="label-xs" style={{ color: seg.val > 0 ? 'var(--text-2)' : 'var(--text-4)' }}>{seg.label}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ── Stats row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '0 1.25rem', marginBottom: '0.75rem' }}>
-        {/* Calories */}
-        <div style={{ background: '#17171F', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.25rem' }}>
-          <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#7A7A8C', marginBottom: '0.5rem' }}>Calories</p>
-          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: '#fff', marginBottom: '0.2rem' }}>{calories.toLocaleString()}</p>
-          <p style={{ fontSize: '0.7rem', color: '#3A3A4A', marginBottom: '0.75rem' }}>/ {calorieTarget.toLocaleString()}</p>
-          <div style={{ height: 5, background: '#25252F', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${Math.min(calPct, 100)}%`, background: 'linear-gradient(90deg,#F59E0B,#F97316)', borderRadius: 999, transition: 'width 0.5s ease' }} />
-          </div>
-        </div>
-
-        {/* Habits */}
-        <div style={{ background: '#17171F', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.25rem' }}>
-          <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#7A7A8C', marginBottom: '0.5rem' }}>Habits</p>
-          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: '#fff', marginBottom: '0.2rem' }}>
-            {habitDone}<span style={{ fontSize: '1.1rem', color: '#3A3A4A', fontWeight: 500 }}>/{habits.length}</span>
+      {/* ── Stats ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ padding: '1.25rem var(--pad)', borderRight: '1px solid var(--border)' }}>
+          <p className="label" style={{ marginBottom: '0.5rem' }}>Calories</p>
+          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.25rem' }}>
+            {calories.toLocaleString()}
           </p>
-          <p style={{ fontSize: '0.7rem', color: '#3A3A4A', marginBottom: '0.75rem' }}>{habits.length > 0 ? `${Math.round(habitPct)}% done` : 'None set'}</p>
-          <div style={{ height: 5, background: '#25252F', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${Math.min(habitPct, 100)}%`, background: 'linear-gradient(90deg,#6366F1,#818CF8)', borderRadius: 999, transition: 'width 0.5s ease' }} />
-          </div>
+          <p className="label" style={{ marginBottom: '0.75rem' }}>/ {calorieTarget.toLocaleString()}</p>
+          <div className="progress"><div className="progress-fill" style={{ width: `${Math.min(calPct, 100)}%` }} /></div>
+        </div>
+        <div style={{ padding: '1.25rem var(--pad)' }}>
+          <p className="label" style={{ marginBottom: '0.5rem' }}>Habits</p>
+          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.25rem' }}>
+            {habitDone}<span style={{ fontSize: '1.1rem', color: 'var(--text-4)', fontWeight: 500 }}>/{habits.length}</span>
+          </p>
+          <p className="label" style={{ marginBottom: '0.75rem' }}>{habits.length > 0 ? `${Math.round(habitPct)}% done` : 'none set'}</p>
+          <div className="progress"><div className="progress-fill" style={{ width: `${Math.min(habitPct, 100)}%` }} /></div>
         </div>
       </div>
 
-      {/* ── Workout + Meditation ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '0 1.25rem', marginBottom: '1.5rem' }}>
+      {/* ── Status cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--border)' }}>
         <button onClick={() => { haptic('light'); router.push('/fitness'); }}
-          style={{ background: workoutsToday > 0 ? 'linear-gradient(135deg,#10B981,#065F46)' : '#17171F', border: `1px solid ${workoutsToday > 0 ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 16, padding: '1.25rem', textAlign: 'left' as const, cursor: 'pointer', fontFamily: "'Inter', system-ui, sans-serif" }}>
-          <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: workoutsToday > 0 ? 'rgba(255,255,255,0.7)' : '#7A7A8C', marginBottom: '0.5rem' }}>Workouts</p>
-          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>{workoutsToday}</p>
-          <p style={{ fontSize: '0.7rem', color: workoutsToday > 0 ? 'rgba(255,255,255,0.5)' : '#3A3A4A', marginTop: '0.25rem' }}>today</p>
+          style={{ padding: '1.25rem var(--pad)', background: workoutsToday > 0 ? 'var(--text)' : 'var(--bg)', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', textAlign: 'left' as const }}>
+          <p className="label" style={{ marginBottom: '0.35rem', color: workoutsToday > 0 ? 'var(--invert)' : 'var(--text-3)', opacity: 0.7 }}>Workouts</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.04em', color: workoutsToday > 0 ? 'var(--invert)' : 'var(--text)', margin: 0 }}>{workoutsToday}</p>
         </button>
-
         <button onClick={() => { haptic('light'); router.push('/meditation'); }}
-          style={{ background: medDone ? 'linear-gradient(135deg,#6366F1,#312E81)' : '#17171F', border: `1px solid ${medDone ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 16, padding: '1.25rem', textAlign: 'left' as const, cursor: 'pointer', fontFamily: "'Inter', system-ui, sans-serif" }}>
-          <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: medDone ? 'rgba(255,255,255,0.7)' : '#7A7A8C', marginBottom: '0.5rem' }}>Meditation</p>
-          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>{medDone ? '✓' : '–'}</p>
-          <p style={{ fontSize: '0.7rem', color: medDone ? 'rgba(255,255,255,0.5)' : '#3A3A4A', marginTop: '0.25rem' }}>{medDone ? 'done' : 'not done'}</p>
+          style={{ padding: '1.25rem var(--pad)', background: medDone ? 'var(--text)' : 'var(--bg)', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
+          <p className="label" style={{ marginBottom: '0.35rem', color: medDone ? 'var(--invert)' : 'var(--text-3)', opacity: 0.7 }}>Meditation</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.04em', color: medDone ? 'var(--invert)' : 'var(--text)', margin: 0 }}>{medDone ? '✓' : '—'}</p>
         </button>
       </div>
 
       {/* ── Quick actions ── */}
-      <div style={{ padding: '0 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid var(--border)' }}>
         {[
-          { label: '+ Meal',     path: '/nutrition?action=add' },
-          { label: '+ Workout',  path: '/fitness?action=add' },
-          { label: '+ Meditate', path: '/meditation' },
-        ].map(b => (
+          { label: '+ Meal',    path: '/nutrition?action=add' },
+          { label: '+ Workout', path: '/fitness?action=add' },
+          { label: '+ Meditate',path: '/meditation' },
+        ].map((b, i) => (
           <button key={b.label} onClick={() => { haptic('light'); router.push(b.path); }}
-            style={{ flex: 1, padding: '0.75rem 0.5rem', background: '#17171F', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, fontSize: '0.7rem', fontWeight: 600, color: '#7A7A8C', cursor: 'pointer', fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: '-0.01em' }}>
+            style={{ padding: '0.875rem 0.5rem', background: 'transparent', border: 'none', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-3)' }}>
             {b.label}
           </button>
         ))}
       </div>
 
       {/* ── Habits ── */}
-      <div style={{ padding: '0 1.25rem', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <p style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Habits</p>
+      <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem var(--pad)', borderBottom: '1px solid var(--border)' }}>
+          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Habits</p>
           <button onClick={() => { haptic('light'); router.push('/habits'); }}
-            style={{ fontSize: '0.75rem', fontWeight: 600, color: '#7A7A8C', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Inter', system-ui, sans-serif" }}>
+            style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}>
             Manage →
           </button>
         </div>
 
         {habits.length === 0 ? (
-          <div style={{ background: '#17171F', borderRadius: 16, padding: '2rem', textAlign: 'center' as const, border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p style={{ fontSize: '0.875rem', color: '#3A3A4A', marginBottom: '0.75rem' }}>No habits yet</p>
-            <button onClick={() => router.push('/habits')}
-              style={{ fontSize: '0.8rem', fontWeight: 600, color: '#F59E0B', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Inter', system-ui, sans-serif" }}>
+          <div style={{ padding: '2rem var(--pad)', textAlign: 'center' as const }}>
+            <p className="label" style={{ marginBottom: '0.5rem' }}>No habits yet</p>
+            <button onClick={() => router.push('/habits')} style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-2)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
               Add your first →
             </button>
           </div>
-        ) : (
-          <div style={{ background: '#17171F', borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-            {habits.map((h, i) => (
-              <button key={h.id} onClick={() => toggle(h.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '1rem',
-                  width: '100%', padding: '1rem 1.25rem',
-                  background: h.done ? 'rgba(16,185,129,0.06)' : 'transparent',
-                  border: 'none',
-                  borderBottom: i < habits.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                  cursor: 'pointer', textAlign: 'left' as const,
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  WebkitTapHighlightColor: 'transparent',
-                }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                  background: h.done ? '#10B981' : 'transparent',
-                  border: `2px solid ${h.done ? '#10B981' : '#3A3A4A'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s ease',
-                }}>
-                  {h.done && <span style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 700 }}>✓</span>}
-                </div>
-                <span style={{ flex: 1, fontSize: '0.9375rem', fontWeight: 500, color: h.done ? '#7A7A8C' : '#F0F0F5', textDecoration: h.done ? 'line-through' : 'none' }}>
-                  {h.name}
-                </span>
-                {h.streak > 0 && (
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F59E0B' }}>{h.streak} 🔥</span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+        ) : habits.map(h => (
+          <button key={h.id} onClick={() => toggle(h.id)}
+            style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', padding: '0.875rem var(--pad)', background: h.done ? 'var(--surface)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', textAlign: 'left' as const, WebkitTapHighlightColor: 'transparent' }}>
+            <div style={{ width: 24, height: 24, borderRadius: 'var(--radius-xs)', border: `2px solid ${h.done ? 'var(--text)' : 'var(--border-2)'}`, background: h.done ? 'var(--text)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
+              {h.done && <span style={{ fontSize: '0.7rem', color: 'var(--invert)', fontWeight: 700 }}>✓</span>}
+            </div>
+            <span style={{ flex: 1, fontSize: '0.9375rem', fontWeight: 500, color: h.done ? 'var(--text-3)' : 'var(--text)', textDecoration: h.done ? 'line-through' : 'none' }}>
+              {h.name}
+            </span>
+            {h.streak > 0 && (
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-3)', border: '1px solid var(--border-2)', borderRadius: 999, padding: '0.15rem 0.5rem' }}>
+                {h.streak}d 🔥
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* ── Suggested meditation ── */}
       {suggested && (
-        <div style={{ padding: '0 1.25rem' }}>
-          <p style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: '0.75rem' }}>Suggested Session</p>
-          <div style={{ background: 'linear-gradient(135deg, #1E1E2E, #13131A)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 16, padding: '1.5rem' }}>
-            <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#6366F1', marginBottom: '0.5rem' }}>
-              {suggested.category} · {suggested.duration_min} min
-            </p>
-            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', marginBottom: '1.25rem', letterSpacing: '-0.02em' }}>
-              {suggested.name}
-            </p>
-            <button onClick={() => { haptic('light'); router.push(`/meditation/${suggested.id}`); }}
-              style={{ width: '100%', padding: '0.875rem', background: '#6366F1', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: '-0.01em' }}>
-              Start Session →
-            </button>
+        <div style={{ borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem var(--pad)', borderBottom: '1px solid var(--border)' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Suggested</p>
+            <span className="label">{suggested.duration_min} min</span>
           </div>
+          <button onClick={() => { haptic('light'); router.push(`/meditation/${suggested.id}`); }}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1.25rem var(--pad)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
+            <div>
+              <p style={{ margin: '0 0 0.35rem', fontWeight: 700, fontSize: '1.125rem', letterSpacing: '-0.02em', color: 'var(--text)' }}>{suggested.name}</p>
+              <p className="label">{suggested.category}</p>
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.5rem 1rem', background: 'var(--text)', color: 'var(--invert)', borderRadius: 'var(--radius-xs)', flexShrink: 0 }}>
+              Start →
+            </span>
+          </button>
         </div>
       )}
 

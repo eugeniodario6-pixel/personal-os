@@ -25,6 +25,17 @@ const DRAWER = [
   { href: '/settings',   label: 'Settings', sub: 'Preferences' },
 ];
 
+const btnStyle: React.CSSProperties = {
+  width: '2.25rem', height: '2.25rem',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-xs)',
+  cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  WebkitTapHighlightColor: 'transparent',
+  transition: 'background 0.15s',
+};
+
 export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -34,55 +45,23 @@ export default function Nav() {
 
   return (
     <>
-      {/* ── Top bar ── */}
+      {/* ── Floating buttons — top right ── */}
       <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, height: '3.5rem',
-        background: 'var(--bg)',
-        borderBottom: '1px solid var(--border)',
+        position: 'fixed', top: '1rem', right: '1rem',
         zIndex: 300,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 1.25rem',
+        display: 'flex', gap: '0.5rem',
       }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-3)' }}>
-          Personal OS
-        </span>
+        {/* Theme toggle */}
+        <button onClick={() => { haptic('light'); toggle(); }} style={btnStyle} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+          <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{theme === 'dark' ? '☀︎' : '☽'}</span>
+        </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {/* Theme toggle */}
-          <button
-            onClick={() => { haptic('light'); toggle(); }}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            style={{
-              width: '2.25rem', height: '2.25rem',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1rem',
-              WebkitTapHighlightColor: 'transparent',
-              transition: 'background 0.15s',
-            }}
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-
-          {/* Menu */}
-          <button
-            onClick={() => { haptic('light'); setOpen(o => !o); }}
-            style={{
-              width: '2.25rem', height: '2.25rem',
-              background: open ? 'var(--text)' : 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: '4px',
-              padding: '0.55rem',
-              WebkitTapHighlightColor: 'transparent',
-              transition: 'background 0.15s',
-            }}
-          >
+        {/* Menu */}
+        <button
+          onClick={() => { haptic('light'); setOpen(o => !o); }}
+          style={{ ...btnStyle, background: open ? 'var(--text)' : 'var(--surface)' }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '14px' }}>
             {[0, 1, 2].map(i => (
               <span key={i} style={{
                 display: 'block', width: '100%', height: '1.5px',
@@ -91,8 +70,8 @@ export default function Nav() {
                 transition: 'background 0.15s',
               }} />
             ))}
-          </button>
-        </div>
+          </div>
+        </button>
       </div>
 
       {/* ── Bottom tab bar ── */}
@@ -117,15 +96,14 @@ export default function Nav() {
                 gap: '0.2rem',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
-                borderTop: active ? '2px solid var(--text)' : '2px solid transparent',
+                borderTop: `2px solid ${active ? 'var(--text)' : 'transparent'}`,
                 paddingTop: '0.35rem',
-                transition: 'border-color 0.15s',
               }}
             >
-              <span style={{ fontSize: '1rem', color: active ? 'var(--text)' : 'var(--text-4)', transition: 'color 0.15s' }}>
+              <span style={{ fontSize: '1rem', color: active ? 'var(--text)' : 'var(--text-4)' }}>
                 {tab.icon}
               </span>
-              <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: active ? 'var(--text)' : 'var(--text-4)', transition: 'color 0.15s' }}>
+              <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: active ? 'var(--text)' : 'var(--text-4)' }}>
                 {tab.label}
               </span>
             </Link>
@@ -137,7 +115,7 @@ export default function Nav() {
       {open && (
         <div onClick={() => setOpen(false)} style={{
           position: 'fixed', inset: 0, zIndex: 298,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(0,0,0,0.4)',
         }} />
       )}
 
@@ -151,7 +129,7 @@ export default function Nav() {
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.22s cubic-bezier(0.4,0,0.2,1)',
         display: 'flex', flexDirection: 'column',
-        paddingTop: '4.5rem',
+        paddingTop: '4rem',
         overflowY: 'auto',
       }}>
         {DRAWER.map(link => {
@@ -163,38 +141,34 @@ export default function Nav() {
                 display: 'flex', alignItems: 'center',
                 padding: '1rem 1.5rem',
                 background: active ? 'var(--surface)' : 'transparent',
-                borderLeft: active ? '2px solid var(--text)' : '2px solid transparent',
+                borderLeft: `2px solid ${active ? 'var(--text)' : 'transparent'}`,
                 borderBottom: '1px solid var(--border)',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '1rem', fontWeight: active ? 700 : 500, color: 'var(--text)', margin: 0, marginBottom: '0.1rem', letterSpacing: '-0.01em' }}>
+                <p style={{ fontSize: '1rem', fontWeight: active ? 700 : 400, color: 'var(--text)', margin: 0, marginBottom: '0.1rem' }}>
                   {link.label}
                 </p>
-                <p style={{ fontSize: '0.65rem', fontWeight: 500, color: 'var(--text-3)', margin: 0 }}>
-                  {link.sub}
-                </p>
+                <p className="label" style={{ margin: 0 }}>{link.sub}</p>
               </div>
-              {active && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text)' }} />}
+              {active && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text)' }} />}
             </Link>
           );
         })}
 
-        {/* Theme toggle in drawer too */}
+        {/* Theme toggle in drawer */}
         <button onClick={() => { haptic('light'); toggle(); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem 1.5rem', background: 'transparent', border: 'none', borderTop: '1px solid var(--border)', cursor: 'pointer', marginTop: 'auto', fontFamily: 'Inter, system-ui, sans-serif', WebkitTapHighlightColor: 'transparent' }}>
-          <span style={{ fontSize: '1.25rem' }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-2)' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem 1.5rem', background: 'transparent', border: 'none', borderTop: '1px solid var(--border)', cursor: 'pointer', marginTop: 'auto', WebkitTapHighlightColor: 'transparent' }}>
+          <span style={{ fontSize: '1rem', color: 'var(--text)' }}>{theme === 'dark' ? '☀︎' : '☽'}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)' }}>
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </span>
         </button>
 
         <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
-          <p style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.12em', color: 'var(--text-4)', textTransform: 'uppercase' as const }}>
-            Personal OS · v0.1
-          </p>
+          <p className="label" style={{ color: 'var(--text-4)' }}>Personal OS · v0.1</p>
         </div>
       </div>
     </>
