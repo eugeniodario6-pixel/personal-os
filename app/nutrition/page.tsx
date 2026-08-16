@@ -268,16 +268,30 @@ function NutritionContent() {
     if (!addCalories) { setAddError('CALORIES REQUIRED'); return; }
     haptic('medium');
     try {
+      const name = addName.trim();
+      const calories = parseFloat(addCalories) || 0;
+      const protein  = parseFloat(addProtein)  || 0;
+      const carbs    = parseFloat(addCarbs)    || 0;
+      const fat      = parseFloat(addFat)      || 0;
+      const serving  = parseFloat(addServing)  || 100;
+
       const foodId = await addFoodItem({
-        external_id: null, name: addName.trim(), brand: addBrand.trim() || null,
-        barcode: null, serving_unit: addServingUnit, serving_size: parseFloat(addServing) || 100,
-        calories: parseFloat(addCalories) || 0, protein: parseFloat(addProtein) || 0,
-        carbs: parseFloat(addCarbs) || 0, fat: parseFloat(addFat) || 0, is_favorite: false,
+        external_id: null, name, brand: addBrand.trim() || null,
+        barcode: null, serving_unit: addServingUnit, serving_size: serving,
+        calories, protein, carbs, fat, is_favorite: false,
       });
       await addMealLog({
         date: todayISO(), meal_type: addMealType, food_item_id: foodId,
         quantity: parseFloat(addQuantity) || 100, logged_at: new Date().toISOString(), source: 'manual',
       });
+
+      // Sync to shared sa_foods DB in the background — fire and forget
+      fetch('/api/food-contribute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, calories, protein, carbs, fat, serving_size: serving, serving_unit: addServingUnit }),
+      }).catch(() => {}); // silent — local log always succeeds regardless
+
       setAddName(''); setAddBrand(''); setAddCalories(''); setAddProtein('');
       setAddCarbs(''); setAddFat(''); setAddServing('100'); setAddQuantity('100');
       await load(); setMode('log'); router.replace('/nutrition');
