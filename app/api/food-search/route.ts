@@ -1,78 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Whole-food keywords that indicate a generic/unprocessed item
-const WHOLE_FOOD_TERMS = [
-  'raw', 'cooked', 'boiled', 'grilled', 'roasted', 'steamed', 'baked',
-  'fresh', 'whole', 'lean', 'ground', 'generic', 'usda',
-];
+const FATSECRET_TOKEN_URL = 'https://oauth.fatsecret.com/connect/token';
+const FATSECRET_SEARCH_URL = 'https://platform.fatsecret.com/rest/server.api';
 
-function isWholeFood(name: string, brands: string): boolean {
-  if (brands) return false; // has a brand = processed
-  const lower = name.toLowerCase();
-  // Single-word foods are usually whole foods (beef, apple, rice)
-  if (lower.split(' ').length <= 2) return true;
-  return WHOLE_FOOD_TERMS.some(t => lower.includes(t));
+let cachedToken: { value: string; expiresAt: number } | null = null;
+
+async function getAccessToken(): Promise<string> {
+  if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.value;
+
+  const clientId = process.env.FATSECRET_CLIENT_ID!;
+  const clientSecret = process.env.FATSECRET_CLIENT_SECRET!;
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+  const res = await fetch(FATSECRET_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials&scope=basic',
+  });
+
+  if (!res.ok) throw new Error(`FatSecret token error: ${res.status}`);
+  const data = await res.json();
+
+  cachedToken = {
+    value: data.access_token,
+    expiresAt: Date.now() + (data.expires_in - 60) * 1000,
+  };
+  return cachedToken.value;
+}
+
+interface FatSecretFood {
+  food_name: string;
+  brand_name?: string;
+  food_type: string;
+  servings?: {
+    serving: FatSecretServing | FatSecretServing[];
+  };
+}
+
+interface FatSecretServing {
+  serving_description: string;
+  metric_serving_amount?: string;
+  metric_serving_unit?: string;
+  calories?: string;
+  protein?: string;
+  carbohydrate?: string;
+  fat?: string;
+  is_default?: string;
+}
+
+function getDefaultServing(food: FatSecretFood): FatSecretServing | null {
+  if (!food.servings?.serving) return null;
+  const servings = Array.isArray(food.servings.serving)
+    ? food.servings.serving
+    : [food.servings.serving];
+  return servings.find(s => s.is_default === '1') ?? servings[0] ?? null;
 }
 
 export async function GET(request: NextRequest) {
-  const query = request.nextUrl.searchParams.get('q');
-  if (!query?.trim()) return NextResponse.json({ foods: [] });
+  const query = request.nextUrl.searchParams.get('q')?.trim();
+  if (!query) return NextResponse.json({ foods: [] });
 
   try {
-    const url = `https://world.openfoodfacts.org/cgi/search.pl` +
-      `?search_terms=${encodeURIComponent(query.trim())}` +
-      `&search_simple=1&action=process&json=1&page_size=20` +
-      `&fields=product_name,generic_name,brands,nutriments,serving_size,food_groups_tags` +
-      `&lc=en&cc=za&sort_by=unique_scans_n`;
+    const token = await getAccessToken();
 
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'PersonalOS/1.0' },
+    const params = new URLSearchParams({
+      method: 'foods.search',
+      search_expression: query,
+      format: 'json',
+      max_results: '20',
+      include_food_images: '0',
+      include_food_attributes: '0',
     });
 
-    const data = await res.json();
-    const products = data.products ?? [];
+    const res = await fetch(`${FATSECRET_SEARCH_URL}?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      next: { revalidate: 300 },
+    });
 
-    const foods = products
-      .filter((p: any) => {
-        const name = p.product_name || p.generic_name;
-        const cal = p.nutriments?.['energy-kcal_100g'];
-        return name && cal && cal > 0;
-      })
-      .map((p: any) => {
-        const name = (p.product_name || p.generic_name || '').trim();
-        const brand = (p.brands || '').split(',')[0].trim();
-        const cal   = Math.round(p.nutriments['energy-kcal_100g'] ?? 0);
-        const prot  = Math.round((p.nutriments['proteins_100g'] ?? 0) * 10) / 10;
-        const carbs = Math.round((p.nutriments['carbohydrates_100g'] ?? 0) * 10) / 10;
-        const fat   = Math.round((p.nutriments['fat_100g'] ?? 0) * 10) / 10;
-        const whole = isWholeFood(name, brand);
+    if (!res.ok) throw new Error(`FatSecret search error: ${res.status}`);
+    const data = await res.json();
+
+    const rawFoods: FatSecretFood[] = data?.foods?.food ?? [];
+
+    const foods = rawFoods
+      .map(f => {
+        const serving = getDefaultServing(f);
+        const cal = Math.round(parseFloat(serving?.calories ?? '0'));
+        const protein = Math.round((parseFloat(serving?.protein ?? '0')) * 10) / 10;
+        const carbs = Math.round((parseFloat(serving?.carbohydrate ?? '0')) * 10) / 10;
+        const fat = Math.round((parseFloat(serving?.fat ?? '0')) * 10) / 10;
+        const servingAmt = parseFloat(serving?.metric_serving_amount ?? '100');
+        const servingUnit = serving?.metric_serving_unit ?? 'g';
+
         return {
-          name,
-          brand,
-          isGeneric: whole,
+          name: f.food_name.slice(0, 80),
+          brand: f.brand_name ?? (f.food_type === 'Generic' ? 'Generic' : ''),
           calories: cal,
-          protein: prot,
+          protein,
           carbs,
           fat,
-          serving_size: 100,
-          serving_unit: 'g',
+          serving_size: servingAmt,
+          serving_unit: servingUnit,
         };
       })
-      // Whole foods first, then by calorie data quality
-      .sort((a: any, b: any) => {
-        if (a.isGeneric && !b.isGeneric) return -1;
-        if (!a.isGeneric && b.isGeneric) return 1;
-        return 0;
-      })
-      // Deduplicate by name
-      .filter((item: any, idx: number, arr: any[]) =>
-        arr.findIndex(x => x.name.toLowerCase() === item.name.toLowerCase()) === idx
-      )
-      .slice(0, 10);
+      .filter(f => f.name.length > 0 && f.calories > 0)
+      .slice(0, 12);
 
     return NextResponse.json({ foods });
-  } catch (err: any) {
-    console.error('[food-search]', err.message);
-    return NextResponse.json({ error: err.message, foods: [] }, { status: 500 });
+  } catch (err) {
+    console.error('[food-search]', err);
+    return NextResponse.json({ error: 'Search failed', foods: [] }, { status: 500 });
   }
 }
