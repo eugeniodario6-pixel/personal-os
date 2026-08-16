@@ -8,9 +8,9 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 async function getToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.value;
 
-  const creds = Buffer.from(
-    `${process.env.FATSECRET_CLIENT_ID}:${process.env.FATSECRET_CLIENT_SECRET}`
-  ).toString('base64');
+  const clientId = process.env.FATSECRET_CLIENT_ID || '91f84c88db6949f6b9f59c7a426721e6';
+  const clientSecret = process.env.FATSECRET_CLIENT_SECRET || 'bf8f48b599aa4a68974c280c58fb121b';
+  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
@@ -97,6 +97,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ foods });
   } catch (err: any) {
     console.error('[food-search]', err.message);
-    return NextResponse.json({ error: err.message, foods: [] }, { status: 500 });
+    return NextResponse.json({ error: err.message, foods: [], debug: err.message }, { status: 500 });
   }
 }
