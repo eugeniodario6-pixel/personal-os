@@ -85,32 +85,32 @@ export default function MeditationTimer({ session }: MeditationTimerProps) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '2rem', padding: '2rem' }}>
       <div style={{ textAlign: 'center', width: '100%' }}>
         <p className="label" style={{ marginBottom: '0.5rem' }}>{session.category}</p>
-        <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', fontFamily: "'IBM Plex Mono', monospace" }}>{session.name}</h1>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{session.name}</h1>
       </div>
-      <div style={{ textAlign: 'center', border: state === 'running' ? '2px solid #fff' : '2px solid #444', padding: '2rem 3rem', background: state === 'done' ? '#fff' : '#000' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '4rem', fontWeight: 700, letterSpacing: '-0.02em', color: state === 'done' ? '#000' : '#fff', lineHeight: 1 }}>
+      <div style={{ textAlign: 'center', border: state === 'running' ? '2px solid var(--text)' : '2px solid var(--border-strong)', padding: '2rem 3rem', background: state === 'done' ? 'var(--surface-2)' : 'var(--bg)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '4rem', fontWeight: 700, letterSpacing: '-0.02em', color: state === 'done' ? 'var(--positive)' : 'var(--text)', lineHeight: 1 }}>
           {state === 'done' ? 'DONE' : formatTime(minutes, seconds)}
         </div>
-        <div className="label" style={{ marginTop: '0.5rem', color: state === 'done' ? '#444' : '#888' }}>
+        <div className="label" style={{ marginTop: '0.5rem', color: state === 'done' ? 'var(--text-ghost)' : 'var(--text-muted)' }}>
           {state === 'idle' ? `${session.duration_min} MIN` : state === 'done' ? 'COMPLETE' : 'REMAINING'}
         </div>
       </div>
       {state === 'running' && (
-        <div style={{ width: '100%', maxWidth: '320px', height: '6px', background: '#111', border: '1px solid #444' }}>
-          <div style={{ height: '100%', background: '#fff', width: `${progress * 100}%` }} />
+        <div style={{ width: '100%', maxWidth: '320px', height: '6px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div style={{ height: '100%', background: 'var(--text)', width: `${progress * 100}%` }} />
         </div>
       )}
       <div style={{ display: 'flex', gap: '1rem' }}>
-        {state === 'idle' && <button className="btn-primary btn" onClick={handleStart}>START SESSION</button>}
+        {state === 'idle' && <button className="btn btn-primary" onClick={handleStart}>START SESSION</button>}
         {(state === 'running' || state === 'done') && (
           <button className="btn" onClick={handleStop}>{state === 'done' ? 'LOG & CLOSE' : 'STOP & LOG'}</button>
         )}
       </div>
       {session.instructions && state === 'idle' && (
-        <div style={{ border: '2px solid #111', padding: '1rem', maxWidth: '480px', width: '100%' }}>
+        <div style={{ border: '2px solid var(--border)', padding: '1rem', maxWidth: '480px', width: '100%' }}>
           <p className="label" style={{ marginBottom: '0.5rem' }}>INSTRUCTIONS</p>
           {session.instructions.split('\n').map((line, i) => (
-            <p key={i} style={{ fontSize: '0.8rem', color: '#888', lineHeight: 1.6, fontFamily: "'IBM Plex Mono', monospace", marginBottom: '0.25rem' }}>{line}</p>
+            <p key={i} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.6, fontFamily: 'var(--font-mono)', marginBottom: '0.25rem' }}>{line}</p>
           ))}
         </div>
       )}

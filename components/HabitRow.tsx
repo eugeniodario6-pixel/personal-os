@@ -31,18 +31,19 @@ export default function HabitRow({
         gap: '0.75rem',
         width: '100%',
         padding: '0.875rem 1rem',
-        background: completed ? '#111' : '#000',
+        background: completed ? 'var(--surface-2)' : 'var(--bg)',
         border: 'none',
-        borderBottom: '1px solid #111',
+        borderBottom: '1px solid var(--border)',
+        borderLeft: completed ? '2px solid var(--positive)' : '2px solid transparent',
         cursor: 'pointer',
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: 'var(--font-mono)',
         textAlign: 'left',
       }}
     >
       <span
         className="checkbox-text"
         style={{
-          color: completed ? '#fff' : '#444',
+          color: completed ? 'var(--positive)' : 'var(--text-ghost)',
           minWidth: '2.5rem',
           fontSize: '0.875rem',
         }}
@@ -54,9 +55,9 @@ export default function HabitRow({
         style={{
           flex: 1,
           fontSize: '0.875rem',
-          color: completed ? '#888' : '#fff',
+          color: completed ? 'var(--text-muted)' : 'var(--text)',
           textDecoration: completed ? 'line-through' : 'none',
-          fontFamily: "'IBM Plex Mono', monospace",
+          fontFamily: 'var(--font-mono)',
         }}
       >
         {name}
@@ -66,9 +67,9 @@ export default function HabitRow({
         <span
           style={{
             fontSize: '0.65rem',
-            color: '#888',
+            color: 'var(--text-muted)',
             letterSpacing: '0.1em',
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: 'var(--font-mono)',
           }}
         >
           {streak}D

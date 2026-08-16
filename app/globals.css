@@ -1,90 +1,106 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   DARK PREMIUM — Design System
-   Inspired by Nike Training / Whoop
-   True black · Warm amber accent · IBM Plex Mono · Size + weight hierarchy
+   PERSONAL OS — Design System
+   Terminal / Operator Dashboard
+   Reference: Linear, Vercel dashboard, mission-control instrument panel.
+   Dark, quiet, precise. Sans for chrome. Mono for measurement.
    ───────────────────────────────────────────────────────────────────────────── */
 
+/* ─── Fonts ──────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap');
+
 :root {
-  /* Core */
-  --black:        #000000;
-  --white:        #ffffff;
-  --amber:        #F5A623;
-  --amber-dim:    rgba(245, 166, 35, 0.15);
+  /* ── Backgrounds ── */
+  --bg:        #0A0B0D;   /* app background */
+  --surface:   #131519;   /* card / panel */
+  --surface-2: #1A1D22;   /* nested / inset */
 
-  /* Surfaces — layered depth */
-  --surface-0:    #000000;   /* true black — page bg */
-  --surface-1:    #0a0a0a;   /* cards, inputs */
-  --surface-2:    #111111;   /* elevated cards */
-  --surface-3:    #1a1a1a;   /* hover / active states */
+  /* ── Borders ── */
+  --border:        #23262C;   /* hairline — use everywhere */
+  --border-strong: #33373F;   /* active / focused element */
 
-  /* Borders */
-  --border-0:     #0d0d0d;   /* barely-there dividers */
-  --border-1:     #1a1a1a;   /* light section dividers */
-  --border-2:     #2a2a2a;   /* standard borders */
-  --border-3:     #3a3a3a;   /* prominent borders */
+  /* ── Text ── */
+  --text:       #E7E8EA;   /* primary */
+  --text-muted: #8A8F98;   /* secondary / labels */
+  --text-ghost: #4B4F57;   /* tertiary / disabled / placeholder */
 
-  /* Text */
-  --text-primary:   #ffffff;
-  --text-secondary: #888888;
-  --text-tertiary:  #444444;
-  --text-ghost:     #222222;
+  /* ── Accent ── */
+  --accent:     #E8A33D;   /* refined amber — THE accent */
+  --accent-dim: #8A6A2E;   /* low-emphasis accent */
 
-  /* Status */
-  --green:   #4ade80;
-  --red:     #f44336;
-  --blue:    #4ab8ff;
-  --yellow:  #e8ff00;
+  /* ── Status ── */
+  --positive: #3FB27F;   /* muted green */
+  --negative: #E5484D;   /* muted red */
 
-  /* Spacing */
+  /* ── Shape ── */
+  --radius:    4px;
+  --radius-sm: 2px;
+
+  /* ── Spacing ── */
   --page-pad: 1.25rem;
 
-  /* Radius — 0, we're sharp */
-  --radius: 0;
+  /* ── Typography ── */
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
-  border-radius: 0 !important;
   margin: 0;
   padding: 0;
 }
 
 html, body {
   height: 100%;
-  background: var(--black);
-  color: var(--text-primary);
-  font-family: 'IBM Plex Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Kill global transitions, allow opt-in */
+/* Opt-in transitions only — no global animation */
 *, *::before, *::after {
   transition: none;
   animation: none;
 }
-.t { transition: all 0.15s ease !important; }
-.t-slow { transition: all 0.3s ease !important; }
-.t-spring { transition: all 0.25s cubic-bezier(0.4,0,0.2,1) !important; }
+
+/* Motion classes */
+.t-fast   { transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out !important; }
+.t-medium { transition: background 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out, opacity 150ms ease-out !important; }
+.t-slide  { transition: transform 220ms cubic-bezier(0.4,0,0.2,1) !important; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .t-fast, .t-medium, .t-slide { transition: none !important; }
+  .num-tween { transition: none !important; }
+}
+
+/* Live-number tween */
+.num-tween { transition: opacity 150ms ease-out !important; }
+.num-tween.updating { opacity: 0.4; }
 
 /* ─── Typography ─────────────────────────────────────────────────────────────── */
 
-/* Hero numbers — the thing you read first */
+/* Mono — for all numeric data */
+.mono { font-family: var(--font-mono); }
+
+/* Hero number — the thing you read first */
 .num-hero {
-  font-size: clamp(3.5rem, 18vw, 6rem);
+  font-family: var(--font-mono);
+  font-size: clamp(3.5rem, 20vw, 7rem);
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 0.9;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
-/* Section numbers */
 .num-xl {
+  font-family: var(--font-mono);
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -0.04em;
@@ -92,6 +108,7 @@ html, body {
 }
 
 .num-lg {
+  font-family: var(--font-mono);
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -99,268 +116,309 @@ html, body {
 }
 
 .num-md {
+  font-family: var(--font-mono);
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-/* Page title */
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-  line-height: 1.1;
-}
-
-/* Section title */
-.section-title {
+.num-sm {
+  font-family: var(--font-mono);
   font-size: 0.875rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text-primary);
-  text-transform: uppercase;
 }
 
-/* Labels — metadata above numbers */
+/* Page title — sans */
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+/* Labels — always mono for instrument readability */
 .label {
+  font-family: var(--font-mono);
   font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
-.label-sm {
+.label-xs {
+  font-family: var(--font-mono);
   font-size: 0.55rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--text-ghost);
 }
 
-/* Body text */
-.body {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.body-sm {
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-  line-height: 1.6;
-}
+/* Body copy — sans */
+.body     { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; }
+.body-sm  { font-size: 0.75rem;  color: var(--text-ghost); line-height: 1.6; }
 
 /* ─── Colour utilities ───────────────────────────────────────────────────────── */
-.text-amber    { color: var(--amber) !important; }
-.text-white    { color: var(--text-primary) !important; }
-.text-dim      { color: var(--text-secondary) !important; }
-.text-ghost    { color: var(--text-tertiary) !important; }
-.text-green    { color: var(--green) !important; }
-.text-red      { color: var(--red) !important; }
-.text-yellow   { color: var(--yellow) !important; }
-.text-blue     { color: var(--blue) !important; }
+.text-accent   { color: var(--accent)   !important; }
+.text-positive { color: var(--positive) !important; }
+.text-negative { color: var(--negative) !important; }
+.text-muted    { color: var(--text-muted) !important; }
+.text-ghost    { color: var(--text-ghost) !important; }
+.text-primary  { color: var(--text) !important; }
 
-.bg-amber      { background: var(--amber) !important; color: #000 !important; }
-.bg-surface-1  { background: var(--surface-1) !important; }
-.bg-surface-2  { background: var(--surface-2) !important; }
-.bg-white      { background: #fff !important; color: #000 !important; }
+.bg-accent   { background: var(--accent)   !important; color: var(--bg) !important; }
+.bg-surface  { background: var(--surface)  !important; }
+.bg-surface2 { background: var(--surface-2)!important; }
 
 /* ─── Layout ─────────────────────────────────────────────────────────────────── */
 .page {
   min-height: 100dvh;
-  background: var(--black);
-  padding-bottom: 3rem; /* nav clearance */
+  background: var(--bg);
+  padding-bottom: 4rem;
 }
 
-/* Page header — top of every page */
+/* Page header */
 .page-header {
   padding: 1.5rem var(--page-pad) 1.25rem;
-  border-bottom: 1px solid var(--border-1);
-  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 
-/* Standard section */
+/* Section */
 .section {
   padding: 1.25rem var(--page-pad);
-  border-bottom: 1px solid var(--border-0);
+  border-bottom: 1px solid var(--border);
 }
 
-/* Section divider label */
+/* Section label row — dim surface, tiny label */
 .section-label {
-  padding: 0.6rem var(--page-pad);
-  border-bottom: 1px solid var(--border-0);
-  background: var(--surface-1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem var(--page-pad);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
-/* ─── Cards ──────────────────────────────────────────────────────────────────── */
+/* ─── Cards / Panels ─────────────────────────────────────────────────────────── */
 .card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem var(--page-pad);
 }
 
 .card-dark {
-  background: var(--surface-0);
-  border: 1px solid var(--border-1);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 1rem;
 }
 
-/* Stat cell — for grids of numbers */
+/* Inset panel — for nested content */
+.panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.875rem 1rem;
+}
+
+/* Stat grid */
+.stat-grid {
+  display: grid;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
 .stat-cell {
-  padding: 1rem 0.75rem;
-  border-right: 1px solid var(--border-0);
+  padding: 0.875rem 1rem;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
 }
 .stat-cell:last-child { border-right: none; }
 
-/* ─── Buttons ────────────────────────────────────────────────────────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 0.7rem 1.25rem;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  border: 1px solid var(--border-2);
-  background: var(--surface-0);
-  color: var(--text-secondary);
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease !important;
-}
-.btn:active { background: var(--surface-2); }
-
-/* Primary — white fill */
-.btn-primary {
-  background: var(--white);
-  color: var(--black);
-  border: 1px solid var(--white);
-}
-.btn-primary:active { opacity: 0.85; }
-
-/* Amber — accent CTA */
-.btn-amber {
-  background: var(--amber);
-  color: var(--black);
-  border: 1px solid var(--amber);
-  font-weight: 700;
-}
-.btn-amber:active { opacity: 0.85; }
-
-/* Ghost — barely visible */
-.btn-ghost {
-  border-color: var(--border-1);
-  color: var(--text-ghost);
-}
-.btn-ghost:active { border-color: var(--border-3); color: var(--text-secondary); }
-
-/* Full width */
-.btn-block {
-  width: 100%;
-  padding: 1rem 1.25rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.15em;
-}
-
-/* Small */
-.btn-sm {
-  font-size: 0.6rem;
-  padding: 0.45rem 0.875rem;
-  letter-spacing: 0.1em;
-}
-
-/* ─── Inputs ─────────────────────────────────────────────────────────────────── */
-input, select, textarea {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.875rem;
-  font-weight: 400;
-  background: var(--surface-1);
-  color: var(--text-primary);
-  border: 1px solid var(--border-2);
-  padding: 0.75rem 1rem;
-  width: 100%;
-  outline: none;
-  transition: border-color 0.15s ease !important;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--text-primary);
-}
-input::placeholder { color: var(--text-ghost); }
-select option { background: var(--surface-2); color: var(--text-primary); }
-
-/* ─── Progress bars ──────────────────────────────────────────────────────────── */
-.progress {
-  height: 2px;
+/* Active stat cell — left accent rule */
+.stat-cell.active {
   background: var(--surface-2);
-  position: relative;
-  overflow: hidden;
+  border-left: 2px solid var(--accent);
+  padding-left: calc(1rem - 2px);
 }
-.progress-fill {
-  height: 100%;
-  transition: width 0.6s cubic-bezier(0.4,0,0.2,1) !important;
-}
-.progress-thick {
-  height: 4px;
-  background: var(--surface-2);
-  position: relative;
-  overflow: hidden;
+
+/* ─── Signature element: left accent rule ───────────────────────────────────── */
+/* Applied to active nav items, selected tabs, active rows, etc. */
+.accent-rule {
+  border-left: 2px solid var(--accent) !important;
+  padding-left: calc(var(--page-pad) - 2px) !important;
 }
 
 /* ─── Rows ───────────────────────────────────────────────────────────────────── */
 .row {
   display: flex;
   align-items: center;
-  padding: 1rem var(--page-pad);
-  border-bottom: 1px solid var(--border-0);
+  padding: 0.875rem var(--page-pad);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
+  background: var(--bg);
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.1s ease !important;
+  transition: background 120ms ease-out !important;
 }
-.row:active { background: var(--surface-1); }
+.row:active { background: var(--surface); }
+
+/* Active row — left accent, no fill invert */
+.row.active {
+  border-left: 2px solid var(--accent);
+  padding-left: calc(var(--page-pad) - 2px);
+  background: var(--surface-2);
+}
 
 .row-compact {
   display: flex;
   align-items: center;
-  padding: 0.75rem var(--page-pad);
-  border-bottom: 1px solid var(--border-0);
+  padding: 0.6rem var(--page-pad);
+  border-bottom: 1px solid var(--border);
 }
 
-/* ─── Badges / Pills ─────────────────────────────────────────────────────────── */
+/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out !important;
+}
+.btn:active { background: var(--surface-2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Primary — accent fill */
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.btn-primary:active { opacity: 0.85; background: var(--accent); }
+
+/* Outline — transparent, text colour */
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-outline:active { border-color: var(--border-strong); background: var(--surface); }
+
+/* Ghost — barely visible */
+.btn-ghost {
+  border-color: transparent;
+  color: var(--text-ghost);
+  background: transparent;
+}
+.btn-ghost:active { color: var(--text-muted); background: var(--surface); }
+
+/* Block */
+.btn-block { width: 100%; padding: 0.875rem 1rem; font-size: 0.7rem; letter-spacing: 0.15em; }
+
+/* Small */
+.btn-sm { font-size: 0.58rem; padding: 0.4rem 0.75rem; letter-spacing: 0.1em; }
+
+/* ─── Inputs ─────────────────────────────────────────────────────────────────── */
+input, select, textarea {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 400;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.875rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 120ms ease-out !important;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--border-strong);
+}
+input::placeholder { color: var(--text-ghost); }
+select option { background: var(--surface-2); color: var(--text); }
+
+/* ─── Progress bars ──────────────────────────────────────────────────────────── */
+.progress {
+  height: 2px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width 600ms cubic-bezier(0.4,0,0.2,1) !important;
+}
+
+.progress-thick {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─── Badges / Tags ──────────────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
+  font-family: var(--font-mono);
   font-size: 0.5rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius-sm);
   border: 1px solid currentColor;
+  white-space: nowrap;
 }
 .badge-fill {
   border: none;
   background: currentColor;
 }
-.badge-fill span { color: #000; }
+.badge-fill span { color: var(--bg); }
 
-/* ─── Tab bar ────────────────────────────────────────────────────────────────── */
+/* Phase-specific */
+.phase-base  { color: #4ab8ff; }
+.phase-build { color: #e8ff00; }
+.phase-camp  { color: var(--accent); }
+.phase-taper { color: var(--text-muted); }
+
+/* ─── Tab bars ───────────────────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
-  border-bottom: 1px solid var(--border-1);
-  background: var(--surface-0);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
+
 .tab {
   flex: 1;
   min-width: max-content;
-  padding: 0.875rem 1rem;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.6rem;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -371,122 +429,125 @@ select option { background: var(--surface-2); color: var(--text-primary); }
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  transition: color 0.1s ease, border-color 0.1s ease !important;
+  border-left: 2px solid transparent;
+  transition: color 120ms ease-out, border-color 120ms ease-out !important;
   -webkit-tap-highlight-color: transparent;
 }
-.tab.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--text-primary);
-}
-.tab.active-amber {
-  color: var(--amber);
-  border-bottom-color: var(--amber);
-}
 
-/* ─── Phase badges ───────────────────────────────────────────────────────────── */
-.phase-base  { background: #4ab8ff; color: #000; }
-.phase-build { background: #e8ff00; color: #000; }
-.phase-camp  { background: #F5A623; color: #000; }
-.phase-taper { background: #888888; color: #000; }
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  border-left-color: transparent;
+}
 
 /* ─── Nav ────────────────────────────────────────────────────────────────────── */
 .nav-drawer {
   position: fixed;
   top: 0; right: 0; bottom: 0;
   width: 72vw; max-width: 280px;
-  background: var(--surface-0);
-  border-left: 1px solid var(--border-1);
+  background: var(--bg);
+  border-left: 1px solid var(--border);
   z-index: 199;
   display: flex;
   flex-direction: column;
   padding-top: 5rem;
-  transition: transform 0.22s cubic-bezier(0.4,0,0.2,1) !important;
+  transition: transform 220ms cubic-bezier(0.4,0,0.2,1) !important;
 }
+
 .nav-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem 1.5rem;
-  border-bottom: 1px solid var(--border-0);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  border-left: 2px solid transparent;
   cursor: pointer;
   background: transparent;
-  border-left: 2px solid transparent;
-  transition: background 0.1s ease, border-color 0.1s ease !important;
-  -webkit-tap-highlight-color: transparent;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-sans);
   text-align: left;
   width: 100%;
+  transition: background 120ms ease-out, border-color 120ms ease-out !important;
+  -webkit-tap-highlight-color: transparent;
 }
-.nav-item:active { background: var(--surface-1); }
+.nav-item:active { background: var(--surface); }
+
+/* Active nav item — left accent rule, not full-white-invert */
 .nav-item.active {
-  background: var(--white);
-  border-left-color: var(--amber);
+  border-left-color: var(--accent);
+  background: var(--surface-2);
 }
+
 .nav-label {
   font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text);
 }
-.nav-item.active .nav-label { color: var(--black); }
 .nav-sub {
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 0.6rem;
+  font-weight: 500;
   color: var(--text-ghost);
   margin-top: 0.1rem;
+  letter-spacing: 0.05em;
 }
-.nav-item.active .nav-sub { color: #555; }
 
 /* Menu button */
 .menu-btn {
   position: fixed;
   top: 1rem; right: 1rem;
   z-index: 200;
-  width: 2.75rem; height: 2.75rem;
-  background: var(--surface-1);
-  border: 1px solid var(--border-2);
+  width: 2.5rem; height: 2.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   cursor: pointer;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
   padding: 10px;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.1s ease !important;
+  transition: background 120ms ease-out, border-color 120ms ease-out !important;
 }
-.menu-btn.open { background: var(--white); }
+.menu-btn.open {
+  background: var(--accent);
+  border-color: var(--accent);
+}
 .menu-btn-dot {
   display: block;
-  background: var(--white);
+  background: var(--text-muted);
+  border-radius: 1px;
   width: 100%; height: 100%;
 }
-.menu-btn.open .menu-btn-dot { background: var(--black); }
+.menu-btn.open .menu-btn-dot { background: var(--bg); }
 
 /* ─── Habit rows ─────────────────────────────────────────────────────────────── */
 .habit-row {
   display: flex;
   align-items: center;
-  padding: 1.1rem var(--page-pad);
-  border-bottom: 1px solid var(--border-0);
+  padding: 1rem var(--page-pad);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
+  background: var(--bg);
+  border-left: 2px solid transparent;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s ease !important;
+  transition: background 120ms ease-out, border-color 120ms ease-out !important;
 }
-.habit-row:active { background: var(--surface-1); }
-.habit-row.done { background: var(--white); }
+.habit-row:active { background: var(--surface); }
+.habit-row.done {
+  background: var(--surface-2);
+  border-left-color: var(--positive);
+}
 
-/* ─── Streak badge ───────────────────────────────────────────────────────────── */
-.streak { color: var(--amber); font-size: 0.7rem; font-weight: 700; }
+/* ─── Score / Status ─────────────────────────────────────────────────────────── */
+.streak { font-family: var(--font-mono); color: var(--accent); font-size: 0.7rem; font-weight: 700; }
 .streak.cold { color: var(--text-ghost); }
 
 /* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 2px; height: 2px; }
-::-webkit-scrollbar-track { background: var(--black); }
-::-webkit-scrollbar-thumb { background: var(--surface-2); }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 1px; }
 
-/* ─── Utilities ──────────────────────────────────────────────────────────────── */
-.divider { border: none; border-top: 1px solid var(--border-0); }
-.divider-2 { border: none; border-top: 1px solid var(--border-1); }
-.amber { color: var(--amber) !important; }
-.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* ─── Utility ────────────────────────────────────────────────────────────────── */
+.divider     { border: none; border-top: 1px solid var(--border); }
+.truncate    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sr-only     { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }

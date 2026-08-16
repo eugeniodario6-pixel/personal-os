@@ -15,6 +15,15 @@ export interface Profile {
   units: 'metric' | 'imperial';
   non_numeric_mode: boolean;
   timezone: string;
+  // Diet profile fields
+  height_cm: number | null;
+  current_weight_kg: number | null;
+  ideal_weight_lbs: number | null;
+  protein_target_g: number | null;
+  carb_percent: number | null;
+  carb_target_g: number | null;
+  fat_target_g: number | null;
+  score_weights: { protein: number; calories: number; carbs: number; fat: number } | null;
 }
 
 export interface FoodItem {
@@ -151,6 +160,14 @@ export async function getProfile(): Promise<Profile | null> {
     units: data.units,
     non_numeric_mode: data.non_numeric_mode,
     timezone: data.timezone,
+    height_cm: data.height_cm ?? null,
+    current_weight_kg: data.current_weight_kg ?? null,
+    ideal_weight_lbs: data.ideal_weight_lbs ?? null,
+    protein_target_g: data.protein_target_g ?? null,
+    carb_percent: data.carb_percent ?? null,
+    carb_target_g: data.carb_target_g ?? null,
+    fat_target_g: data.fat_target_g ?? null,
+    score_weights: data.score_weights ?? null,
   };
 }
 
@@ -167,6 +184,12 @@ export async function upsertProfile(p: Omit<Profile, 'id' | 'user_id'>): Promise
     units: p.units,
     non_numeric_mode: p.non_numeric_mode,
     timezone: p.timezone,
+    ...(p.height_cm != null ? { height_cm: p.height_cm } : {}),
+    ...(p.current_weight_kg != null ? { current_weight_kg: p.current_weight_kg } : {}),
+    ...(p.ideal_weight_lbs != null ? { ideal_weight_lbs: p.ideal_weight_lbs } : {}),
+    ...(p.protein_target_g != null ? { protein_target_g: p.protein_target_g } : {}),
+    ...(p.carb_percent != null ? { carb_percent: p.carb_percent } : {}),
+    ...(p.score_weights != null ? { score_weights: p.score_weights } : {}),
   }, { onConflict: 'user_id' });
 }
 
@@ -483,16 +506,28 @@ export async function seedUserData(): Promise<void> {
     .eq('user_id', userId);
 
   if (!pCount || pCount === 0) {
+    // Default diet profile per brief spec
+    const calTarget = 1800;
+    const carbPct = 0.05;
+    const proteinTargetG = 176;
+    const carbTargetG = Math.round(calTarget * carbPct / 4);
+    const fatTargetG = Math.round((calTarget - proteinTargetG * 4 - carbTargetG * 4) / 9);
     await supabase.from('profile').insert({
       user_id: userId,
-      calorie_target: 2000,
-      macro_protein: 150,
-      macro_carbs: 200,
-      macro_fat: 65,
+      calorie_target: calTarget,
+      macro_protein: proteinTargetG,
+      macro_carbs: carbTargetG,
+      macro_fat: fatTargetG,
       weight_goal: null,
       units: 'metric',
       non_numeric_mode: false,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      height_cm: 175,
+      current_weight_kg: 92,
+      ideal_weight_lbs: 176,
+      protein_target_g: proteinTargetG,
+      carb_percent: carbPct,
+      score_weights: { protein: 0.4, calories: 0.3, carbs: 0.2, fat: 0.1 },
     });
   }
 }
@@ -666,4 +701,171 @@ export async function getMainLifts(): Promise<Exercise[]> {
   const { data } = await supabase.from('exercises')
     .select('*').eq('is_main_lift', true).order('name');
   return data ?? [];
+}
+
+// ── Daily Score ────────────────────────────────────────────────────────────────
+
+export interface DailyScore {
+  id: number;
+  user_id: string;
+  date: string;
+  calories_actual: number;
+  protein_actual: number;
+  carbs_actual: number;
+  fat_actual: number;
+  protein_score: number;
+  calorie_score: number;
+  carb_score: number;
+  fat_score: number;
+  total_score: number;
+  computed_at: string;
+}
+
+export interface GroceryItem {
+  id: number;
+  user_id: string;
+  name: string;
+  quantity_grams: number | null;
+  purchased: boolean;
+  added_at: string;
+  week_of: string;
+}
+
+// Compute and upsert daily score for a given date
+export async function computeDailyScore(date: string): Promise<DailyScore | null> {
+  const userId = await getUserId();
+  const [logs, profile] = await Promise.all([getMealLogs(date), getProfile()]);
+  if (!profile) return null;
+
+  const actuals = logs.reduce((acc, l) => {
+    if (!l.food) return acc;
+    const r = l.quantity / l.food.serving_size;
+    return {
+      calories: acc.calories + l.food.calories * r,
+      protein:  acc.protein  + l.food.protein  * r,
+      carbs:    acc.carbs    + l.food.carbs    * r,
+      fat:      acc.fat      + l.food.fat      * r,
+    };
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+  const w = { protein: 0.4, calories: 0.3, carbs: 0.2, fat: 0.1 };
+  const pt = profile.macro_targets.protein;
+  const ct = profile.calorie_target;
+  const carbT = profile.macro_targets.carbs;
+  const fatT = profile.macro_targets.fat;
+
+  // Protein: proportional up to 100
+  const proteinScore = Math.min(100, (actuals.protein / pt) * 100);
+
+  // Calories: 100 at/under, 1.5x penalty over, light penalty if >10% under
+  let calScore = 100;
+  if (actuals.calories > ct) {
+    const overPct = (actuals.calories - ct) / ct;
+    calScore = Math.max(0, 100 - overPct * 150);
+  } else if (actuals.calories < ct * 0.9) {
+    const underPct = (ct * 0.9 - actuals.calories) / (ct * 0.9);
+    calScore = Math.max(0, 100 - underPct * 50);
+  }
+
+  // Carbs: 100 at/under, 2x penalty over
+  let carbScore = 100;
+  if (actuals.carbs > carbT) {
+    const overPct = (actuals.carbs - carbT) / carbT;
+    carbScore = Math.max(0, 100 - overPct * 200);
+  }
+
+  // Fat: 100 within ±15% of target, tapering outside
+  const fatDiff = Math.abs(actuals.fat - fatT) / fatT;
+  const fatScore = fatDiff <= 0.15 ? 100 : Math.max(0, 100 - (fatDiff - 0.15) * 200);
+
+  const total = Math.round(
+    proteinScore * w.protein +
+    calScore     * w.calories +
+    carbScore    * w.carbs +
+    fatScore     * w.fat
+  );
+
+  const row = {
+    user_id: userId, date,
+    calories_actual: Math.round(actuals.calories),
+    protein_actual:  Math.round(actuals.protein * 10) / 10,
+    carbs_actual:    Math.round(actuals.carbs * 10) / 10,
+    fat_actual:      Math.round(actuals.fat * 10) / 10,
+    protein_score:   Math.round(proteinScore),
+    calorie_score:   Math.round(calScore),
+    carb_score:      Math.round(carbScore),
+    fat_score:       Math.round(fatScore),
+    total_score:     total,
+    computed_at:     new Date().toISOString(),
+  };
+
+  await supabase.from('daily_score').upsert(row, { onConflict: 'user_id,date' });
+  return { id: 0, ...row } as DailyScore;
+}
+
+export async function getDailyScores(days: number): Promise<DailyScore[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('daily_score')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+    .limit(days);
+  return data ?? [];
+}
+
+export async function getDailyScore(date: string): Promise<DailyScore | null> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('daily_score')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .single();
+  return data ?? null;
+}
+
+// ── Grocery List ───────────────────────────────────────────────────────────────
+
+export function currentWeekOf(): string {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  return monday.toISOString().split('T')[0];
+}
+
+export async function getGroceryItems(weekOf?: string): Promise<GroceryItem[]> {
+  const userId = await getUserId();
+  const week = weekOf ?? currentWeekOf();
+  const { data } = await supabase
+    .from('grocery_item')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('week_of', week)
+    .order('added_at', { ascending: true });
+  return data ?? [];
+}
+
+export async function addGroceryItem(name: string, quantityGrams: number | null): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('grocery_item').insert({
+    user_id: userId,
+    name: name.trim(),
+    quantity_grams: quantityGrams,
+    purchased: false,
+    week_of: currentWeekOf(),
+  });
+}
+
+export async function toggleGroceryItem(id: number): Promise<void> {
+  const { data } = await supabase.from('grocery_item').select('purchased').eq('id', id).single();
+  if (data) await supabase.from('grocery_item').update({ purchased: !data.purchased }).eq('id', id);
+}
+
+export async function clearPurchasedGroceries(weekOf?: string): Promise<void> {
+  const userId = await getUserId();
+  const week = weekOf ?? currentWeekOf();
+  await supabase.from('grocery_item').delete()
+    .eq('user_id', userId).eq('week_of', week).eq('purchased', true);
 }

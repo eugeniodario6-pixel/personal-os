@@ -11,11 +11,7 @@ import {
 import { haptic } from '@/lib/haptic';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
-const MONO = "'IBM Plex Mono', monospace";
-
-const PHASE_COLOR: Record<string, string> = {
-  Base: '#4ab8ff', Build: '#e8ff00', Camp: '#F5A623', Taper: '#888888',
-};
+const MONO = 'var(--font-mono)';
 
 const PHASE_CLASS: Record<string, string> = {
   Base: 'phase-base', Build: 'phase-build', Camp: 'phase-camp', Taper: 'phase-taper',
@@ -32,11 +28,11 @@ const LIFTS = [
 const SESSION_TYPES = ['strength', 'cardio', 'boxing', 'agility'] as const;
 type SessionType = typeof SESSION_TYPES[number];
 
-const SESSION_META: Record<SessionType, { label: string; color: string }> = {
-  strength: { label: 'STRENGTH',     color: '#e8ff00' },
-  cardio:   { label: 'CARDIO',       color: '#f44336' },
-  boxing:   { label: 'PAD & BOXING', color: '#F5A623' },
-  agility:  { label: 'AGILITY / BW', color: '#4ab8ff' },
+const SESSION_META: Record<SessionType, { label: string; colorClass: string }> = {
+  strength: { label: 'STRENGTH',     colorClass: 'phase-build' },
+  cardio:   { label: 'CARDIO',       colorClass: 'text-negative' },
+  boxing:   { label: 'PAD & BOXING', colorClass: 'phase-camp' },
+  agility:  { label: 'AGILITY / BW', colorClass: 'phase-base' },
 };
 
 interface SetEntry { actual_weight: string; reps: string; rpe: string; }
@@ -63,22 +59,22 @@ function ExerciseCard({ ex, prescribed, children }: {
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: '1px solid var(--border-0)' }}>
+    <div style={{ borderBottom: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', padding: '1rem 1.25rem', gap: '0.75rem' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' as const }}>
-            <p style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.875rem', fontFamily: MONO }}>
+            <p style={{ margin: 0, fontWeight: 700, color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font-mono)' }}>
               {ex.name.toUpperCase()}
             </p>
             {prescribed != null && (
-              <span className="badge bg-amber" style={{ fontSize: '0.5rem', flexShrink: 0 }}>
+              <span className="badge text-accent" style={{ fontSize: '0.5rem', flexShrink: 0 }}>
                 {prescribed} KG
               </span>
             )}
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <span className="label-sm">{ex.primary_target}</span>
-            <span className="label-sm">{ex.equipment}</span>
+            <span className="label">{ex.primary_target}</span>
+            <span className="label">{ex.equipment}</span>
           </div>
         </div>
         <button
@@ -93,13 +89,13 @@ function ExerciseCard({ ex, prescribed, children }: {
       {open && (
         <div style={{ padding: '0 1.25rem 1.25rem' }}>
           {ex.cues && (
-            <div className="card-dark" style={{ marginBottom: '0.75rem', borderLeft: '2px solid var(--amber)' }}>
-              <p className="label" style={{ color: 'var(--amber)', marginBottom: '0.35rem' }}>CUES</p>
-              <p className="body-sm" style={{ margin: 0, fontFamily: MONO, lineHeight: 1.6 }}>{ex.cues}</p>
+            <div className="card-dark" style={{ marginBottom: '0.75rem', borderLeft: '2px solid var(--accent)' }}>
+              <p className="label" style={{ color: 'var(--accent)', marginBottom: '0.35rem' }}>CUES</p>
+              <p className="body-sm" style={{ margin: 0, fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>{ex.cues}</p>
             </div>
           )}
           {ex.how_to && (
-            <p className="body" style={{ margin: 0, fontFamily: MONO, lineHeight: 1.7 }}>{ex.how_to}</p>
+            <p className="body" style={{ margin: 0, fontFamily: 'var(--font-mono)', lineHeight: 1.7 }}>{ex.how_to}</p>
           )}
         </div>
       )}
@@ -174,7 +170,19 @@ export default function PlanPage() {
   }, [activeSession]);
 
   const hasSetup = lifts.length > 0;
-  const phaseColor = plan ? (PHASE_COLOR[plan.phase] ?? '#fff') : '#fff';
+
+  // Determine phase color using CSS class approach
+  function getPhaseColorVar(phase: string | undefined): string {
+    switch (phase) {
+      case 'Base':  return 'var(--positive)'; // blue mapped → positive (no blue token)
+      case 'Build': return 'var(--accent-dim)';
+      case 'Camp':  return 'var(--accent)';
+      case 'Taper': return 'var(--text-muted)';
+      default:      return 'var(--text)';
+    }
+  }
+
+  const phaseColorVar = plan ? getPhaseColorVar(plan.phase) : 'var(--text)';
 
   function getPrescribedWeight(liftName: string): number | null {
     if (!plan) return null;
@@ -281,7 +289,7 @@ export default function PlanPage() {
         <div>
           <p className="label" style={{ marginBottom: '0.3rem' }}>PROGRAMME SETUP</p>
           <h1 className="page-title">STARTING WEIGHTS</h1>
-          <p className="body-sm" style={{ marginTop: '0.4rem', fontFamily: MONO }}>
+          <p className="body-sm" style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)' }}>
             Weight you can lift for 5 clean reps today.<br />Programme auto-calculates from here.
           </p>
         </div>
@@ -291,12 +299,12 @@ export default function PlanPage() {
         {LIFTS.map(l => {
           const ex = getExerciseByName(l.key);
           return (
-            <div key={l.key} style={{ paddingBottom: '0.875rem', borderBottom: '1px solid var(--border-1)' }}>
+            <div key={l.key} style={{ paddingBottom: '0.875rem', borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                <p className="label" style={{ color: 'var(--text-primary)' }}>{l.key.toUpperCase()}</p>
+                <p className="label" style={{ color: 'var(--text)' }}>{l.key.toUpperCase()}</p>
                 <span className="label">+{l.increment}kg/week</span>
               </div>
-              {ex && <p className="label-sm" style={{ marginBottom: '0.5rem' }}>{ex.primary_target} · {ex.equipment}</p>}
+              {ex && <p className="label-xs" style={{ marginBottom: '0.5rem' }}>{ex.primary_target} · {ex.equipment}</p>}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <input
                   type="number"
@@ -324,7 +332,7 @@ export default function PlanPage() {
         <div>
           <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()} · {todayLabel()}</p>
           <h1 className="page-title">STRENGTH</h1>
-          <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: phaseColor }}>
+          <p style={{ margin: '0.2rem 0 0', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: phaseColorVar }}>
             {plan?.strength_prescription} — {prescribedReps} REPS PER SET
           </p>
         </div>
@@ -344,7 +352,7 @@ export default function PlanPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1.5rem 1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.35rem' }}>
                       <span />
                       {['WEIGHT (KG)', 'REPS', 'RPE'].map(h => (
-                        <span key={h} className="label-sm">{h}</span>
+                        <span key={h} className="label-xs">{h}</span>
                       ))}
                     </div>
                     {liftSets.map((s, idx) => (
@@ -369,15 +377,15 @@ export default function PlanPage() {
                     ))}
                   </div>
                 </ExerciseCard>
-              : <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-0)' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>{l.key.toUpperCase()}</p>
+              : <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--text)' }}>{l.key.toUpperCase()}</p>
                 </div>
             }
           </div>
         );
       })}
 
-      <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-strong)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
           <div>
             <p className="label" style={{ marginBottom: '0.3rem' }}>SESSION RPE</p>
@@ -404,15 +412,15 @@ export default function PlanPage() {
           <div>
             <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
             <h1 className="page-title">CARDIO</h1>
-            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: '#f44336' }}>{plan?.cardio_protocol?.toUpperCase()}</p>
+            <p style={{ margin: '0.2rem 0 0', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--negative)' }}>{plan?.cardio_protocol?.toUpperCase()}</p>
           </div>
           {backBtn(() => setActiveSession(null))}
         </div>
 
         {/* Prescribed detail */}
-        <div className="section" style={{ background: 'var(--surface-1)' }}>
-          <p className="label" style={{ marginBottom: '0.3rem', color: '#f44336' }}>PRESCRIBED</p>
-          <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: MONO }}>{plan?.cardio_detail}</p>
+        <div className="section" style={{ background: 'var(--surface)' }}>
+          <p className="label" style={{ marginBottom: '0.3rem', color: 'var(--negative)' }}>PRESCRIBED</p>
+          <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{plan?.cardio_detail}</p>
         </div>
 
         {/* Protocol how-to */}
@@ -453,13 +461,13 @@ export default function PlanPage() {
           <div>
             <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
             <h1 className="page-title">PAD & BOXING</h1>
-            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: 'var(--amber)' }}>{plan?.boxing_focus}</p>
+            <p style={{ margin: '0.2rem 0 0', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--accent)' }}>{plan?.boxing_focus}</p>
           </div>
           {backBtn(() => setActiveSession(null))}
         </div>
         {shadowEx && <ExerciseCard ex={shadowEx} />}
         {bagEx && <ExerciseCard ex={bagEx} />}
-        <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-strong)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
             <div>
               <p className="label" style={{ marginBottom: '0.3rem' }}>SHADOW (ROUNDS)</p>
@@ -495,12 +503,12 @@ export default function PlanPage() {
           <div>
             <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
             <h1 className="page-title">AGILITY / BW</h1>
-            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: '#4ab8ff' }}>{plan?.agility_focus}</p>
+            <p style={{ margin: '0.2rem 0 0', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }} className="phase-base">{plan?.agility_focus}</p>
           </div>
           {backBtn(() => setActiveSession(null))}
         </div>
         {agilityExs.map(ex => <ExerciseCard key={ex.id} ex={ex} />)}
-        <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-strong)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
             {[['LADDER', 'ladder'], ['CONES', 'cones']].map(([label, key]) => (
               <button key={key} onClick={() => sf(key, !simpleFields[key as keyof typeof simpleFields])}
@@ -565,30 +573,30 @@ export default function PlanPage() {
           <div>
             <p className="label" style={{ marginBottom: '0.15rem' }}>WEEK</p>
             <p className="num-xl" style={{ margin: 0 }}>{week}</p>
-            <p className="label-sm" style={{ marginTop: '0.1rem' }}>OF 26</p>
+            <p className="label-xs" style={{ marginTop: '0.1rem' }}>OF 26</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <span className={`badge badge-fill ${PHASE_CLASS[plan?.phase ?? ''] ?? ''}`} style={{ alignSelf: 'flex-start' }}>
               <span>{plan?.phase?.toUpperCase()}</span>
             </span>
             {plan?.is_deload && (
-              <span className="badge" style={{ alignSelf: 'flex-start', color: 'var(--text-secondary)' }}>DELOAD</span>
+              <span className="badge text-muted" style={{ alignSelf: 'flex-start' }}>DELOAD</span>
             )}
           </div>
         </div>
 
         {/* Prescribed weight strip */}
         {plan && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', border: '1px solid var(--border-1)', background: 'var(--surface-1)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', border: '1px solid var(--border)', background: 'var(--surface)' }}>
             {LIFTS.map((l) => {
               const pw = getPrescribedWeight(l.key);
               return (
                 <div key={l.key} className="stat-cell" style={{ textAlign: 'center' }}>
-                  <p className="label-sm" style={{ marginBottom: '0.2rem' }}>{l.key.split(' ')[0].toUpperCase()}</p>
-                  <p className="num-md" style={{ margin: 0, color: pw ? phaseColor : 'var(--text-ghost)' }}>
+                  <p className="label-xs" style={{ marginBottom: '0.2rem' }}>{l.key.split(' ')[0].toUpperCase()}</p>
+                  <p className="num-md" style={{ margin: 0, color: pw ? phaseColorVar : 'var(--text-ghost)' }}>
                     {pw ? `${pw}` : '—'}
                   </p>
-                  <p className="label-sm" style={{ marginTop: '0.1rem' }}>kg</p>
+                  <p className="label-xs" style={{ marginTop: '0.1rem' }}>kg</p>
                 </div>
               );
             })}
@@ -600,7 +608,7 @@ export default function PlanPage() {
       {!sessionDone(nextSession) && (
         <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="label">UP NEXT</span>
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: SESSION_META[nextSession].color, fontFamily: MONO, letterSpacing: '0.1em' }}>
+          <span className={`label ${SESSION_META[nextSession].colorClass}`} style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>
             {SESSION_META[nextSession].label}
           </span>
         </div>
@@ -626,25 +634,25 @@ export default function PlanPage() {
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               width: '100%', padding: '1.25rem var(--page-pad)',
-              background: isNext ? 'var(--surface-1)' : 'var(--surface-0)',
-              border: 'none', borderBottom: '1px solid var(--border-0)',
+              background: isNext ? 'var(--surface)' : 'var(--bg)',
+              border: 'none', borderBottom: '1px solid var(--border)',
               cursor: done ? 'default' : 'pointer',
-              textAlign: 'left' as const, fontFamily: MONO,
-              borderLeft: isNext ? `3px solid #F5A623` : '3px solid transparent',
+              textAlign: 'left' as const, fontFamily: 'var(--font-mono)',
+              borderLeft: isNext ? '3px solid var(--accent)' : '3px solid transparent',
             }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-                <span style={{ fontWeight: 700, color: done ? 'var(--text-ghost)' : 'var(--text-primary)', fontSize: '0.875rem' }}>
+                <span style={{ fontWeight: 700, color: done ? 'var(--text-ghost)' : 'var(--text)', fontSize: '0.875rem' }}>
                   {meta.label}
                 </span>
                 {done
-                  ? <span className="badge" style={{ color: 'var(--green)' }}>DONE</span>
-                  : isNext && <span className="badge" style={{ color: '#F5A623' }}>TODAY</span>
+                  ? <span className="badge text-positive">DONE</span>
+                  : isNext && <span className="badge text-accent">TODAY</span>
                 }
               </div>
-              <p className="label" style={{ margin: 0, color: done ? 'var(--text-ghost)' : 'var(--text-tertiary)' }}>{sub[type]}</p>
+              <p className="label" style={{ margin: 0, color: done ? 'var(--text-ghost)' : 'var(--text-muted)' }}>{sub[type]}</p>
             </div>
-            <span style={{ color: done ? 'var(--text-ghost)' : 'var(--text-secondary)', fontSize: done ? '0.875rem' : '1.1rem' }}>
+            <span style={{ color: done ? 'var(--text-ghost)' : 'var(--text-muted)', fontSize: done ? '0.875rem' : '1.1rem' }}>
               {done ? '✓' : '→'}
             </span>
           </button>
@@ -652,7 +660,7 @@ export default function PlanPage() {
       })}
 
       {/* Week nav */}
-      <div style={{ display: 'flex', borderTop: '2px solid var(--border-2)', marginTop: '0.5rem' }}>
+      <div style={{ display: 'flex', borderTop: '2px solid var(--border-strong)', marginTop: '0.5rem' }}>
         {[
           { label: '← PREV', fn: () => setWeek(w => Math.max(1, w - 1)), active: week > 1 },
           { label: `W${getCurrentTrainingWeek()}`, fn: () => setWeek(getCurrentTrainingWeek()), active: true },
@@ -660,7 +668,7 @@ export default function PlanPage() {
         ].map((b, i) => (
           <button key={i} onClick={b.fn}
             className="btn btn-ghost"
-            style={{ flex: 1, padding: '0.75rem', borderRight: i < 2 ? '1px solid var(--border-0)' : 'none', color: b.active ? 'var(--text-secondary)' : 'var(--text-ghost)' }}>
+            style={{ flex: 1, padding: '0.75rem', borderRight: i < 2 ? '1px solid var(--border)' : 'none', color: b.active ? 'var(--text-muted)' : 'var(--text-ghost)' }}>
             {b.label}
           </button>
         ))}

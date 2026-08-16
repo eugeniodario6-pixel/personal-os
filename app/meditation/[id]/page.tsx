@@ -4,10 +4,6 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getMeditationSession, addMeditationLog, todayISO, type MeditationSession } from '@/lib/db';
 
-const MONO = "'IBM Plex Mono', monospace";
-const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
-const border2 = '2px solid #444';
-
 export default function MeditationPlayerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -100,59 +96,59 @@ export default function MeditationPlayerPage() {
   const instructions = (session?.instructions ?? '').split('\n').filter(Boolean);
 
   return (
-    <div style={{ fontFamily: MONO }}>
-      <div style={{ padding: '0.75rem 1rem', borderBottom: border2, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    <div style={{ fontFamily: 'var(--font-mono)' }}>
+      <div style={{ padding: '0.75rem 1rem', borderBottom: '2px solid var(--border-strong)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <button onClick={() => { if (running) stop(); else router.push('/meditation'); }}
-          style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.4rem 0.75rem', background: '#000', border: '2px solid #444', color: '#888', cursor: 'pointer', fontFamily: MONO }}>
+          style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.4rem 0.75rem', background: 'var(--bg)', border: '2px solid var(--border-strong)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
           ← BACK
         </button>
-        <span style={lbl}>{session?.category?.toUpperCase() ?? ''}</span>
+        <span className="label">{session?.category?.toUpperCase() ?? ''}</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '2rem', padding: '2rem' }}>
         <div style={{ textAlign: 'center', width: '100%' }}>
-          <p style={{ ...lbl, marginBottom: '0.5rem' }}>{session?.category?.toUpperCase() ?? ''}</p>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>{session?.name ?? ''}</h1>
+          <p className="label" style={{ marginBottom: '0.5rem' }}>{session?.category?.toUpperCase() ?? ''}</p>
+          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text)' }}>{session?.name ?? ''}</h1>
         </div>
 
-        <div style={{ textAlign: 'center', padding: '2rem 3rem', border: running ? '2px solid #fff' : border2, background: done ? '#fff' : '#000' }}>
-          <div style={{ fontSize: '4rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: done ? '#000' : '#fff' }}>
+        <div style={{ textAlign: 'center', padding: '2rem 3rem', border: running ? '2px solid var(--text)' : '2px solid var(--border-strong)', background: done ? 'var(--surface-2)' : 'var(--bg)' }}>
+          <div style={{ fontSize: '4rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, color: done ? 'var(--positive)' : 'var(--text)' }}>
             {done ? 'DONE' : timerText}
           </div>
-          <div style={{ marginTop: '0.5rem', ...lbl, color: done ? '#444' : '#888' }}>
+          <div className="label" style={{ marginTop: '0.5rem', color: done ? 'var(--text-ghost)' : 'var(--text-muted)' }}>
             {done ? 'SESSION COMPLETE' : running ? `${mins}:${String(secs).padStart(2, '0')} REMAINING` : `${session?.duration_min ?? 0} MIN SESSION`}
           </div>
         </div>
 
         {running && (
-          <div style={{ width: '100%', maxWidth: 320, height: 6, background: '#111', border: '1px solid #444' }}>
-            <div style={{ height: '100%', background: '#fff', width: `${progress * 100}%` }} />
+          <div style={{ width: '100%', maxWidth: 320, height: 6, background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div style={{ height: '100%', background: 'var(--text)', width: `${progress * 100}%` }} />
           </div>
         )}
 
         <div style={{ display: 'flex', gap: '1rem' }}>
           {!running && !done && (
-            <button onClick={start} style={{ padding: '0.6rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', background: '#fff', color: '#000', border: border2, fontFamily: MONO }}>
+            <button onClick={start} className="btn btn-primary" style={{ padding: '0.6rem 1.5rem' }}>
               START SESSION
             </button>
           )}
           {running && (
-            <button onClick={stop} style={{ padding: '0.6rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', background: '#000', color: '#fff', border: border2, fontFamily: MONO }}>
+            <button onClick={stop} className="btn btn-outline" style={{ padding: '0.6rem 1.5rem' }}>
               STOP
             </button>
           )}
           {done && (
-            <button onClick={() => router.push('/meditation')} style={{ padding: '0.6rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', background: '#fff', color: '#000', border: border2, fontFamily: MONO }}>
+            <button onClick={() => router.push('/meditation')} className="btn btn-primary" style={{ padding: '0.6rem 1.5rem' }}>
               DONE →
             </button>
           )}
         </div>
 
         {!running && !done && instructions.length > 0 && (
-          <div style={{ border: '2px solid #111', padding: '1rem', width: '100%', boxSizing: 'border-box' as const }}>
-            <p style={{ ...lbl, marginBottom: '0.5rem' }}>INSTRUCTIONS</p>
+          <div style={{ border: '2px solid var(--border)', padding: '1rem', width: '100%', boxSizing: 'border-box' as const }}>
+            <p className="label" style={{ marginBottom: '0.5rem' }}>INSTRUCTIONS</p>
             {instructions.map((line, i) => (
-              <p key={i} style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: '#888', lineHeight: 1.6 }}>{line}</p>
+              <p key={i} style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{line}</p>
             ))}
           </div>
         )}

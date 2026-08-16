@@ -6,18 +6,6 @@ import { getProfile, upsertProfile } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptic';
 
-const MONO = "'IBM Plex Mono', monospace";
-const border2 = '2px solid #2a2a2a';
-const lbl = {
-  fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.18em',
-  textTransform: 'uppercase' as const, color: '#666', margin: 0,
-};
-const inputStyle = {
-  width: '100%', fontFamily: MONO, fontSize: '0.875rem',
-  background: '#080808', color: '#fff', border: '2px solid #2a2a2a',
-  padding: '0.65rem 0.875rem', outline: 'none', boxSizing: 'border-box' as const,
-};
-
 export default function SettingsPage() {
   const router = useRouter();
   const [calTarget, setCalTarget] = useState('2000');
@@ -50,18 +38,31 @@ export default function SettingsPage() {
 
   const save = async () => {
     haptic('medium');
+    const cal = parseInt(calTarget) || 1800;
+    const prot = parseInt(protein) || 176;
+    const carbPct = 0.05;
+    const carbG = Math.round(cal * carbPct / 4);
+    const fatG = Math.round((cal - prot * 4 - carbG * 4) / 9);
     await upsertProfile({
-      calorie_target: parseInt(calTarget) || 2000,
+      calorie_target: cal,
       macro_targets: {
-        protein: parseInt(protein) || 150,
-        carbs: parseInt(carbs) || 200,
-        fat: parseInt(fat) || 65,
+        protein: prot,
+        carbs: parseInt(carbs) || carbG,
+        fat: parseInt(fat) || fatG,
       },
       starting_weight: startingWeight ? parseFloat(startingWeight) : null,
       weight_goal: weightGoal ? parseFloat(weightGoal) : null,
       units,
       non_numeric_mode: nonNumeric,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      height_cm: null,
+      current_weight_kg: startingWeight ? parseFloat(startingWeight) : null,
+      ideal_weight_lbs: null,
+      protein_target_g: prot,
+      carb_percent: carbPct,
+      score_weights: { protein: 0.4, calories: 0.3, carbs: 0.2, fat: 0.1 },
+      carb_target_g: null,
+      fat_target_g: null,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -75,30 +76,30 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '2rem', color: '#444', fontFamily: MONO, fontSize: '0.75rem' }}>
+      <div style={{ padding: '2rem', color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
         LOADING...
       </div>
     );
   }
 
   return (
-    <div style={{ fontFamily: MONO, paddingTop: '4rem' }}>
+    <div style={{ fontFamily: 'var(--font-mono)', paddingTop: '4rem' }}>
 
       {/* Header */}
-      <div style={{ padding: '1.25rem', borderBottom: border2 }}>
-        <p style={{ ...lbl, marginBottom: '0.3rem' }}>SETTINGS</p>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>SET</h1>
+      <div style={{ padding: '1.25rem', borderBottom: '2px solid var(--border)' }}>
+        <p className="label" style={{ marginBottom: '0.3rem' }}>SETTINGS</p>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>SET</h1>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
         {/* ── Daily Goals ── */}
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid #1a1a1a' }}>
-          <p style={{ ...lbl, marginBottom: '1rem' }}>DAILY GOALS</p>
+        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--surface-2)' }}>
+          <p className="label" style={{ marginBottom: '1rem' }}>DAILY GOALS</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
             <div>
-              <p style={{ ...lbl, marginBottom: '0.35rem' }}>CALORIE TARGET (KCAL)</p>
-              <input type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)} style={inputStyle} />
+              <p className="label" style={{ marginBottom: '0.35rem' }}>CALORIE TARGET (KCAL)</p>
+              <input type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
               {[
@@ -107,35 +108,33 @@ export default function SettingsPage() {
                 { label: 'FAT (G)',     val: fat,     set: setFat },
               ].map(m => (
                 <div key={m.label}>
-                  <p style={{ ...lbl, marginBottom: '0.35rem' }}>{m.label}</p>
-                  <input type="number" value={m.val} onChange={e => m.set(e.target.value)} style={inputStyle} />
+                  <p className="label" style={{ marginBottom: '0.35rem' }}>{m.label}</p>
+                  <input type="number" value={m.val} onChange={e => m.set(e.target.value)} />
                 </div>
               ))}
             </div>
             <div>
-              <p style={{ ...lbl, marginBottom: '0.35rem' }}>STARTING WEIGHT (KG)</p>
+              <p className="label" style={{ marginBottom: '0.35rem' }}>STARTING WEIGHT (KG)</p>
               <input
                 type="number"
                 value={startingWeight}
                 onChange={e => setStartingWeight(e.target.value)}
                 placeholder="E.G. 85"
-                style={inputStyle}
               />
-              <p style={{ ...lbl, marginTop: '0.35rem', color: '#333' }}>YOUR BASELINE — SET ONCE, TRACK PROGRESS FROM HERE</p>
+              <p className="label" style={{ marginTop: '0.35rem', color: 'var(--text-ghost)' }}>YOUR BASELINE — SET ONCE, TRACK PROGRESS FROM HERE</p>
             </div>
             <div>
-              <p style={{ ...lbl, marginBottom: '0.35rem' }}>WEIGHT GOAL (KG) — OPTIONAL</p>
+              <p className="label" style={{ marginBottom: '0.35rem' }}>WEIGHT GOAL (KG) — OPTIONAL</p>
               <input
                 type="number"
                 value={weightGoal}
                 onChange={e => setWeightGoal(e.target.value)}
                 placeholder="LEAVE BLANK TO SKIP"
-                style={inputStyle}
               />
             </div>
             <div>
-              <p style={{ ...lbl, marginBottom: '0.35rem' }}>UNITS</p>
-              <select value={units} onChange={e => setUnits(e.target.value as 'metric' | 'imperial')} style={inputStyle}>
+              <p className="label" style={{ marginBottom: '0.35rem' }}>UNITS</p>
+              <select value={units} onChange={e => setUnits(e.target.value as 'metric' | 'imperial')}>
                 <option value="metric">METRIC</option>
                 <option value="imperial">IMPERIAL</option>
               </select>
@@ -144,8 +143,8 @@ export default function SettingsPage() {
         </div>
 
         {/* ── Display ── */}
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid #1a1a1a' }}>
-          <p style={{ ...lbl, marginBottom: '1rem' }}>DISPLAY</p>
+        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--surface-2)' }}>
+          <p className="label" style={{ marginBottom: '1rem' }}>DISPLAY</p>
 
           {/* Non-numeric toggle */}
           <button
@@ -154,41 +153,35 @@ export default function SettingsPage() {
               display: 'flex', width: '100%',
               justifyContent: 'space-between', alignItems: 'center',
               padding: '0.875rem 1rem',
-              background: nonNumeric ? '#fff' : '#080808',
-              border: '2px solid #2a2a2a',
-              cursor: 'pointer', fontFamily: MONO,
+              background: nonNumeric ? 'var(--text)' : 'var(--surface)',
+              border: '2px solid var(--border)',
+              cursor: 'pointer', fontFamily: 'var(--font-mono)',
               boxSizing: 'border-box' as const,
               marginBottom: '0.5rem',
             }}
           >
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.08em', color: nonNumeric ? '#000' : '#fff' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.08em', color: nonNumeric ? 'var(--bg)' : 'var(--text)' }}>
               NON-NUMERIC MODE
             </span>
             <span style={{
               fontSize: '0.8rem', fontWeight: 700,
-              color: nonNumeric ? '#000' : '#333',
-              border: `2px solid ${nonNumeric ? '#000' : '#333'}`,
+              color: nonNumeric ? 'var(--bg)' : 'var(--text-ghost)',
+              border: `2px solid ${nonNumeric ? 'var(--bg)' : 'var(--text-ghost)'}`,
               padding: '0.1rem 0.4rem',
               lineHeight: 1,
             }}>
               {nonNumeric ? 'ON' : 'OFF'}
             </span>
           </button>
-          <p style={{ ...lbl, color: '#333' }}>HIDES CALORIE + WEIGHT NUMBERS APP-WIDE</p>
+          <p className="label" style={{ color: 'var(--text-ghost)' }}>HIDES CALORIE + WEIGHT NUMBERS APP-WIDE</p>
         </div>
 
         {/* ── Save ── */}
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid #1a1a1a' }}>
+        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--surface-2)' }}>
           <button
             onClick={save}
-            style={{
-              width: '100%', padding: '0.875rem 1rem',
-              fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              background: saved ? '#F5A623' : '#fff',
-              color: '#000', border: border2,
-              cursor: 'pointer', fontFamily: MONO,
-            }}
+            className="btn btn-primary btn-block"
+            style={{ background: saved ? 'var(--accent)' : undefined }}
           >
             {saved ? 'SAVED ✓' : 'SAVE SETTINGS'}
           </button>
@@ -196,17 +189,10 @@ export default function SettingsPage() {
 
         {/* ── Account ── */}
         <div style={{ padding: '1.25rem' }}>
-          <p style={{ ...lbl, marginBottom: '1rem' }}>ACCOUNT</p>
+          <p className="label" style={{ marginBottom: '1rem' }}>ACCOUNT</p>
           <button
             onClick={signOut}
-            style={{
-              width: '100%', padding: '0.875rem 1rem',
-              fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              background: '#000', color: '#666',
-              border: '2px solid #1a1a1a',
-              cursor: 'pointer', fontFamily: MONO,
-            }}
+            className="btn btn-ghost btn-block"
           >
             SIGN OUT →
           </button>

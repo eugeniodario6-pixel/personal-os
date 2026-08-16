@@ -13,16 +13,16 @@ function StatCell({ label, value, sub, inverted }: StatCellProps) {
       className="stat-cell"
       style={
         inverted
-          ? { background: '#fff', color: '#000', borderColor: '#fff' }
+          ? { background: 'var(--surface-2)', borderColor: 'var(--border-strong)', borderLeft: '2px solid var(--positive)' }
           : {}
       }
     >
-      <span className="label" style={inverted ? { color: '#444' } : {}}>
+      <span className="label" style={inverted ? { color: 'var(--text-ghost)' } : {}}>
         {label}
       </span>
       <span
-        className="number-medium"
-        style={inverted ? { color: '#000' } : { color: '#fff' }}
+        className="num-md"
+        style={inverted ? { color: 'var(--positive)' } : { color: 'var(--text)' }}
       >
         {value}
       </span>
@@ -30,8 +30,8 @@ function StatCell({ label, value, sub, inverted }: StatCellProps) {
         <span
           style={{
             fontSize: '0.65rem',
-            color: inverted ? '#444' : '#888',
-            fontFamily: "'IBM Plex Mono', monospace",
+            color: inverted ? 'var(--text-ghost)' : 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
           }}
         >
           {sub}
@@ -68,10 +68,10 @@ export default function StatusGrid({
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: '0',
-          borderBottom: '2px solid #444',
+          borderBottom: '2px solid var(--border-strong)',
         }}
       >
-        <div style={{ borderRight: '1px solid #444' }}>
+        <div style={{ borderRight: '1px solid var(--border)' }}>
           <StatCell
             label="CALORIES"
             value={Math.round(calories)}
@@ -81,14 +81,14 @@ export default function StatusGrid({
             style={{
               margin: '0 0.75rem 0.75rem',
               height: '4px',
-              background: '#111',
-              border: '1px solid #444',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
             }}
           >
             <div
               style={{
                 height: '100%',
-                background: '#fff',
+                background: 'var(--text)',
                 width: `${calPct * 100}%`,
               }}
             />
@@ -110,14 +110,14 @@ export default function StatusGrid({
             style={{
               margin: '0 0.75rem 0.75rem',
               height: '4px',
-              background: '#111',
-              border: '1px solid #444',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
             }}
           >
             <div
               style={{
                 height: '100%',
-                background: '#fff',
+                background: 'var(--text)',
                 width: `${habitPct * 100}%`,
               }}
             />
@@ -129,10 +129,10 @@ export default function StatusGrid({
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          borderBottom: '2px solid #444',
+          borderBottom: '2px solid var(--border-strong)',
         }}
       >
-        <div style={{ borderRight: '1px solid #444' }}>
+        <div style={{ borderRight: '1px solid var(--border)' }}>
           <StatCell
             label="WORKOUTS"
             value={workoutsToday}

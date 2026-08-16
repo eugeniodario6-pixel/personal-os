@@ -1,18 +1,23 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   getMealLogs, addFoodItem, addMealLog, deleteMealLog,
-  getProfile, getRecentFoods, todayISO,
-  type FoodItem, type MealLog,
+  getProfile, getRecentFoods,
+  computeDailyScore, getDailyScore, getDailyScores,
+  getGroceryItems, addGroceryItem, toggleGroceryItem, clearPurchasedGroceries,
+  currentWeekOf, todayISO,
+  type FoodItem, type MealLog, type DailyScore, type GroceryItem, type Profile,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface MealLogWithFood extends MealLog { food: FoodItem | null; }
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
-type Mode = 'log' | 'search' | 'manual';
+type MainTab = 'log' | 'trends' | 'grocery';
+type LogMode = 'recents' | 'search';
+type TrendsTab = 'day' | 'week' | 'year';
 
 interface FoodResult {
   id: string; name: string; brand: string; isGeneric: boolean;
@@ -46,85 +51,507 @@ function calcTotals(logs: MealLogWithFood[]) {
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 }
 
-// ─── MacroBar ─────────────────────────────────────────────────────────────────
-function MacroBar({ label, value, target, color }: {
-  label: string; value: number; target: number; color: string;
-}) {
-  const pct = Math.min((value / target) * 100, 100);
+function scoreColor(score: number): string {
+  if (score >= 75) return 'var(--accent)';
+  if (score >= 50) return 'var(--text-muted)';
+  return 'var(--negative)';
+}
+
+function formatDate(d: Date): string {
+  return d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+}
+
+// ─── MacroRow ─────────────────────────────────────────────────────────────────
+function MacroRow({ label, value, target }: { label: string; value: number; target: number }) {
+  const pct = Math.min((value / (target || 1)) * 100, 100);
   const over = value > target;
   return (
-    <div style={{ flex: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.4rem' }}>
+    <div style={{ marginBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
         <span className="label">{label}</span>
-        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: over ? 'var(--red)' : 'var(--text-primary)' }}>
-          {Math.round(value)}<span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>/{target}g</span>
+        <span className="label" style={{ color: over ? 'var(--negative)' : 'var(--text-muted)' }}>
+          {Math.round(value * 10) / 10}g / {target}g
         </span>
       </div>
       <div className="progress">
         <div
-          className="progress-fill"
-          style={{ width: `${pct}%`, background: over ? 'var(--red)' : color }}
+          className="progress-fill t-medium"
+          style={{ width: `${pct}%`, background: over ? 'var(--negative)' : 'var(--accent)' }}
         />
       </div>
     </div>
   );
 }
 
-// ─── MealGroup ────────────────────────────────────────────────────────────────
-function MealGroup({ type, logs, onDelete, onAdd }: {
-  type: MealType; logs: MealLogWithFood[];
-  onDelete: (id: number) => void; onAdd: (type: MealType) => void;
+// ─── ScoreStatGrid ────────────────────────────────────────────────────────────
+function ScoreStatGrid({ score }: { score: DailyScore | null }) {
+  const components = [
+    { label: 'PROTEIN', value: score?.protein_score ?? null },
+    { label: 'CALORIES', value: score?.calorie_score ?? null },
+    { label: 'CARBS', value: score?.carb_score ?? null },
+    { label: 'FAT', value: score?.fat_score ?? null },
+  ];
+  return (
+    <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: '0.75rem' }}>
+      {components.map(({ label, value }) => (
+        <div key={label} className="stat-cell">
+          <div className="label-xs" style={{ marginBottom: '0.3rem' }}>{label}</div>
+          <div className="num-sm" style={{ color: value !== null ? scoreColor(value) : 'var(--text-ghost)' }}>
+            {value !== null ? value : '—'}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── FoodLogPanel ─────────────────────────────────────────────────────────────
+function FoodLogPanel({
+  selected, onLog, onCancel,
+}: {
+  selected: FoodResult | FoodItem;
+  onLog: (qty: number, mt: MealType) => void;
+  onCancel: () => void;
 }) {
-  const totals = calcTotals(logs);
-  const cal = Math.round(totals.calories);
+  const [quantity, setQuantity] = useState('100');
+  const [mealType, setMealType] = useState<MealType>('lunch');
+  const [tweening, setTweening] = useState(false);
+  const prevQty = useRef('100');
+
+  const qty = parseFloat(quantity) || 0;
+  const ss = (selected as FoodItem).serving_size ?? (selected as FoodResult).serving_size ?? 100;
+  const r = qty / ss;
+
+  const calories = selected.calories;
+  const protein = selected.protein;
+  const carbs = selected.carbs;
+  const fat = selected.fat;
+
+  const pCal  = Math.round(calories * r);
+  const pProt = Math.round(protein  * r * 10) / 10;
+  const pCarb = Math.round(carbs    * r * 10) / 10;
+  const pFat  = Math.round(fat      * r * 10) / 10;
+
+  const handleQtyChange = (val: string) => {
+    if (val !== prevQty.current) {
+      setTweening(true);
+      setTimeout(() => setTweening(false), 150);
+      prevQty.current = val;
+    }
+    setQuantity(val);
+  };
 
   return (
-    <div style={{ borderBottom: '2px solid var(--border-2)' }}>
-      {/* Group header */}
-      <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span className="label" style={{ color: 'var(--text-secondary)' }}>{MEAL_LABELS[type]}</span>
-          {cal > 0 && (
-            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {cal} kcal
-            </span>
-          )}
+    <div className="panel" style={{ margin: '0 var(--page-pad) var(--page-pad)', borderTop: '2px solid var(--accent)' }}>
+      {/* Food name */}
+      <div style={{ marginBottom: '0.875rem' }}>
+        <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.875rem' }}>
+          {selected.name}
         </div>
-        <button className="btn btn-sm btn-ghost" onClick={() => onAdd(type)}>
-          + ADD
-        </button>
+        {'brand' in selected && selected.brand && (
+          <div className="label-xs" style={{ marginTop: '0.15rem' }}>{selected.brand}</div>
+        )}
       </div>
 
-      {/* Food rows */}
-      {logs.map(log => {
-        if (!log.food) return null;
-        const r = log.quantity / log.food.serving_size;
-        const logCal  = Math.round(log.food.calories * r);
-        const logProt = Math.round(log.food.protein  * r * 10) / 10;
-        return (
-          <div key={log.id} className="row" style={{ cursor: 'default' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                margin: 0, fontWeight: 700, color: 'var(--text-primary)',
-                fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>{log.food.name}</p>
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', alignItems: 'center' }}>
-                <span className="label" style={{ color: 'var(--amber)' }}>{logCal} kcal</span>
-                <span className="label" style={{ color: 'var(--amber)' }}>P {logProt}g</span>
-                <span className="label">{log.quantity}{log.food.serving_unit}</span>
+      {/* Quantity input + quick-select */}
+      <div style={{ marginBottom: '0.875rem' }}>
+        <div className="label" style={{ marginBottom: '0.4rem' }}>GRAMS</div>
+        <input
+          type="number"
+          value={quantity}
+          onChange={e => handleQtyChange(e.target.value)}
+          style={{ marginBottom: '0.5rem' }}
+        />
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          {['50', '100', '150', '200'].map(q => (
+            <button
+              key={q}
+              className={`btn btn-sm ${quantity === q ? 'btn-primary' : 'btn-outline'} t-fast`}
+              style={{ flex: 1 }}
+              onClick={() => handleQtyChange(q)}
+            >
+              {q}g
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Meal type */}
+      <div className="tab-bar" style={{ marginBottom: '0.875rem', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+        {MEAL_ORDER.map(mt => (
+          <button
+            key={mt}
+            className={`tab ${mealType === mt ? 'active' : ''}`}
+            onClick={() => setMealType(mt)}
+          >
+            {MEAL_LABELS[mt].slice(0, 5)}
+          </button>
+        ))}
+      </div>
+
+      {/* Live macro preview */}
+      <div className="panel" style={{ marginBottom: '0.875rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+          {[
+            { label: 'KCAL', val: pCal },
+            { label: 'PRO', val: `${pProt}g` },
+            { label: 'CARB', val: `${pCarb}g` },
+            { label: 'FAT', val: `${pFat}g` },
+          ].map(({ label, val }) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+              <div className="label-xs" style={{ marginBottom: '0.2rem' }}>{label}</div>
+              <div
+                className={`num-sm num-tween${tweening ? ' updating' : ''}`}
+                style={{ color: 'var(--accent)' }}
+              >
+                {val}
               </div>
             </div>
-            <button
-              onClick={() => { haptic('light'); onDelete(log.id); }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-ghost)', cursor: 'pointer', fontSize: '0.9rem', padding: '0.25rem 0.25rem 0.25rem 0.75rem' }}
-            >✕</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <button
+        className="btn btn-primary btn-block"
+        style={{ marginBottom: '0.5rem' }}
+        onClick={() => onLog(qty, mealType)}
+      >
+        LOG →
+      </button>
+      <button className="btn btn-ghost btn-block" onClick={onCancel}>
+        CANCEL
+      </button>
+    </div>
+  );
+}
+
+// ─── MealGroup ────────────────────────────────────────────────────────────────
+function MealGroup({ type, logs, onDelete }: {
+  type: MealType;
+  logs: MealLogWithFood[];
+  onDelete: (id: number) => void;
+}) {
+  const cal = Math.round(calcTotals(logs).calories);
+  return (
+    <div>
+      <div className="section-label">
+        <span className="label">{MEAL_LABELS[type]}</span>
+        {cal > 0 && <span className="label" style={{ color: 'var(--accent)' }}>{cal} kcal</span>}
+      </div>
+      {logs.length === 0 ? (
+        <div style={{ padding: '0.6rem var(--page-pad)' }}>
+          <span className="label" style={{ color: 'var(--text-ghost)' }}>—</span>
+        </div>
+      ) : (
+        logs.map(log => {
+          if (!log.food) return null;
+          const r = log.quantity / log.food.serving_size;
+          const logCal = Math.round(log.food.calories * r);
+          return (
+            <div key={log.id} className="row" style={{ cursor: 'default' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="truncate" style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text)' }}>
+                  {log.food.name}
+                </div>
+                <div className="label-xs" style={{ marginTop: '0.15rem' }}>
+                  {log.quantity}{log.food.serving_unit} · P {Math.round(log.food.protein * r * 10) / 10}g
+                </div>
+              </div>
+              <span className="num-sm" style={{ color: 'var(--accent)', marginRight: '0.75rem' }}>{logCal}</span>
+              <span className="label-xs" style={{ color: 'var(--text-ghost)', marginRight: '0.75rem' }}>kcal</span>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => { haptic('light'); onDelete(log.id); }}
+                style={{ padding: '0.2rem 0.4rem' }}
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+// ─── TotalsSection ────────────────────────────────────────────────────────────
+function TotalsSection({ logs, profile }: { logs: MealLogWithFood[]; profile: Profile | null }) {
+  const totals = calcTotals(logs);
+  const ct = profile?.calorie_target ?? 2000;
+  const mt = profile?.macro_targets ?? { protein: 150, carbs: 200, fat: 65 };
+  const calPct = Math.min((totals.calories / ct) * 100, 100);
+  const over = totals.calories > ct;
+
+  return (
+    <div className="card" style={{ margin: 'var(--page-pad)', marginBottom: 0 }}>
+      {/* Calorie progress */}
+      <div style={{ marginBottom: '0.875rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+          <span className="label">CALORIES</span>
+          <span className="label" style={{ color: over ? 'var(--negative)' : 'var(--text-muted)' }}>
+            {Math.round(totals.calories)} / {ct} kcal
+          </span>
+        </div>
+        <div className="progress" style={{ height: '4px' }}>
+          <div
+            className="progress-fill t-medium"
+            style={{ width: `${calPct}%`, background: over ? 'var(--negative)' : 'var(--accent)' }}
+          />
+        </div>
+      </div>
+      <MacroRow label="PROTEIN" value={totals.protein} target={mt.protein} />
+      <MacroRow label="CARBS"   value={totals.carbs}   target={mt.carbs} />
+      <MacroRow label="FAT"     value={totals.fat}     target={mt.fat} />
+    </div>
+  );
+}
+
+// ─── WeekGrid ─────────────────────────────────────────────────────────────────
+function WeekGrid({ scores }: { scores: DailyScore[] }) {
+  const today = todayISO();
+  const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  // Build a map of this week Mon–Sun
+  const weekDays: string[] = [];
+  const d = new Date();
+  const dow = d.getDay();
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(d);
+    day.setDate(d.getDate() + mondayOffset + i);
+    weekDays.push(day.toISOString().slice(0, 10));
+  }
+
+  const scoreMap = new Map(scores.map(s => [s.date, s.total_score]));
+
+  return (
+    <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)', margin: 'var(--page-pad)' }}>
+      {weekDays.map((date, i) => {
+        const score = scoreMap.get(date) ?? null;
+        const isToday = date === today;
+        return (
+          <div key={date} className={`stat-cell${isToday ? ' active' : ''}`} style={{ textAlign: 'center' }}>
+            <div className="label-xs" style={{ marginBottom: '0.3rem' }}>{DAY_LABELS[i]}</div>
+            <div className="num-sm" style={{ color: score !== null ? scoreColor(score) : 'var(--text-ghost)' }}>
+              {score !== null ? score : '—'}
+            </div>
           </div>
         );
       })}
+    </div>
+  );
+}
 
-      {logs.length === 0 && (
-        <div style={{ padding: '0.6rem var(--page-pad)' }}>
-          <span className="label" style={{ color: 'var(--text-ghost)' }}>— NOTHING LOGGED</span>
+// ─── YearGrid ─────────────────────────────────────────────────────────────────
+function YearGrid({ scores }: { scores: DailyScore[] }) {
+  const scoreMap = new Map(scores.map(s => [s.date, s.total_score]));
+
+  // Compute rolling threshold
+  const sortedScores = [...scores].sort((a, b) => a.date.localeCompare(b.date));
+  let threshold = 80;
+  if (sortedScores.length >= 14) {
+    const last30 = sortedScores.slice(-30);
+    const avg = last30.reduce((s, x) => s + x.total_score, 0) / last30.length;
+    threshold = Math.round(avg);
+  }
+
+  // Build 52 weeks from today going back
+  const today = new Date();
+  const todayISO_ = today.toISOString().slice(0, 10);
+
+  // Find Monday of 51 weeks ago
+  const startDay = new Date(today);
+  const dow = startDay.getDay();
+  startDay.setDate(startDay.getDate() - (dow === 0 ? 6 : dow - 1) - 51 * 7);
+
+  const weeks: string[][] = [];
+  let cur = new Date(startDay);
+  for (let w = 0; w < 52; w++) {
+    const week: string[] = [];
+    for (let d = 0; d < 7; d++) {
+      week.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  return (
+    <div style={{ padding: 'var(--page-pad)', overflowX: 'auto' }}>
+      <div className="label-xs" style={{ marginBottom: '0.75rem' }}>
+        PAST 52 WEEKS · THRESHOLD {threshold}
+      </div>
+      <div style={{ display: 'flex', gap: '2px' }}>
+        {weeks.map((week, wi) => (
+          <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {week.map(date => {
+              const score = scoreMap.get(date) ?? null;
+              const isFuture = date > todayISO_;
+              const isAbove = score !== null && score >= threshold;
+              return (
+                <div
+                  key={date}
+                  title={score !== null ? `${date}: ${score}` : date}
+                  style={{
+                    width: '2rem',
+                    height: '2rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: isFuture
+                      ? 'transparent'
+                      : score === null
+                      ? 'var(--surface)'
+                      : isAbove
+                      ? 'var(--accent)'
+                      : 'var(--surface-2)',
+                    border: date === todayISO_ ? '1px solid var(--accent)' : '1px solid transparent',
+                    minWidth: '2rem',
+                    minHeight: '2rem',
+                  }}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── GroceryTab ───────────────────────────────────────────────────────────────
+function GroceryTab() {
+  const [items, setItems] = useState<GroceryItem[]>([]);
+  const [newName, setNewName] = useState('');
+  const [newGrams, setNewGrams] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    const data = await getGroceryItems();
+    setItems(data);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAdd = async () => {
+    if (!newName.trim()) return;
+    setLoading(true);
+    haptic('light');
+    await addGroceryItem(newName.trim(), newGrams ? parseFloat(newGrams) : null);
+    setNewName('');
+    setNewGrams('');
+    await load();
+    setLoading(false);
+  };
+
+  const handleToggle = async (id: number) => {
+    haptic('light');
+    await toggleGroceryItem(id);
+    await load();
+  };
+
+  const handleClear = async () => {
+    haptic('medium');
+    await clearPurchasedGroceries();
+    await load();
+  };
+
+  const hasPurchased = items.some(i => i.purchased);
+
+  return (
+    <div>
+      {/* Add row */}
+      <div className="section" style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+        <div style={{ flex: 2 }}>
+          <div className="label" style={{ marginBottom: '0.3rem' }}>ITEM</div>
+          <input
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="CHICKEN BREAST"
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div className="label" style={{ marginBottom: '0.3rem' }}>GRAMS</div>
+          <input
+            type="number"
+            value={newGrams}
+            onChange={e => setNewGrams(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="500"
+          />
+        </div>
+        <button
+          className="btn btn-primary"
+          onClick={handleAdd}
+          disabled={loading || !newName.trim()}
+          style={{ flexShrink: 0 }}
+        >
+          ADD
+        </button>
+      </div>
+
+      {/* Week label */}
+      <div className="section-label">
+        <span className="label">WEEK OF {currentWeekOf()}</span>
+        <span className="label-xs">{items.length} ITEMS</span>
+      </div>
+
+      {/* Items */}
+      {items.length === 0 ? (
+        <div style={{ padding: '2rem var(--page-pad)', textAlign: 'center' }}>
+          <span className="label" style={{ color: 'var(--text-ghost)' }}>NO ITEMS THIS WEEK</span>
+        </div>
+      ) : (
+        items.map(item => (
+          <div key={item.id} className="row" style={{ cursor: 'default' }}>
+            <button
+              className="mono"
+              onClick={() => handleToggle(item.id)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: item.purchased ? 'var(--positive)' : 'var(--text-ghost)',
+                fontSize: '0.9rem', marginRight: '0.75rem', padding: 0,
+                minWidth: '1.25rem',
+              }}
+            >
+              {item.purchased ? '✓' : '○'}
+            </button>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span
+                className="truncate"
+                style={{
+                  fontWeight: 600, fontSize: '0.8rem',
+                  color: item.purchased ? 'var(--text-ghost)' : 'var(--text)',
+                  textDecoration: item.purchased ? 'line-through' : 'none',
+                  display: 'block',
+                }}
+              >
+                {item.name}
+              </span>
+              {item.quantity_grams !== null && (
+                <span className="label-xs">{item.quantity_grams}g</span>
+              )}
+            </div>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={async () => {
+                haptic('light');
+                await toggleGroceryItem(item.id);
+                await load();
+              }}
+              style={{ padding: '0.2rem 0.4rem', color: 'var(--text-ghost)' }}
+            >
+              ✕
+            </button>
+          </div>
+        ))
+      )}
+
+      {/* Clear purchased */}
+      {hasPurchased && (
+        <div style={{ padding: 'var(--page-pad)' }}>
+          <button className="btn btn-outline btn-block" onClick={handleClear}>
+            CLEAR PURCHASED
+          </button>
         </div>
       )}
     </div>
@@ -133,50 +560,39 @@ function MealGroup({ type, logs, onDelete, onAdd }: {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 function NutritionContent() {
-  const searchParams = useSearchParams();
+  useSearchParams(); // needed to satisfy Suspense boundary requirement
   const router = useRouter();
 
-  const [mode, setMode] = useState<Mode>(searchParams.get('action') === 'add' ? 'search' : 'log');
-  const [activeMealType, setActiveMealType] = useState<MealType>('lunch');
+  const [mainTab, setMainTab] = useState<MainTab>('log');
+  const [logMode, setLogMode] = useState<LogMode>('recents');
+  const [trendsTab, setTrendsTab] = useState<TrendsTab>('week');
+
   const [logs, setLogs] = useState<MealLogWithFood[]>([]);
   const [recentFoods, setRecentFoods] = useState<FoodItem[]>([]);
-  const [calorieTarget, setCalorieTarget] = useState(2000);
-  const [macroTargets, setMacroTargets] = useState({ protein: 150, carbs: 200, fat: 65 });
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [todayScore, setTodayScore] = useState<DailyScore | null>(null);
+  const [allScores, setAllScores] = useState<DailyScore[]>([]);
 
-  // Search
+  // Search state
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FoodResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [selected, setSelected] = useState<FoodResult | null>(null);
-  const [quantity, setQuantity] = useState('100');
-  const [mealType, setMealType] = useState<MealType>('lunch');
-
-  // Manual
-  const [addName, setAddName] = useState('');
-  const [addBrand, setAddBrand] = useState('');
-  const [addCalories, setAddCalories] = useState('');
-  const [addProtein, setAddProtein] = useState('');
-  const [addCarbs, setAddCarbs] = useState('');
-  const [addFat, setAddFat] = useState('');
-  const [addServing, setAddServing] = useState('100');
-  const [addServingUnit, setAddServingUnit] = useState('g');
-  const [addQuantity, setAddQuantity] = useState('100');
-  const [addMealType, setAddMealType] = useState<MealType>('lunch');
-  const [addError, setAddError] = useState('');
+  const [selectedFood, setSelectedFood] = useState<FoodResult | FoodItem | null>(null);
 
   const load = useCallback(async () => {
-    const [rawLogs, profile, recents] = await Promise.all([
+    const [rawLogs, prof, recents, score, scores] = await Promise.all([
       getMealLogs(todayISO()),
       getProfile(),
       getRecentFoods(8),
+      getDailyScore(todayISO()),
+      getDailyScores(400),
     ]);
     setLogs(rawLogs);
+    setProfile(prof);
     setRecentFoods(recents);
-    if (profile) {
-      setCalorieTarget(profile.calorie_target);
-      setMacroTargets(profile.macro_targets);
-    }
+    setTodayScore(score);
+    setAllScores(scores);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -186,31 +602,21 @@ function NutritionContent() {
     return acc;
   }, {} as Record<MealType, MealLogWithFood[]>);
 
-  const totals = calcTotals(logs);
-  const remaining = Math.round(calorieTarget - totals.calories);
-  const isOver = remaining < 0;
-  const isClose = !isOver && remaining < calorieTarget * 0.1;
-  const heroColor = isOver ? 'var(--red)' : isClose ? 'var(--yellow)' : 'var(--amber)';
-  const calPct = Math.min((totals.calories / calorieTarget) * 100, 100);
-
-  const openAdd = (mt: MealType) => {
-    setActiveMealType(mt);
-    setMealType(mt);
-    setAddMealType(mt);
-    setMode('search');
-    setSelected(null);
-    setResults([]);
-    setQuery('');
+  // Score recompute after log
+  const reloadAndScore = async () => {
+    await load();
+    const score = await computeDailyScore(todayISO());
+    setTodayScore(score);
   };
 
   const doSearch = async () => {
     if (!query.trim()) return;
-    setSearching(true); setSearchError(''); setResults([]); setSelected(null);
+    setSearching(true); setSearchError(''); setResults([]); setSelectedFood(null);
     try {
       const r = await searchFood(query.trim());
-      if (r.length === 0) setSearchError('NO RESULTS. TRY A DIFFERENT NAME OR ADD MANUALLY.');
+      if (r.length === 0) setSearchError('NO RESULTS');
       setResults(r);
-    } catch { setSearchError('SEARCH FAILED. CHECK CONNECTION.'); }
+    } catch { setSearchError('SEARCH FAILED'); }
     finally { setSearching(false); }
   };
 
@@ -220,7 +626,8 @@ function NutritionContent() {
       date: todayISO(), meal_type: mt, food_item_id: food.id,
       quantity: qty, logged_at: new Date().toISOString(), source: 'search',
     });
-    await load(); setMode('log'); router.replace('/nutrition');
+    setSelectedFood(null); setResults([]); setQuery('');
+    await reloadAndScore();
   };
 
   const logFoodResult = async (food: FoodResult, qty: number, mt: MealType) => {
@@ -235,377 +642,258 @@ function NutritionContent() {
       date: todayISO(), meal_type: mt, food_item_id: foodId,
       quantity: qty, logged_at: new Date().toISOString(), source: 'search',
     });
-    setSelected(null); setQuery(''); setResults([]); setQuantity('100');
-    await load(); setMode('log'); router.replace('/nutrition');
+    setSelectedFood(null); setResults([]); setQuery('');
+    await reloadAndScore();
   };
 
-  const handleManualAdd = async () => {
-    setAddError('');
-    if (!addName.trim()) { setAddError('NAME REQUIRED'); return; }
-    if (!addCalories) { setAddError('CALORIES REQUIRED'); return; }
-    haptic('medium');
-    try {
-      const name = addName.trim();
-      const calories = parseFloat(addCalories) || 0;
-      const protein  = parseFloat(addProtein)  || 0;
-      const carbs    = parseFloat(addCarbs)    || 0;
-      const fat      = parseFloat(addFat)      || 0;
-      const serving  = parseFloat(addServing)  || 100;
-
-      const foodId = await addFoodItem({
-        external_id: null, name, brand: addBrand.trim() || null,
-        barcode: null, serving_unit: addServingUnit, serving_size: serving,
-        calories, protein, carbs, fat, is_favorite: false,
-      });
-      await addMealLog({
-        date: todayISO(), meal_type: addMealType, food_item_id: foodId,
-        quantity: parseFloat(addQuantity) || 100, logged_at: new Date().toISOString(), source: 'manual',
-      });
-
-      // Sync to shared sa_foods DB in the background — fire and forget
-      fetch('/api/food-contribute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, calories, protein, carbs, fat, serving_size: serving, serving_unit: addServingUnit }),
-      }).catch(() => {}); // silent — local log always succeeds regardless
-
-      setAddName(''); setAddBrand(''); setAddCalories(''); setAddProtein('');
-      setAddCarbs(''); setAddFat(''); setAddServing('100'); setAddQuantity('100');
-      await load(); setMode('log'); router.replace('/nutrition');
-    } catch { setAddError('FAILED TO SAVE.'); }
+  const handleLog = async (qty: number, mt: MealType) => {
+    if (!selectedFood) return;
+    if ('id' in selectedFood && typeof (selectedFood as FoodItem).id === 'number' && !(selectedFood as FoodResult).isGeneric !== undefined) {
+      // Try as FoodItem first if it has numeric id and no isGeneric property
+      const asItem = selectedFood as FoodItem;
+      if (typeof asItem.id === 'number' && !('isGeneric' in selectedFood)) {
+        await logFoodItem(asItem, qty, mt);
+        return;
+      }
+    }
+    // treat as search result
+    await logFoodResult(selectedFood as FoodResult, qty, mt);
   };
 
-  const qty = parseFloat(quantity) || 100;
-  const previewCal  = selected ? Math.round(selected.calories * qty / selected.serving_size) : 0;
-  const previewProt = selected ? Math.round(selected.protein  * qty / selected.serving_size * 10) / 10 : 0;
-  const previewCarb = selected ? Math.round(selected.carbs    * qty / selected.serving_size * 10) / 10 : 0;
-  const previewFat  = selected ? Math.round(selected.fat      * qty / selected.serving_size * 10) / 10 : 0;
+  const totalScore = todayScore?.total_score ?? null;
 
   return (
     <div className="page" style={{ paddingTop: '4rem' }}>
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <div className="page-header">
-        {/* Title + actions */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: 'var(--page-pad)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
           <div>
-            <p className="label" style={{ marginBottom: '0.3rem' }}>NUTRITION</p>
-            <h1 className="page-title">FUEL</h1>
-          </div>
-          {mode !== 'log' ? (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => { setMode('log'); setSelected(null); setResults([]); router.replace('/nutrition'); }}
-            >
-              ← BACK
-            </button>
-          ) : (
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button className="btn btn-primary btn-sm" onClick={() => { haptic('light'); openAdd('lunch'); }}>
-                + SEARCH
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => { haptic('light'); setMode('manual'); }}>
-                MANUAL
-              </button>
+            <div className="label" style={{ color: 'var(--text-ghost)', marginBottom: '0.25rem' }}>
+              EAT · {formatDate(new Date())}
             </div>
-          )}
-        </div>
-
-        {/* Hero: remaining calories */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <p className="label" style={{ marginBottom: '0.5rem' }}>
-            KCAL {isOver ? 'OVER' : 'REMAINING'}
-          </p>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <span
-              className="num-hero"
-              style={{ color: heroColor, transition: 'color 0.4s ease' }}
-            >
-              {Math.abs(remaining)}
-            </span>
+            <div className="page-title">FUEL</div>
           </div>
-          {/* Calorie progress bar */}
-          <div className="progress-thick" style={{ marginBottom: '0.5rem' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div className="label-xs" style={{ marginBottom: '0.2rem' }}>TODAY</div>
             <div
-              className="progress-fill"
-              style={{ width: `${calPct}%`, background: heroColor }}
-            />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="label" style={{ color: 'var(--text-secondary)' }}>{Math.round(totals.calories)} consumed</span>
-            <span className="label">{calorieTarget} target</span>
+              className="num-xl"
+              style={{ color: totalScore !== null ? scoreColor(totalScore) : 'var(--text-ghost)' }}
+            >
+              {totalScore !== null ? totalScore : '—'}
+            </div>
           </div>
         </div>
 
-        {/* Macro bars */}
-        <div style={{ display: 'flex', gap: '1.25rem' }}>
-          <MacroBar label="PROTEIN" value={totals.protein} target={macroTargets.protein} color="var(--amber)" />
-          <MacroBar label="CARBS"   value={totals.carbs}   target={macroTargets.carbs}   color="var(--blue)" />
-          <MacroBar label="FAT"     value={totals.fat}     target={macroTargets.fat}      color="#f70" />
-        </div>
+        {/* Score component grid */}
+        <ScoreStatGrid score={todayScore} />
       </div>
 
-      {/* ── SEARCH MODE ────────────────────────────────────────────────────── */}
-      {mode === 'search' && (
+      {/* ── MAIN TAB BAR ───────────────────────────────────────────────────── */}
+      <div className="tab-bar">
+        {(['log', 'trends', 'grocery'] as MainTab[]).map(t => (
+          <button
+            key={t}
+            className={`tab ${mainTab === t ? 'active' : ''}`}
+            onClick={() => setMainTab(t)}
+          >
+            {t.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB 1: LOG
+      ══════════════════════════════════════════════════════════════════════ */}
+      {mainTab === 'log' && (
         <div>
-          {/* Meal type tabs */}
-          <div className="tab-bar">
-            {MEAL_ORDER.map(mt => (
-              <button
-                key={mt}
-                className={`tab ${mealType === mt ? 'active' : ''}`}
-                onClick={() => { setMealType(mt); setActiveMealType(mt); setAddMealType(mt); }}
-              >
-                {MEAL_LABELS[mt].slice(0, 5)}
-              </button>
-            ))}
+          {/* Mode switcher */}
+          <div className="tab-bar" style={{ borderBottom: 'none', borderTop: '1px solid var(--border)' }}>
+            <button
+              className={`tab ${logMode === 'recents' ? 'active' : ''}`}
+              onClick={() => { setLogMode('recents'); setSelectedFood(null); }}
+            >
+              RECENTS
+            </button>
+            <button
+              className={`tab ${logMode === 'search' ? 'active' : ''}`}
+              onClick={() => { setLogMode('search'); setSelectedFood(null); }}
+            >
+              SEARCH
+            </button>
           </div>
 
-          {/* Search bar */}
-          <div className="section" style={{ borderBottom: '1px solid var(--border-2)' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && doSearch()}
-                placeholder="SEARCH FOOD..."
-                autoFocus
-              />
-              <button
-                className="btn btn-primary"
-                onClick={doSearch}
-                disabled={searching}
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                {searching ? '···' : 'GO'}
-              </button>
-            </div>
-            {searchError && (
-              <p className="label" style={{ marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
-                {searchError}
-              </p>
-            )}
-          </div>
-
-          {/* Recent foods */}
-          {results.length === 0 && !selected && recentFoods.length > 0 && (
+          {/* RECENTS mode */}
+          {logMode === 'recents' && !selectedFood && (
             <div>
-              <div className="section-label">
-                <span className="label">RECENT</span>
-              </div>
-              {recentFoods.map(food => (
+              {recentFoods.length === 0 ? (
+                <div style={{ padding: '2rem var(--page-pad)', textAlign: 'center' }}>
+                  <div className="label" style={{ color: 'var(--text-ghost)', marginBottom: '1rem' }}>
+                    NO RECENT FOODS
+                  </div>
+                  <button className="btn btn-outline btn-sm" onClick={() => setLogMode('search')}>
+                    SEARCH FOOD →
+                  </button>
+                </div>
+              ) : (
+                recentFoods.map(food => (
+                  <button
+                    key={food.id}
+                    className="row"
+                    onClick={() => { haptic('light'); setSelectedFood(food); }}
+                    style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="truncate" style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text)' }}>
+                        {food.name}
+                      </div>
+                      {food.brand && (
+                        <div className="label-xs">{food.brand}</div>
+                      )}
+                    </div>
+                    <span className="num-sm" style={{ color: 'var(--accent)', marginRight: '0.25rem' }}>
+                      {food.calories}
+                    </span>
+                    <span className="label-xs">kcal</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* SEARCH mode */}
+          {logMode === 'search' && !selectedFood && (
+            <div>
+              <div className="section" style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && doSearch()}
+                  placeholder="SEARCH FOOD..."
+                  autoFocus
+                />
                 <button
-                  key={food.id}
+                  className="btn btn-primary btn-sm"
+                  onClick={doSearch}
+                  disabled={searching}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  {searching ? '···' : 'GO'}
+                </button>
+              </div>
+              {searchError && (
+                <div style={{ padding: '0.75rem var(--page-pad)' }}>
+                  <span className="label" style={{ color: 'var(--text-muted)' }}>{searchError}</span>
+                  {' · '}
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setSearchError('')}
+                    style={{ display: 'inline' }}
+                  >
+                    TRY MANUAL
+                  </button>
+                </div>
+              )}
+              {results.map((r, i) => (
+                <button
+                  key={i}
                   className="row"
-                  onClick={() => logFoodItem(food, food.serving_size, activeMealType)}
+                  onClick={() => { haptic('light'); setSelectedFood(r); }}
                   style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.8rem' }}>{food.name}</p>
-                    <p className="label" style={{ marginTop: '0.15rem', color: 'var(--text-secondary)' }}>
-                      {food.calories} kcal · {food.serving_size}{food.serving_unit}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.1rem' }}>
+                      <span className="truncate" style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text)' }}>
+                        {r.name}
+                      </span>
+                      {r.isGeneric && <span className="badge" style={{ color: 'var(--accent)' }}>WHOLE</span>}
+                    </div>
+                    {r.brand && <span className="label-xs">{r.brand}</span>}
                   </div>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '1rem' }}>+</span>
+                  <span className="num-sm" style={{ color: 'var(--accent)', marginRight: '0.25rem' }}>
+                    {r.calories}
+                  </span>
+                  <span className="label-xs">kcal</span>
                 </button>
               ))}
             </div>
           )}
 
-          {/* Search results */}
-          {results.map((r, i) => (
-            <button
-              key={i}
-              className="row"
-              onClick={() => { haptic('light'); setSelected(r); setResults([]); }}
-              style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.1rem' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: r.isGeneric ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                    {r.name}
-                  </p>
-                  {r.isGeneric && (
-                    <span className="badge" style={{ color: 'var(--amber)' }}>WHOLE</span>
-                  )}
-                </div>
-                {r.brand && <p className="label" style={{ color: 'var(--text-ghost)' }}>{r.brand}</p>}
-              </div>
-              <p style={{ margin: 0, fontWeight: 700, color: r.isGeneric ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: '0.875rem', whiteSpace: 'nowrap', marginLeft: '1rem' }}>
-                {r.calories} kcal
-              </p>
-            </button>
-          ))}
-
-          {!searching && (results.length > 0 || searchError) && !selected && (
-            <div className="section">
-              <button className="btn btn-ghost btn-sm" onClick={() => setMode('manual')}>
-                + ENTER MANUALLY
-              </button>
-            </div>
+          {/* Food log panel — shown when food selected */}
+          {selectedFood && (
+            <FoodLogPanel
+              selected={selectedFood}
+              onLog={handleLog}
+              onCancel={() => setSelectedFood(null)}
+            />
           )}
 
-          {/* Selected food — log panel */}
-          {selected && (
-            <div className="card-dark" style={{ margin: 'var(--page-pad)', borderTop: '1px solid var(--border-2)' }}>
-              <p className="label" style={{ marginBottom: '1rem' }}>LOG: {selected.name.toUpperCase()}</p>
+          {/* Today's totals + meal groups */}
+          <TotalsSection logs={logs} profile={profile} />
 
-              {/* Quick quantity presets */}
-              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.875rem' }}>
-                {['50', '100', '150', '200'].map(q => (
-                  <button
-                    key={q}
-                    className={`btn btn-sm ${quantity === q ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ flex: 1 }}
-                    onClick={() => setQuantity(q)}
-                  >
-                    {q}g
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.875rem' }}>
-                <div>
-                  <p className="label" style={{ marginBottom: '0.35rem' }}>QUANTITY (G)</p>
-                  <input type="number" value={quantity} onChange={e => setQuantity(e.target.value)} />
-                </div>
-                <div>
-                  <p className="label" style={{ marginBottom: '0.35rem' }}>MEAL</p>
-                  <select value={mealType} onChange={e => setMealType(e.target.value as MealType)}>
-                    {MEAL_ORDER.map(mt => <option key={mt} value={mt}>{MEAL_LABELS[mt]}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Macro preview */}
-              <div className="card" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', padding: '0.875rem' }}>
-                <div>
-                  <p className="label" style={{ marginBottom: '0.2rem' }}>KCAL</p>
-                  <p className="num-md" style={{ color: 'var(--amber)' }}>{previewCal}</p>
-                </div>
-                <div>
-                  <p className="label" style={{ marginBottom: '0.2rem' }}>PROTEIN</p>
-                  <p className="num-md" style={{ color: 'var(--amber)' }}>{previewProt}g</p>
-                </div>
-                <div>
-                  <p className="label" style={{ marginBottom: '0.2rem' }}>CARBS</p>
-                  <p className="num-md" style={{ color: 'var(--blue)' }}>{previewCarb}g</p>
-                </div>
-                <div>
-                  <p className="label" style={{ marginBottom: '0.2rem' }}>FAT</p>
-                  <p className="num-md" style={{ color: '#f70' }}>{previewFat}g</p>
-                </div>
-              </div>
-
-              <button className="btn btn-primary btn-block" onClick={() => logFoodResult(selected, qty, mealType)}>
-                LOG →
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── MANUAL MODE ────────────────────────────────────────────────────── */}
-      {mode === 'manual' && (
-        <div style={{ padding: 'var(--page-pad)' }}>
-          <p className="section-title" style={{ marginBottom: '1.25rem' }}>ADD MANUALLY</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-            {addError && (
-              <p style={{ margin: 0, color: 'var(--text-primary)', background: 'var(--surface-1)', border: '1px solid var(--border-3)', padding: '0.5rem', fontSize: '0.75rem' }}>
-                ⚠ {addError}
-              </p>
-            )}
-            <div>
-              <p className="label" style={{ marginBottom: '0.35rem' }}>NAME *</p>
-              <input value={addName} onChange={e => setAddName(e.target.value)} placeholder="E.G. BOEREWORS" />
-            </div>
-            <div>
-              <p className="label" style={{ marginBottom: '0.35rem' }}>BRAND (OPTIONAL)</p>
-              <input value={addBrand} onChange={e => setAddBrand(e.target.value)} placeholder="E.G. WOOLWORTHS" />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>SERVING SIZE</p>
-                <input type="number" value={addServing} onChange={e => setAddServing(e.target.value)} />
-              </div>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>UNIT</p>
-                <select value={addServingUnit} onChange={e => setAddServingUnit(e.target.value)}>
-                  <option value="g">g</option>
-                  <option value="ml">ml</option>
-                  <option value="oz">oz</option>
-                  <option value="cup">cup</option>
-                  <option value="piece">piece</option>
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>CALORIES *</p>
-                <input type="number" value={addCalories} onChange={e => setAddCalories(e.target.value)} placeholder="0" />
-              </div>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>PROTEIN (G)</p>
-                <input type="number" value={addProtein} onChange={e => setAddProtein(e.target.value)} placeholder="0" />
-              </div>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>CARBS (G)</p>
-                <input type="number" value={addCarbs} onChange={e => setAddCarbs(e.target.value)} placeholder="0" />
-              </div>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>FAT (G)</p>
-                <input type="number" value={addFat} onChange={e => setAddFat(e.target.value)} placeholder="0" />
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>QUANTITY</p>
-                <input type="number" value={addQuantity} onChange={e => setAddQuantity(e.target.value)} min="0.1" step="0.1" />
-              </div>
-              <div>
-                <p className="label" style={{ marginBottom: '0.35rem' }}>MEAL</p>
-                <select value={addMealType} onChange={e => setAddMealType(e.target.value as MealType)}>
-                  {MEAL_ORDER.map(mt => <option key={mt} value={mt}>{MEAL_LABELS[mt]}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <button className="btn btn-primary btn-block" style={{ flex: 1 }} onClick={handleManualAdd}>
-                SAVE & LOG
-              </button>
-              <button className="btn btn-ghost btn-block" style={{ flex: 1 }} onClick={() => setMode('log')}>
-                CANCEL
-              </button>
-            </div>
+          <div style={{ marginTop: 'var(--page-pad)' }}>
+            {MEAL_ORDER.map(mt => (
+              <MealGroup
+                key={mt}
+                type={mt}
+                logs={grouped[mt]}
+                onDelete={async id => { haptic('light'); await deleteMealLog(id); await reloadAndScore(); }}
+              />
+            ))}
           </div>
         </div>
       )}
 
-      {/* ── LOG MODE: meal groups ───────────────────────────────────────────── */}
-      {mode === 'log' && (
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB 2: TRENDS
+      ══════════════════════════════════════════════════════════════════════ */}
+      {mainTab === 'trends' && (
         <div>
-          {logs.length === 0 && (
-            <div style={{ padding: '3rem var(--page-pad)', textAlign: 'center' }}>
-              <p className="label" style={{ color: 'var(--text-ghost)', marginBottom: '1.25rem' }}>NOTHING LOGGED TODAY</p>
+          <div className="tab-bar">
+            {(['day', 'week', 'year'] as TrendsTab[]).map(t => (
               <button
-                className="btn btn-ghost"
-                onClick={() => openAdd('breakfast')}
+                key={t}
+                className={`tab ${trendsTab === t ? 'active' : ''}`}
+                onClick={() => setTrendsTab(t)}
               >
-                LOG FIRST MEAL →
+                {t.toUpperCase()}
               </button>
+            ))}
+          </div>
+
+          {trendsTab === 'day' && (
+            <div>
+              <div style={{ padding: 'var(--page-pad)' }}>
+                <div className="label" style={{ marginBottom: '0.5rem', color: 'var(--text-ghost)' }}>
+                  TODAY&apos;S ACTUALS VS TARGETS
+                </div>
+              </div>
+              <ScoreStatGrid score={todayScore} />
+              <TotalsSection logs={logs} profile={profile} />
             </div>
           )}
-          {MEAL_ORDER.map(mt => (
-            <MealGroup
-              key={mt}
-              type={mt}
-              logs={grouped[mt]}
-              onDelete={async (id) => { haptic('light'); await deleteMealLog(id); await load(); }}
-              onAdd={openAdd}
-            />
-          ))}
+
+          {trendsTab === 'week' && (
+            <div>
+              <div style={{ padding: 'var(--page-pad) var(--page-pad) 0' }}>
+                <div className="label" style={{ color: 'var(--text-ghost)' }}>THIS WEEK</div>
+              </div>
+              <WeekGrid scores={allScores} />
+            </div>
+          )}
+
+          {trendsTab === 'year' && (
+            <div>
+              <YearGrid scores={allScores} />
+            </div>
+          )}
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB 3: GROCERY
+      ══════════════════════════════════════════════════════════════════════ */}
+      {mainTab === 'grocery' && <GroceryTab />}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export default function QuickAdd() {
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr 1fr',
-        borderBottom: '2px solid #444',
+        borderBottom: '2px solid var(--border-strong)',
       }}
     >
       {buttons.map((btn, i) => (
@@ -29,7 +29,7 @@ export default function QuickAdd() {
             borderTop: 'none',
             borderBottom: 'none',
             borderLeft: 'none',
-            borderRight: i < buttons.length - 1 ? '1px solid #444' : 'none',
+            borderRight: i < buttons.length - 1 ? '1px solid var(--border)' : 'none',
             padding: '1rem 0.5rem',
             fontSize: '0.6rem',
             letterSpacing: '0.12em',

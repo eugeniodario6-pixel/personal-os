@@ -6,7 +6,7 @@ import { haptic } from '@/lib/haptic';
 
 const LINKS = [
   { href: '/',           label: 'TODAY',    sub: 'Dashboard'  },
-  { href: '/nutrition',  label: 'FUEL',     sub: 'Nutrition'  },
+  { href: '/nutrition',  label: 'EAT',      sub: 'Nutrition'  },
   { href: '/fitness',    label: 'TRAIN',    sub: 'Fitness'    },
   { href: '/habits',     label: 'HABITS',   sub: 'Daily'      },
   { href: '/meditation', label: 'MIND',     sub: 'Meditation' },
@@ -27,26 +27,23 @@ export default function Nav() {
 
   return (
     <>
-      {/* Menu button */}
       <button
-        className={`menu-btn${open ? ' open' : ''}`}
+        className={`menu-btn t-fast${open ? ' open' : ''}`}
         onClick={() => { haptic('light'); setOpen(o => !o); }}
         aria-label="Menu"
       >
         {[0,1,2,3].map(i => <span key={i} className="menu-btn-dot" />)}
       </button>
 
-      {/* Backdrop */}
       {open && (
         <div
           onClick={() => setOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 198, background: 'rgba(0,0,0,0.7)' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 198, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}
         />
       )}
 
-      {/* Drawer */}
       <nav
-        className="nav-drawer"
+        className="nav-drawer t-slide"
         style={{ transform: open ? 'translateX(0)' : 'translateX(100%)' }}
       >
         {LINKS.map(link => {
@@ -54,7 +51,7 @@ export default function Nav() {
           return (
             <button
               key={link.href}
-              className={`nav-item${isActive ? ' active' : ''}`}
+              className={`nav-item t-fast${isActive ? ' active' : ''}`}
               onClick={() => go(link.href)}
             >
               <div>
@@ -62,14 +59,13 @@ export default function Nav() {
                 <p className="nav-sub">{link.sub}</p>
               </div>
               {isActive && (
-                <span style={{ fontSize: '0.7rem', color: '#000', fontWeight: 700 }}>◈</span>
+                <span style={{ color: 'var(--accent)', fontSize: '0.65rem' }}>◈</span>
               )}
             </button>
           );
         })}
-
-        <div style={{ marginTop: 'auto', padding: '1.5rem', borderTop: '1px solid #0d0d0d' }}>
-          <p className="label-sm" style={{ color: '#1a1a1a' }}>PERSONAL OS · v0.1</p>
+        <div style={{ marginTop: 'auto', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
+          <p className="label-xs" style={{ color: 'var(--text-ghost)' }}>PERSONAL OS · v0.1</p>
         </div>
       </nav>
     </>

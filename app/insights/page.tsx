@@ -3,10 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getMealLogs, getWorkoutLogs, getWorkoutHistory, getHabits, getHabitCompletions, getMeditationLogs, getInsights, todayISO } from '@/lib/db';
 
-const MONO = "'IBM Plex Mono', monospace";
-const lbl = { fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: '#888', margin: 0 };
-const border2 = '2px solid #444';
-
 export default function InsightsPage() {
   const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [summaries, setSummaries] = useState<{ label: string; sub: string; value: string }[]>([]);
@@ -66,46 +62,46 @@ export default function InsightsPage() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div style={{ fontFamily: MONO }}>
-      <div style={{ padding: '1rem', borderBottom: border2 }}>
-        <p style={{ ...lbl, marginBottom: '0.25rem' }}>INSIGHTS</p>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>DATA</h1>
+    <div style={{ fontFamily: 'var(--font-mono)' }}>
+      <div style={{ padding: '1rem', borderBottom: '2px solid var(--border-strong)' }}>
+        <p className="label" style={{ marginBottom: '0.25rem' }}>INSIGHTS</p>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)' }}>DATA</h1>
       </div>
 
-      <div style={{ display: 'flex', borderBottom: border2 }}>
+      <div style={{ display: 'flex', borderBottom: '2px solid var(--border-strong)' }}>
         {(['week', 'month'] as const).map(p => (
           <button key={p} onClick={() => setPeriod(p)}
-            style={{ flex: 1, padding: '0.6rem 1rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', textAlign: 'center', border: 'none', background: '#000', cursor: 'pointer', marginBottom: -2, color: period === p ? '#fff' : '#444', borderBottom: `2px solid ${period === p ? '#fff' : '#444'}`, fontFamily: MONO }}>
+            style={{ flex: 1, padding: '0.6rem 1rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', textAlign: 'center', border: 'none', background: 'var(--bg)', cursor: 'pointer', marginBottom: -2, color: period === p ? 'var(--text)' : 'var(--text-ghost)', borderBottom: `2px solid ${period === p ? 'var(--text)' : 'var(--text-ghost)'}`, fontFamily: 'var(--font-mono)' }}>
             {p === 'week' ? 'THIS WEEK' : 'THIS MONTH'}
           </button>
         ))}
       </div>
 
-      <div style={{ borderBottom: border2 }}>
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
-          <span style={lbl}>SUMMARY — {period === 'week' ? 'THIS WEEK' : 'THIS MONTH'}</span>
+      <div style={{ borderBottom: '2px solid var(--border-strong)' }}>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
+          <span className="label">SUMMARY — {period === 'week' ? 'THIS WEEK' : 'THIS MONTH'}</span>
         </div>
         {summaries.map(s => (
-          <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1rem', borderBottom: '1px solid #111' }}>
+          <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1rem', borderBottom: '1px solid var(--border)' }}>
             <div>
-              <p style={lbl}>{s.label}</p>
-              <p style={{ margin: 0, fontSize: '0.65rem', color: '#444' }}>{s.sub}</p>
+              <p className="label">{s.label}</p>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-ghost)' }}>{s.sub}</p>
             </div>
-            <span style={{ fontWeight: 700, fontSize: '1.125rem', color: '#fff' }}>{s.value}</span>
+            <span style={{ fontWeight: 700, fontSize: '1.125rem', color: 'var(--text)' }}>{s.value}</span>
           </div>
         ))}
       </div>
 
       <div>
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #111' }}>
-          <span style={lbl}>DISCOVERED PATTERNS</span>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
+          <span className="label">DISCOVERED PATTERNS</span>
         </div>
         {insights.length === 0 ? (
-          <div style={{ padding: '1.5rem 1rem', color: '#444', fontSize: '0.75rem' }}>NOT ENOUGH DATA YET — KEEP LOGGING.</div>
+          <div style={{ padding: '1.5rem 1rem', color: 'var(--text-ghost)', fontSize: '0.75rem' }}>NOT ENOUGH DATA YET — KEEP LOGGING.</div>
         ) : insights.map((i, idx) => (
-          <div key={idx} style={{ padding: '1rem', borderBottom: '1px solid #111', borderLeft: '3px solid #444' }}>
-            <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: '#fff', lineHeight: 1.6 }}>{i.text}</p>
-            <p style={lbl}>{i.meta}</p>
+          <div key={idx} style={{ padding: '1rem', borderBottom: '1px solid var(--border)', borderLeft: '3px solid var(--border-strong)' }}>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text)', lineHeight: 1.6 }}>{i.text}</p>
+            <p className="label">{i.meta}</p>
           </div>
         ))}
       </div>
