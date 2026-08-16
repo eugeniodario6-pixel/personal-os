@@ -12,14 +12,13 @@ import { haptic } from '@/lib/haptic';
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
-const lbl = { fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' as const, color: '#555', margin: 0 };
-const B2 = '2px solid #222';
-const B1 = '1px solid #161616';
-const BG = '#000';
-const SURFACE = '#070707';
 
 const PHASE_COLOR: Record<string, string> = {
-  Base: '#4af', Build: '#e8ff00', Camp: '#f70', Taper: '#888',
+  Base: '#4ab8ff', Build: '#e8ff00', Camp: '#F5A623', Taper: '#888888',
+};
+
+const PHASE_CLASS: Record<string, string> = {
+  Base: 'phase-base', Build: 'phase-build', Camp: 'phase-camp', Taper: 'phase-taper',
 };
 
 const LIFTS = [
@@ -35,15 +34,9 @@ type SessionType = typeof SESSION_TYPES[number];
 
 const SESSION_META: Record<SessionType, { label: string; color: string }> = {
   strength: { label: 'STRENGTH',     color: '#e8ff00' },
-  cardio:   { label: 'CARDIO',       color: '#f44'    },
-  boxing:   { label: 'PAD & BOXING', color: '#f70'    },
-  agility:  { label: 'AGILITY / BW', color: '#4af'    },
-};
-
-const inputStyle = {
-  width: '100%', fontFamily: MONO, fontSize: '0.875rem',
-  background: '#0a0a0a', color: '#fff', border: B2,
-  padding: '0.5rem 0.75rem', outline: 'none', boxSizing: 'border-box' as const,
+  cardio:   { label: 'CARDIO',       color: '#f44336' },
+  boxing:   { label: 'PAD & BOXING', color: '#F5A623' },
+  agility:  { label: 'AGILITY / BW', color: '#4ab8ff' },
 };
 
 interface SetEntry { actual_weight: string; reps: string; rpe: string; }
@@ -70,40 +63,43 @@ function ExerciseCard({ ex, prescribed, children }: {
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: B1 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', padding: '0.875rem 1.25rem', gap: '0.75rem' }}>
+    <div style={{ borderBottom: '1px solid var(--border-0)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', padding: '1rem 1.25rem', gap: '0.75rem' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' as const }}>
-            <p style={{ margin: 0, fontWeight: 700, color: '#fff', fontSize: '0.875rem', fontFamily: MONO }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' as const }}>
+            <p style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.875rem', fontFamily: MONO }}>
               {ex.name.toUpperCase()}
             </p>
             {prescribed != null && (
-              <span style={{ fontSize: '0.55rem', fontWeight: 700, padding: '0.15rem 0.4rem', background: '#e8ff00', color: '#000', letterSpacing: '0.1em', flexShrink: 0 }}>
+              <span className="badge bg-amber" style={{ fontSize: '0.5rem', flexShrink: 0 }}>
                 {prescribed} KG
               </span>
             )}
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <span style={{ ...lbl, color: '#2a2a2a', fontSize: '0.5rem' }}>{ex.primary_target}</span>
-            <span style={{ ...lbl, color: '#1e1e1e', fontSize: '0.5rem' }}>{ex.equipment}</span>
+            <span className="label-sm">{ex.primary_target}</span>
+            <span className="label-sm">{ex.equipment}</span>
           </div>
         </div>
-        <button onClick={() => setOpen(o => !o)}
-          style={{ background: 'none', border: '1px solid #1e1e1e', color: '#333', fontFamily: MONO, fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.1em', padding: '0.25rem 0.5rem', cursor: 'pointer', flexShrink: 0 }}>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="btn btn-sm btn-ghost"
+          style={{ flexShrink: 0 }}
+        >
           {open ? 'LESS' : 'HOW TO'}
         </button>
       </div>
 
       {open && (
-        <div style={{ padding: '0 1.25rem 1rem' }}>
+        <div style={{ padding: '0 1.25rem 1.25rem' }}>
           {ex.cues && (
-            <div style={{ padding: '0.75rem', background: '#050505', border: '1px solid #0d0d0d', marginBottom: '0.75rem' }}>
-              <p style={{ ...lbl, marginBottom: '0.35rem', color: '#e8ff00', fontSize: '0.5rem' }}>CUES</p>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#777', fontFamily: MONO, lineHeight: 1.6 }}>{ex.cues}</p>
+            <div className="card-dark" style={{ marginBottom: '0.75rem', borderLeft: '2px solid var(--amber)' }}>
+              <p className="label" style={{ color: 'var(--amber)', marginBottom: '0.35rem' }}>CUES</p>
+              <p className="body-sm" style={{ margin: 0, fontFamily: MONO, lineHeight: 1.6 }}>{ex.cues}</p>
             </div>
           )}
           {ex.how_to && (
-            <p style={{ margin: 0, fontSize: '0.73rem', color: '#444', fontFamily: MONO, lineHeight: 1.7 }}>{ex.how_to}</p>
+            <p className="body" style={{ margin: 0, fontFamily: MONO, lineHeight: 1.7 }}>{ex.how_to}</p>
           )}
         </div>
       )}
@@ -267,26 +263,25 @@ export default function PlanPage() {
     ? parsePrescription(plan.strength_prescription) : { sets: 3, reps: '5' };
 
   const backBtn = (onClick: () => void) => (
-    <button onClick={onClick} style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', padding: '0.5rem 0.875rem', border: B2, background: '#fff', color: '#000', cursor: 'pointer', fontFamily: MONO }}>
+    <button onClick={onClick} className="btn btn-primary btn-sm">
       ← BACK
     </button>
   );
 
   const completeBtn = (onClick: () => void) => (
-    <button onClick={onClick} disabled={saving}
-      style={{ width: '100%', padding: '0.875rem', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em', background: '#fff', color: '#000', border: B2, cursor: 'pointer', fontFamily: MONO }}>
+    <button onClick={onClick} disabled={saving} className="btn btn-primary btn-block">
       {saving ? 'SAVING...' : 'COMPLETE SESSION ✓'}
     </button>
   );
 
   // ── SETUP ──────────────────────────────────────────────────────────────────
   if (!hasSetup || showSetup) return (
-    <div style={{ fontFamily: MONO, paddingTop: '4rem', background: BG, minHeight: '100vh' }}>
-      <div style={{ padding: '1.25rem', borderBottom: B2, background: SURFACE, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div className="page" style={{ paddingTop: '4rem' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <p style={{ ...lbl, marginBottom: '0.3rem', color: '#333' }}>PROGRAMME SETUP</p>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>STARTING WEIGHTS</h1>
-          <p style={{ margin: '0.4rem 0 0', fontSize: '0.7rem', color: '#444', fontFamily: MONO, lineHeight: 1.5 }}>
+          <p className="label" style={{ marginBottom: '0.3rem' }}>PROGRAMME SETUP</p>
+          <h1 className="page-title">STARTING WEIGHTS</h1>
+          <p className="body-sm" style={{ marginTop: '0.4rem', fontFamily: MONO }}>
             Weight you can lift for 5 clean reps today.<br />Programme auto-calculates from here.
           </p>
         </div>
@@ -296,23 +291,26 @@ export default function PlanPage() {
         {LIFTS.map(l => {
           const ex = getExerciseByName(l.key);
           return (
-            <div key={l.key} style={{ paddingBottom: '0.875rem', borderBottom: B1 }}>
+            <div key={l.key} style={{ paddingBottom: '0.875rem', borderBottom: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                <p style={{ ...lbl, color: '#fff' }}>{l.key.toUpperCase()}</p>
-                <span style={{ ...lbl, color: '#333' }}>+{l.increment}kg/week</span>
+                <p className="label" style={{ color: 'var(--text-primary)' }}>{l.key.toUpperCase()}</p>
+                <span className="label">+{l.increment}kg/week</span>
               </div>
-              {ex && <p style={{ ...lbl, fontSize: '0.5rem', color: '#2a2a2a', marginBottom: '0.5rem' }}>{ex.primary_target} · {ex.equipment}</p>}
+              {ex && <p className="label-sm" style={{ marginBottom: '0.5rem' }}>{ex.primary_target} · {ex.equipment}</p>}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input type="number" value={setupWeights[l.key]}
+                <input
+                  type="number"
+                  value={setupWeights[l.key]}
                   onChange={e => setSetupWeights(w => ({ ...w, [l.key]: e.target.value }))}
-                  placeholder="e.g. 60" style={{ ...inputStyle, flex: 1 }} />
-                <span style={{ ...lbl, color: '#333' }}>kg</span>
+                  placeholder="e.g. 60"
+                  style={{ flex: 1 }}
+                />
+                <span className="label">kg</span>
               </div>
             </div>
           );
         })}
-        <button onClick={handleSetupSave}
-          style={{ width: '100%', padding: '0.875rem', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em', background: '#fff', color: '#000', border: B2, cursor: 'pointer', fontFamily: MONO }}>
+        <button onClick={handleSetupSave} className="btn btn-primary btn-block">
           {hasSetup ? 'UPDATE WEIGHTS' : 'START PROGRAMME →'}
         </button>
       </div>
@@ -321,11 +319,11 @@ export default function PlanPage() {
 
   // ── STRENGTH SESSION ───────────────────────────────────────────────────────
   if (activeSession === 'strength') return (
-    <div style={{ fontFamily: MONO, paddingTop: '4rem', background: BG, minHeight: '100vh' }}>
-      <div style={{ padding: '1.25rem', borderBottom: B2, background: SURFACE, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+    <div className="page" style={{ paddingTop: '4rem' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <p style={{ ...lbl, marginBottom: '0.3rem', color: '#333' }}>WEEK {week} · {plan?.phase?.toUpperCase()} · {todayLabel()}</p>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>STRENGTH</h1>
+          <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()} · {todayLabel()}</p>
+          <h1 className="page-title">STRENGTH</h1>
           <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: phaseColor }}>
             {plan?.strength_prescription} — {prescribedReps} REPS PER SET
           </p>
@@ -341,17 +339,17 @@ export default function PlanPage() {
           <div key={l.key}>
             {ex
               ? <ExerciseCard ex={ex} prescribed={pw}>
-                  <div style={{ padding: '0 1.25rem 1rem' }}>
+                  <div style={{ padding: '0 1.25rem 1.25rem' }}>
                     {/* Column headers */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1.5rem 1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.35rem' }}>
                       <span />
                       {['WEIGHT (KG)', 'REPS', 'RPE'].map(h => (
-                        <span key={h} style={{ ...lbl, fontSize: '0.5rem', color: '#2a2a2a' }}>{h}</span>
+                        <span key={h} className="label-sm">{h}</span>
                       ))}
                     </div>
                     {liftSets.map((s, idx) => (
                       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5rem 1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.35rem', alignItems: 'center' }}>
-                        <span style={{ ...lbl, color: '#2a2a2a', fontSize: '0.55rem' }}>S{idx + 1}</span>
+                        <span className="label" style={{ fontSize: '0.55rem' }}>S{idx + 1}</span>
                         {(['actual_weight', 'reps', 'rpe'] as const).map(field => (
                           <input key={field} type="number"
                             value={s[field]}
@@ -364,30 +362,30 @@ export default function PlanPage() {
                               u[idx] = { ...u[idx], [field]: e.target.value };
                               return { ...prev, [l.key]: u };
                             })}
-                            style={{ ...inputStyle, padding: '0.4rem 0.5rem', fontSize: '0.8rem' }}
+                            style={{ padding: '0.4rem 0.5rem', fontSize: '0.8rem' }}
                           />
                         ))}
                       </div>
                     ))}
                   </div>
                 </ExerciseCard>
-              : <div style={{ padding: '0.875rem 1.25rem', borderBottom: B1 }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>{l.key.toUpperCase()}</p>
+              : <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-0)' }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>{l.key.toUpperCase()}</p>
                 </div>
             }
           </div>
         );
       })}
 
-      <div style={{ padding: '1.25rem', borderTop: B2, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
           <div>
-            <p style={{ ...lbl, marginBottom: '0.3rem' }}>SESSION RPE</p>
-            <input type="number" value={sessionRPE} onChange={e => setSessionRPE(e.target.value)} placeholder="7" min="1" max="10" step="0.5" style={inputStyle} />
+            <p className="label" style={{ marginBottom: '0.3rem' }}>SESSION RPE</p>
+            <input type="number" value={sessionRPE} onChange={e => setSessionRPE(e.target.value)} placeholder="7" min="1" max="10" step="0.5" />
           </div>
           <div>
-            <p style={{ ...lbl, marginBottom: '0.3rem' }}>NOTES</p>
-            <input value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} placeholder="Optional" style={inputStyle} />
+            <p className="label" style={{ marginBottom: '0.3rem' }}>NOTES</p>
+            <input value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} placeholder="Optional" />
           </div>
         </div>
         {completeBtn(handleStrengthLog)}
@@ -401,20 +399,20 @@ export default function PlanPage() {
       e.name.toLowerCase().includes((plan?.cardio_protocol ?? '').toLowerCase().split(' ')[0])
     );
     return (
-      <div style={{ fontFamily: MONO, paddingTop: '4rem', background: BG, minHeight: '100vh' }}>
-        <div style={{ padding: '1.25rem', borderBottom: B2, background: SURFACE, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div className="page" style={{ paddingTop: '4rem' }}>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <p style={{ ...lbl, marginBottom: '0.3rem', color: '#333' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>CARDIO</h1>
-            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: '#f44' }}>{plan?.cardio_protocol?.toUpperCase()}</p>
+            <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
+            <h1 className="page-title">CARDIO</h1>
+            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: '#f44336' }}>{plan?.cardio_protocol?.toUpperCase()}</p>
           </div>
           {backBtn(() => setActiveSession(null))}
         </div>
 
         {/* Prescribed detail */}
-        <div style={{ padding: '1rem 1.25rem', background: SURFACE, borderBottom: B2 }}>
-          <p style={{ ...lbl, marginBottom: '0.3rem', color: '#f44' }}>PRESCRIBED</p>
-          <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#fff', fontFamily: MONO }}>{plan?.cardio_detail}</p>
+        <div className="section" style={{ background: 'var(--surface-1)' }}>
+          <p className="label" style={{ marginBottom: '0.3rem', color: '#f44336' }}>PRESCRIBED</p>
+          <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: MONO }}>{plan?.cardio_detail}</p>
         </div>
 
         {/* Protocol how-to */}
@@ -422,15 +420,23 @@ export default function PlanPage() {
 
         <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>DURATION (MIN)</p>
-              <input type="number" value={simpleFields.duration} onChange={e => sf('duration', e.target.value)} placeholder="30" style={inputStyle} /></div>
-            <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>AVG HEART RATE</p>
-              <input type="number" value={simpleFields.hr} onChange={e => sf('hr', e.target.value)} placeholder="135" style={inputStyle} /></div>
+            <div>
+              <p className="label" style={{ marginBottom: '0.3rem' }}>DURATION (MIN)</p>
+              <input type="number" value={simpleFields.duration} onChange={e => sf('duration', e.target.value)} placeholder="30" />
+            </div>
+            <div>
+              <p className="label" style={{ marginBottom: '0.3rem' }}>AVG HEART RATE</p>
+              <input type="number" value={simpleFields.hr} onChange={e => sf('hr', e.target.value)} placeholder="135" />
+            </div>
           </div>
-          <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>RPE</p>
-            <input type="number" value={simpleFields.rpe} onChange={e => sf('rpe', e.target.value)} placeholder="6" min="1" max="10" step="0.5" style={inputStyle} /></div>
-          <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>NOTES</p>
-            <input value={simpleFields.notes} onChange={e => sf('notes', e.target.value)} placeholder="Optional" style={inputStyle} /></div>
+          <div>
+            <p className="label" style={{ marginBottom: '0.3rem' }}>RPE</p>
+            <input type="number" value={simpleFields.rpe} onChange={e => sf('rpe', e.target.value)} placeholder="6" min="1" max="10" step="0.5" />
+          </div>
+          <div>
+            <p className="label" style={{ marginBottom: '0.3rem' }}>NOTES</p>
+            <input value={simpleFields.notes} onChange={e => sf('notes', e.target.value)} placeholder="Optional" />
+          </div>
           {completeBtn(() => handleSimpleLog('cardio'))}
         </div>
       </div>
@@ -442,29 +448,37 @@ export default function PlanPage() {
     const shadowEx = getExerciseByName('Shadowboxing');
     const bagEx = getExerciseByName('Heavy Bag Work');
     return (
-      <div style={{ fontFamily: MONO, paddingTop: '4rem', background: BG, minHeight: '100vh' }}>
-        <div style={{ padding: '1.25rem', borderBottom: B2, background: SURFACE, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div className="page" style={{ paddingTop: '4rem' }}>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <p style={{ ...lbl, marginBottom: '0.3rem', color: '#333' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>PAD & BOXING</h1>
-            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: '#f70' }}>{plan?.boxing_focus}</p>
+            <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
+            <h1 className="page-title">PAD & BOXING</h1>
+            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: 'var(--amber)' }}>{plan?.boxing_focus}</p>
           </div>
           {backBtn(() => setActiveSession(null))}
         </div>
         {shadowEx && <ExerciseCard ex={shadowEx} />}
         {bagEx && <ExerciseCard ex={bagEx} />}
-        <div style={{ padding: '1.25rem', borderTop: B2, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>SHADOW (ROUNDS)</p>
-              <input type="number" value={simpleFields.shadowRounds} onChange={e => sf('shadowRounds', e.target.value)} placeholder="3" style={inputStyle} /></div>
-            <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>BAG (ROUNDS)</p>
-              <input type="number" value={simpleFields.bagRounds} onChange={e => sf('bagRounds', e.target.value)} placeholder="3" style={inputStyle} /></div>
+            <div>
+              <p className="label" style={{ marginBottom: '0.3rem' }}>SHADOW (ROUNDS)</p>
+              <input type="number" value={simpleFields.shadowRounds} onChange={e => sf('shadowRounds', e.target.value)} placeholder="3" />
+            </div>
+            <div>
+              <p className="label" style={{ marginBottom: '0.3rem' }}>BAG (ROUNDS)</p>
+              <input type="number" value={simpleFields.bagRounds} onChange={e => sf('bagRounds', e.target.value)} placeholder="3" />
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>RPE</p>
-              <input type="number" value={simpleFields.rpe} onChange={e => sf('rpe', e.target.value)} placeholder="7" min="1" max="10" step="0.5" style={inputStyle} /></div>
-            <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>NOTES</p>
-              <input value={simpleFields.notes} onChange={e => sf('notes', e.target.value)} placeholder="Optional" style={inputStyle} /></div>
+            <div>
+              <p className="label" style={{ marginBottom: '0.3rem' }}>RPE</p>
+              <input type="number" value={simpleFields.rpe} onChange={e => sf('rpe', e.target.value)} placeholder="7" min="1" max="10" step="0.5" />
+            </div>
+            <div>
+              <p className="label" style={{ marginBottom: '0.3rem' }}>NOTES</p>
+              <input value={simpleFields.notes} onChange={e => sf('notes', e.target.value)} placeholder="Optional" />
+            </div>
           </div>
           {completeBtn(() => handleSimpleLog('boxing'))}
         </div>
@@ -476,21 +490,21 @@ export default function PlanPage() {
   if (activeSession === 'agility') {
     const agilityExs = exercises.filter(e => ['Agility', 'Bodyweight', 'Flexibility'].includes(e.type)).slice(0, 5);
     return (
-      <div style={{ fontFamily: MONO, paddingTop: '4rem', background: BG, minHeight: '100vh' }}>
-        <div style={{ padding: '1.25rem', borderBottom: B2, background: SURFACE, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div className="page" style={{ paddingTop: '4rem' }}>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <p style={{ ...lbl, marginBottom: '0.3rem', color: '#333' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>AGILITY / BW</h1>
-            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: '#4af' }}>{plan?.agility_focus}</p>
+            <p className="label" style={{ marginBottom: '0.3rem' }}>WEEK {week} · {plan?.phase?.toUpperCase()}</p>
+            <h1 className="page-title">AGILITY / BW</h1>
+            <p style={{ margin: '0.2rem 0 0', fontFamily: MONO, fontSize: '0.7rem', color: '#4ab8ff' }}>{plan?.agility_focus}</p>
           </div>
           {backBtn(() => setActiveSession(null))}
         </div>
         {agilityExs.map(ex => <ExerciseCard key={ex.id} ex={ex} />)}
-        <div style={{ padding: '1.25rem', borderTop: B2, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ padding: '1.25rem', borderTop: '2px solid var(--border-2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
             {[['LADDER', 'ladder'], ['CONES', 'cones']].map(([label, key]) => (
               <button key={key} onClick={() => sf(key, !simpleFields[key as keyof typeof simpleFields])}
-                style={{ padding: '0.6rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', border: B2, background: simpleFields[key as keyof typeof simpleFields] ? '#fff' : BG, color: simpleFields[key as keyof typeof simpleFields] ? '#000' : '#444', cursor: 'pointer', fontFamily: MONO }}>
+                className={`btn btn-block ${simpleFields[key as keyof typeof simpleFields] ? 'btn-primary' : 'btn-ghost'}`}>
                 {simpleFields[key as keyof typeof simpleFields] ? '✓ ' : ''}{label}
               </button>
             ))}
@@ -499,15 +513,17 @@ export default function PlanPage() {
             {[['PUSH-UPS', 'pushUps'], ['BW SQUATS', 'bwSquats'], ['LUNGES', 'lunges'],
               ['PLANK (SEC)', 'plankSec'], ['PULL-UPS', 'pullUps'], ['RPE', 'rpe']].map(([label, key]) => (
               <div key={key}>
-                <p style={{ ...lbl, marginBottom: '0.2rem', fontSize: '0.5rem' }}>{label}</p>
+                <p className="label" style={{ marginBottom: '0.2rem', fontSize: '0.5rem' }}>{label}</p>
                 <input type="number" value={simpleFields[key as keyof typeof simpleFields] as string}
                   onChange={e => sf(key, e.target.value)}
-                  style={{ ...inputStyle, padding: '0.4rem 0.5rem', fontSize: '0.8rem' }} />
+                  style={{ padding: '0.4rem 0.5rem', fontSize: '0.8rem' }} />
               </div>
             ))}
           </div>
-          <div><p style={{ ...lbl, marginBottom: '0.3rem' }}>NOTES</p>
-            <input value={simpleFields.notes} onChange={e => sf('notes', e.target.value)} placeholder="Optional" style={inputStyle} /></div>
+          <div>
+            <p className="label" style={{ marginBottom: '0.3rem' }}>NOTES</p>
+            <input value={simpleFields.notes} onChange={e => sf('notes', e.target.value)} placeholder="Optional" />
+          </div>
           {completeBtn(() => handleSimpleLog('agility'))}
         </div>
       </div>
@@ -515,64 +531,64 @@ export default function PlanPage() {
   }
 
   // ── PLAN OVERVIEW ──────────────────────────────────────────────────────────
-  if (loading) return <div style={{ padding: '5rem 1.25rem', color: '#333', fontFamily: MONO, fontSize: '0.75rem' }}>LOADING...</div>;
+  if (loading) return (
+    <div className="page" style={{ padding: '5rem 1.25rem' }}>
+      <p className="label">LOADING...</p>
+    </div>
+  );
 
   const nextSession = suggestedSession(sessions);
 
   return (
-    <div style={{ fontFamily: MONO, paddingTop: '4rem', background: BG, minHeight: '100vh' }}>
+    <div className="page" style={{ paddingTop: '4rem' }}>
       {/* Header */}
-      <div style={{ padding: '1.25rem', borderBottom: B2, background: SURFACE }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+      <div className="page-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
           <div>
-            <p style={{ ...lbl, marginBottom: '0.3rem', color: '#333' }}>
+            <p className="label" style={{ marginBottom: '0.3rem' }}>
               {todayLabel()} · {new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }).toUpperCase()}
             </p>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>TRAINING PLAN</h1>
+            <h1 className="page-title">TRAINING PLAN</h1>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => router.push('/fitness/exercises')}
-              style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', padding: '0.5rem 0.75rem', border: B2, background: BG, color: '#fff', cursor: 'pointer', fontFamily: MONO }}>
+            <button onClick={() => router.push('/fitness/exercises')} className="btn btn-sm">
               LIBRARY
             </button>
-            <button onClick={() => setShowSetup(true)}
-              style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', padding: '0.5rem 0.75rem', border: '2px solid #161616', background: BG, color: '#444', cursor: 'pointer', fontFamily: MONO }}>
+            <button onClick={() => setShowSetup(true)} className="btn btn-sm btn-ghost">
               SETUP
             </button>
           </div>
         </div>
 
         {/* Week + Phase */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.25rem' }}>
           <div>
-            <p style={{ ...lbl, marginBottom: '0.15rem', color: '#333' }}>WEEK</p>
-            <p style={{ margin: 0, fontSize: '2.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.04em', lineHeight: 1 }}>{week}</p>
-            <p style={{ ...lbl, color: '#1e1e1e', fontSize: '0.5rem' }}>OF 26</p>
+            <p className="label" style={{ marginBottom: '0.15rem' }}>WEEK</p>
+            <p className="num-xl" style={{ margin: 0 }}>{week}</p>
+            <p className="label-sm" style={{ marginTop: '0.1rem' }}>OF 26</p>
           </div>
-          <div>
-            <span style={{ display: 'inline-block', padding: '0.35rem 0.875rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', color: '#000', background: phaseColor, fontFamily: MONO }}>
-              {plan?.phase?.toUpperCase()}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <span className={`badge badge-fill ${PHASE_CLASS[plan?.phase ?? ''] ?? ''}`} style={{ alignSelf: 'flex-start' }}>
+              <span>{plan?.phase?.toUpperCase()}</span>
             </span>
             {plan?.is_deload && (
-              <span style={{ marginLeft: '0.5rem', display: 'inline-block', padding: '0.35rem 0.75rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', color: '#888', border: '1px solid #333', fontFamily: MONO }}>
-                DELOAD
-              </span>
+              <span className="badge" style={{ alignSelf: 'flex-start', color: 'var(--text-secondary)' }}>DELOAD</span>
             )}
           </div>
         </div>
 
         {/* Prescribed weight strip */}
         {plan && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', border: B2, background: '#050505' }}>
-            {LIFTS.map((l, i) => {
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', border: '1px solid var(--border-1)', background: 'var(--surface-1)' }}>
+            {LIFTS.map((l) => {
               const pw = getPrescribedWeight(l.key);
               return (
-                <div key={l.key} style={{ padding: '0.5rem 0.25rem', textAlign: 'center' as const, borderRight: i < 4 ? B1 : 'none' }}>
-                  <p style={{ ...lbl, fontSize: '0.45rem', marginBottom: '0.2rem', color: '#222' }}>{l.key.split(' ')[0].toUpperCase()}</p>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: pw ? phaseColor : '#222', fontFamily: MONO }}>
+                <div key={l.key} className="stat-cell" style={{ textAlign: 'center' }}>
+                  <p className="label-sm" style={{ marginBottom: '0.2rem' }}>{l.key.split(' ')[0].toUpperCase()}</p>
+                  <p className="num-md" style={{ margin: 0, color: pw ? phaseColor : 'var(--text-ghost)' }}>
                     {pw ? `${pw}` : '—'}
                   </p>
-                  <p style={{ ...lbl, fontSize: '0.45rem', marginTop: '0.1rem', color: '#161616' }}>kg</p>
+                  <p className="label-sm" style={{ marginTop: '0.1rem' }}>kg</p>
                 </div>
               );
             })}
@@ -582,17 +598,17 @@ export default function PlanPage() {
 
       {/* UP NEXT */}
       {!sessionDone(nextSession) && (
-        <div style={{ padding: '0.5rem 1.25rem', background: '#050505', borderBottom: B1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ ...lbl, color: '#2a2a2a' }}>UP NEXT</span>
+        <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="label">UP NEXT</span>
           <span style={{ fontSize: '0.65rem', fontWeight: 700, color: SESSION_META[nextSession].color, fontFamily: MONO, letterSpacing: '0.1em' }}>
             {SESSION_META[nextSession].label}
           </span>
         </div>
       )}
 
-      {/* Session cards */}
-      <div style={{ padding: '0.5rem 1.25rem', background: SURFACE, borderBottom: B1 }}>
-        <span style={{ ...lbl, color: '#2a2a2a' }}>THIS WEEK</span>
+      {/* Session cards header */}
+      <div className="section-label">
+        <span className="label">THIS WEEK</span>
       </div>
 
       {SESSION_TYPES.map(type => {
@@ -609,26 +625,26 @@ export default function PlanPage() {
           <button key={type} onClick={() => !done && setActiveSession(type)}
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              width: '100%', padding: '1rem 1.25rem',
-              background: isNext ? '#080808' : BG,
-              border: 'none', borderBottom: B1,
+              width: '100%', padding: '1.25rem var(--page-pad)',
+              background: isNext ? 'var(--surface-1)' : 'var(--surface-0)',
+              border: 'none', borderBottom: '1px solid var(--border-0)',
               cursor: done ? 'default' : 'pointer',
               textAlign: 'left' as const, fontFamily: MONO,
-              borderLeft: isNext ? `3px solid ${meta.color}` : '3px solid transparent',
+              borderLeft: isNext ? `3px solid #F5A623` : '3px solid transparent',
             }}>
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontWeight: 700, color: done ? '#2a2a2a' : '#fff', fontSize: '0.875rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
+                <span style={{ fontWeight: 700, color: done ? 'var(--text-ghost)' : 'var(--text-primary)', fontSize: '0.875rem' }}>
                   {meta.label}
                 </span>
                 {done
-                  ? <span style={{ fontSize: '0.5rem', fontWeight: 700, color: '#4f8', border: '1px solid #4f8', padding: '0.1rem 0.35rem', letterSpacing: '0.1em' }}>DONE</span>
-                  : isNext && <span style={{ fontSize: '0.5rem', fontWeight: 700, color: meta.color, border: `1px solid ${meta.color}`, padding: '0.1rem 0.35rem', letterSpacing: '0.1em' }}>TODAY</span>
+                  ? <span className="badge" style={{ color: 'var(--green)' }}>DONE</span>
+                  : isNext && <span className="badge" style={{ color: '#F5A623' }}>TODAY</span>
                 }
               </div>
-              <p style={{ ...lbl, color: done ? '#1a1a1a' : '#2a2a2a', margin: 0, fontSize: '0.5rem' }}>{sub[type]}</p>
+              <p className="label" style={{ margin: 0, color: done ? 'var(--text-ghost)' : 'var(--text-tertiary)' }}>{sub[type]}</p>
             </div>
-            <span style={{ color: done ? '#1a1a1a' : '#444', fontSize: done ? '0.875rem' : '1.1rem' }}>
+            <span style={{ color: done ? 'var(--text-ghost)' : 'var(--text-secondary)', fontSize: done ? '0.875rem' : '1.1rem' }}>
               {done ? '✓' : '→'}
             </span>
           </button>
@@ -636,14 +652,15 @@ export default function PlanPage() {
       })}
 
       {/* Week nav */}
-      <div style={{ display: 'flex', borderTop: B2, marginTop: '0.5rem' }}>
+      <div style={{ display: 'flex', borderTop: '2px solid var(--border-2)', marginTop: '0.5rem' }}>
         {[
           { label: '← PREV', fn: () => setWeek(w => Math.max(1, w - 1)), active: week > 1 },
           { label: `W${getCurrentTrainingWeek()}`, fn: () => setWeek(getCurrentTrainingWeek()), active: true },
           { label: 'NEXT →', fn: () => setWeek(w => Math.min(26, w + 1)), active: week < 26 },
         ].map((b, i) => (
           <button key={i} onClick={b.fn}
-            style={{ flex: 1, padding: '0.75rem', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', background: BG, color: b.active ? '#444' : '#1e1e1e', border: 'none', borderRight: i < 2 ? B1 : 'none', cursor: 'pointer', fontFamily: MONO }}>
+            className="btn btn-ghost"
+            style={{ flex: 1, padding: '0.75rem', borderRight: i < 2 ? '1px solid var(--border-0)' : 'none', color: b.active ? 'var(--text-secondary)' : 'var(--text-ghost)' }}>
             {b.label}
           </button>
         ))}

@@ -136,7 +136,7 @@ export default function TodayPage() {
     <div style={{ fontFamily: MONO }}>
 
       {/* ── Hero score ── */}
-      <div style={{ padding: '2rem 1.25rem 1.5rem', borderBottom: '2px solid #1a1a1a' }}>
+      <div style={{ padding: '2rem 1.25rem 1.5rem', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <div>
             <p className="label" style={{ marginBottom: '0.3rem' }}>{dateStr}</p>
@@ -144,7 +144,7 @@ export default function TodayPage() {
           </div>
           <button
               onClick={() => { haptic('light'); router.push('/log'); }}
-              style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.5rem 0.875rem', border: '2px solid #2a2a2a', background: '#000', color: '#fff', cursor: 'pointer', fontFamily: MONO }}
+              style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '0.5rem 0.875rem', border: '1px solid var(--border-2)', background: '#000', color: '#fff', cursor: 'pointer', fontFamily: MONO }}
             >
               + LOG
             </button>
@@ -190,7 +190,7 @@ export default function TodayPage() {
       </div>
 
       {/* ── Stats row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #1a1a1a' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--border-1)' }}>
         {/* Calories */}
         <div style={{ borderRight: '1px solid #1a1a1a', padding: '1.25rem' }}>
           <p className="label" style={{ marginBottom: '0.5rem' }}>CALORIES</p>
@@ -216,7 +216,7 @@ export default function TodayPage() {
       </div>
 
       {/* ── Status pills ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '2px solid #1a1a1a' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{
           borderRight: '1px solid #1a1a1a',
           padding: '1rem 1.25rem',
@@ -243,7 +243,7 @@ export default function TodayPage() {
       </div>
 
       {/* ── Quick actions ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '2px solid #1a1a1a' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid var(--border-1)' }}>
         {[
           { label: '+ MEAL',    path: '/nutrition?action=add' },
           { label: '+ WORKOUT', path: '/fitness?action=add' },
@@ -297,7 +297,7 @@ export default function TodayPage() {
               display: 'flex', alignItems: 'center', gap: '0.875rem',
               width: '100%', padding: '1rem 1.25rem',
               background: h.done ? '#fff' : '#000',
-              border: 'none', borderBottom: '1px solid #0f0f0f',
+              border: 'none', borderBottom: '1px solid var(--border-0)',
               cursor: 'pointer', textAlign: 'left', fontFamily: MONO,
               WebkitTapHighlightColor: 'transparent',
             }}
@@ -330,7 +330,7 @@ export default function TodayPage() {
 
       {/* ── Suggested meditation ── */}
       {suggested && (
-        <div style={{ borderTop: '2px solid #1a1a1a', borderBottom: '2px solid #1a1a1a' }}>
+        <div style={{ borderTop: '1px solid var(--border-1)', borderBottom: '1px solid var(--border-1)' }}>
           <div className="section-header">
             <p className="label">START HERE</p>
             <p className="label" style={{ color: '#222' }}>{suggested.duration_min} MIN</p>
