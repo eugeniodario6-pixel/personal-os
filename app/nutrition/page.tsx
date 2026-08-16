@@ -14,6 +14,8 @@ interface MealLogWithFood extends MealLog { food: FoodItem | null; }
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 type Mode = 'log' | 'search' | 'manual';
 
+const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
 interface FoodResult {
   id: string;
   name: string;
@@ -28,7 +30,15 @@ interface FoodResult {
   serving_unit: string;
 }
 
-async function searchFatSecret(query: string): Promise<FoodResult[]> {
+function getMealTypeByTime(): MealType {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 10) return 'breakfast';
+  if (h >= 10 && h < 14) return 'lunch';
+  if (h >= 17 && h < 21) return 'dinner';
+  return 'snack';
+}
+
+async function searchFood(query: string): Promise<FoodResult[]> {
   const res = await fetch(`/api/food-search?q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error('Search failed');
   const data = await res.json();
@@ -50,7 +60,7 @@ function NutritionContent() {
   const [searchError, setSearchError] = useState('');
   const [selected, setSelected] = useState<FoodResult | null>(null);
   const [quantity, setQuantity] = useState('100');
-  const [mealType, setMealType] = useState<MealType>('lunch');
+  const [mealType, setMealType] = useState<MealType>(getMealTypeByTime());
 
   // Manual
   const [addName, setAddName] = useState('');
@@ -62,7 +72,7 @@ function NutritionContent() {
   const [addServing, setAddServing] = useState('100');
   const [addServingUnit, setAddServingUnit] = useState('g');
   const [addQuantity, setAddQuantity] = useState('100');
-  const [addMealType, setAddMealType] = useState<MealType>('lunch');
+  const [addMealType, setAddMealType] = useState<MealType>(getMealTypeByTime());
   const [addError, setAddError] = useState('');
 
   const loadData = useCallback(async () => {
@@ -77,7 +87,7 @@ function NutritionContent() {
     if (!query.trim()) return;
     setSearching(true); setSearchError(''); setResults([]); setSelected(null);
     try {
-      const r = await searchFatSecret(query.trim());
+      const r = await searchFood(query.trim());
       if (r.length === 0) setSearchError('NO RESULTS. TRY A DIFFERENT NAME OR ENTER MANUALLY.');
       setResults(r);
     } catch {
@@ -91,18 +101,16 @@ function NutritionContent() {
     if (!selected) return;
     haptic('medium');
     const qty = parseFloat(quantity) || 100;
-    const ratio = qty / selected.serving_size;
-    const foodId = await addFoodItem({
+    await addFoodItem({
       external_id: null, name: selected.name, brand: selected.brand || null,
       barcode: null, serving_unit: selected.serving_unit,
       serving_size: selected.serving_size,
       calories: selected.calories, protein: selected.protein,
       carbs: selected.carbs, fat: selected.fat, is_favorite: false,
-    });
-    await addMealLog({
+    }).then(foodId => addMealLog({
       date: todayISO(), meal_type: mealType, food_item_id: foodId,
       quantity: qty, logged_at: new Date().toISOString(), source: 'search',
-    });
+    }));
     setSelected(null); setQuery(''); setResults([]); setQuantity('100');
     await loadData();
     setMode('log');
@@ -141,9 +149,26 @@ function NutritionContent() {
 
   const calPct = Math.min((totals.calories / calorieTarget) * 100, 100);
 
-  // Computed preview for selected food
+  // Live macro preview — correctly scaled by serving_size
   const qty = parseFloat(quantity) || 100;
-  const previewCal = selected ? Math.round(selected.calories * qty / selected.serving_size) : 0;
+  const ratio = selected ? qty / selected.serving_size : 0;
+  const previewCal = selected ? Math.round(selected.calories * ratio) : 0;
+  const previewProtein = selected ? Math.round(selected.protein * ratio * 10) / 10 : 0;
+  const previewCarbs = selected ? Math.round(selected.carbs * ratio * 10) / 10 : 0;
+  const previewFat = selected ? Math.round(selected.fat * ratio * 10) / 10 : 0;
+
+  // Group logs by meal type
+  const logsByMeal = MEAL_ORDER.reduce((acc, meal) => {
+    acc[meal] = logs.filter(l => l.meal_type === meal);
+    return acc;
+  }, {} as Record<MealType, MealLogWithFood[]>);
+
+  const mealTotals = (mealLogs: MealLogWithFood[]) =>
+    mealLogs.reduce((acc, l) => {
+      if (!l.food) return acc;
+      const r = l.quantity / l.food.serving_size;
+      return { cal: acc.cal + l.food.calories * r, p: acc.p + l.food.protein * r };
+    }, { cal: 0, p: 0 });
 
   return (
     <div style={{ fontFamily: MONO, paddingTop: '4rem' }}>
@@ -232,16 +257,13 @@ function NutritionContent() {
             <button
               key={i}
               onClick={() => { haptic('light'); setSelected(r); setQuery(r.name); setResults([]); }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0.875rem 1.25rem', background: r.isGeneric ? '#000' : '#050505', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', textAlign: 'left', fontFamily: MONO, opacity: r.isGeneric ? 1 : 0.7 }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0.875rem 1.25rem', background: '#000', border: 'none', borderBottom: '1px solid #111', cursor: 'pointer', textAlign: 'left', fontFamily: MONO }}
             >
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.1rem' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: r.isGeneric ? '#fff' : '#888', fontSize: '0.875rem' }}>{r.name}</p>
-                  {r.isGeneric && <span style={{ fontSize: '0.45rem', fontWeight: 700, letterSpacing: '0.15em', color: '#F5A623', border: '1px solid #F5A623', padding: '0.1rem 0.3rem' }}>WHOLE</span>}
-                </div>
-                {r.brand && <p style={{ ...lbl, color: '#333' }}>{r.brand}</p>}
+                <p style={{ margin: 0, fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>{r.name}</p>
+                <p style={{ ...lbl, marginTop: '0.1rem', color: '#333' }}>{r.serving_size}{r.serving_unit} · {r.protein}g P · {r.carbs}g C · {r.fat}g F</p>
               </div>
-              <p style={{ margin: 0, fontWeight: 700, color: r.isGeneric ? '#F5A623' : '#555', fontSize: '0.875rem', whiteSpace: 'nowrap', marginLeft: '1rem' }}>
+              <p style={{ margin: 0, fontWeight: 700, color: '#F5A623', fontSize: '0.875rem', whiteSpace: 'nowrap', marginLeft: '1rem' }}>
                 {r.calories} kcal
               </p>
             </button>
@@ -264,8 +286,13 @@ function NutritionContent() {
               <p style={{ ...lbl, marginBottom: '0.75rem' }}>LOG: {selected.name.toUpperCase()}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <div>
-                  <p style={{ ...lbl, marginBottom: '0.35rem' }}>QUANTITY (G)</p>
-                  <input type="number" value={quantity} onChange={e => setQuantity(e.target.value)} style={inputStyle} />
+                  <p style={{ ...lbl, marginBottom: '0.35rem' }}>QUANTITY ({selected.serving_unit})</p>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={e => setQuantity(e.target.value)}
+                    style={inputStyle}
+                  />
                 </div>
                 <div>
                   <p style={{ ...lbl, marginBottom: '0.35rem' }}>MEAL TYPE</p>
@@ -277,11 +304,12 @@ function NutritionContent() {
                   </select>
                 </div>
               </div>
+              {/* Live macro preview */}
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.875rem', padding: '0.75rem', background: '#111', border: '1px solid #1a1a1a' }}>
                 <div><p style={lbl}>KCAL</p><p style={{ margin: 0, fontWeight: 700, color: '#F5A623' }}>{previewCal}</p></div>
-                <div><p style={lbl}>PROTEIN</p><p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>{Math.round(selected.protein * qty / 100)}g</p></div>
-                <div><p style={lbl}>CARBS</p><p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>{Math.round(selected.carbs * qty / 100)}g</p></div>
-                <div><p style={lbl}>FAT</p><p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>{Math.round(selected.fat * qty / 100)}g</p></div>
+                <div><p style={lbl}>PROTEIN</p><p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>{previewProtein}g</p></div>
+                <div><p style={lbl}>CARBS</p><p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>{previewCarbs}g</p></div>
+                <div><p style={lbl}>FAT</p><p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>{previewFat}g</p></div>
               </div>
               <button onClick={logSelected}
                 style={{ width: '100%', padding: '0.875rem', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em', background: '#fff', color: '#000', border: border2, cursor: 'pointer', fontFamily: MONO }}>
@@ -330,12 +358,9 @@ function NutritionContent() {
         </div>
       )}
 
-      {/* ── LOG MODE ── */}
+      {/* ── LOG MODE — grouped by meal ── */}
       {mode === 'log' && (
         <>
-          <div style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid #1a1a1a' }}>
-            <p style={lbl}>TODAY&apos;S LOG</p>
-          </div>
           {logs.length === 0 ? (
             <div style={{ padding: '2.5rem 1.25rem' }}>
               <p style={{ ...lbl, color: '#222', marginBottom: '0.5rem' }}>NOTHING LOGGED YET</p>
@@ -343,17 +368,31 @@ function NutritionContent() {
                 SEARCH FOR FOOD →
               </button>
             </div>
-          ) : logs.map(log => {
-            if (!log.food) return null;
-            const r = log.quantity / log.food.serving_size;
-            const cal = Math.round(log.food.calories * r);
+          ) : MEAL_ORDER.map(meal => {
+            const mealLogs = logsByMeal[meal];
+            if (mealLogs.length === 0) return null;
+            const { cal, p } = mealTotals(mealLogs);
             return (
-              <div key={log.id} style={{ display: 'flex', alignItems: 'center', padding: '0.875rem 1.25rem', borderBottom: '1px solid #111' }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>{log.food.name}</p>
-                  <p style={{ ...lbl, marginTop: '0.2rem' }}>{log.meal_type.toUpperCase()} · {log.quantity}{log.food.serving_unit} · <span style={{ color: '#F5A623' }}>{cal} KCAL</span></p>
+              <div key={meal}>
+                {/* Meal section header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.6rem 1.25rem', background: '#060606', borderBottom: '1px solid #1a1a1a', borderTop: border2 }}>
+                  <span style={{ ...lbl, color: '#fff' }}>{meal.toUpperCase()}</span>
+                  <span style={{ fontSize: '0.6rem', color: '#333', fontFamily: MONO }}>{Math.round(cal)} KCAL · {Math.round(p)}G P</span>
                 </div>
-                <button onClick={() => handleDelete(log.id)} style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', fontSize: '1rem', fontFamily: MONO, padding: '0.25rem' }}>✕</button>
+                {mealLogs.map(log => {
+                  if (!log.food) return null;
+                  const r = log.quantity / log.food.serving_size;
+                  const cal = Math.round(log.food.calories * r);
+                  return (
+                    <div key={log.id} style={{ display: 'flex', alignItems: 'center', padding: '0.875rem 1.25rem', borderBottom: '1px solid #111' }}>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>{log.food.name}</p>
+                        <p style={{ ...lbl, marginTop: '0.2rem' }}>{log.quantity}{log.food.serving_unit} · <span style={{ color: '#F5A623' }}>{cal} KCAL</span> · {Math.round(log.food.protein * r * 10) / 10}G P</p>
+                      </div>
+                      <button onClick={() => handleDelete(log.id)} style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', fontSize: '1rem', fontFamily: MONO, padding: '0.25rem' }}>✕</button>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
