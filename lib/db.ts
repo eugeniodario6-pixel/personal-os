@@ -207,6 +207,29 @@ export async function deleteMealLog(id: number): Promise<void> {
   await supabase.from('meal_log').delete().eq('id', id);
 }
 
+// Most recently logged distinct foods — for quick-log recents
+export async function getRecentFoods(limit = 8): Promise<FoodItem[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('meal_log')
+    .select('food:food_item(*), logged_at')
+    .eq('user_id', userId)
+    .order('logged_at', { ascending: false })
+    .limit(50);
+  if (!data) return [];
+  const seen = new Set<number>();
+  const foods: FoodItem[] = [];
+  for (const row of data) {
+    const food = (row.food as unknown) as FoodItem | null;
+    if (food && !seen.has(food.id)) {
+      seen.add(food.id);
+      foods.push(food);
+      if (foods.length >= limit) break;
+    }
+  }
+  return foods;
+}
+
 export async function getTodayMacros(): Promise<{ calories: number; protein: number; carbs: number; fat: number }> {
   const logs = await getMealLogs(todayISO());
   return logs.reduce((acc, l) => {
