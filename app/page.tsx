@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   getProfile, getHabits, getHabitCompletions, getHabitStreaks,
   getMeditationSessions, getMeditationLogs, getTodayMacros,
@@ -531,6 +532,20 @@ export default function TodayPage() {
       </div>
 
       <QuickLogSheet open={quickLog} onClose={() => setQuickLog(false)} onLogged={() => load()} />
+
+      {/* ── Jarvis floating button ── */}
+      <Link href="/jarvis" style={{
+        position: 'fixed', bottom: 104, right: 20, zIndex: 200,
+        width: 52, height: 52, borderRadius: '50%',
+        background: '#0A0A0A',
+        boxShadow: 'rgba(218,255,1,0.35) 0px 0px 0px 1.5px, rgba(218,255,1,0.15) 0px 0px 20px 0px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        textDecoration: 'none', fontSize: 22,
+        WebkitTapHighlightColor: 'transparent',
+        transition: 'box-shadow 0.2s',
+      }}>
+        ⬡
+      </Link>
     </>
   );
 }
