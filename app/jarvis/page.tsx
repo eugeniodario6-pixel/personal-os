@@ -84,58 +84,58 @@ function JarvisAvatar({ loading, listening }: { loading: boolean; listening: boo
   const active = loading || listening;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0 28px' }}>
-      <div style={{ position: 'relative', width: 130, height: 130 }}>
-        {/* Outer ring */}
+      <div style={{ position: 'relative', width: 160, height: 160 }}>
+        {/* Outer pulse ring */}
         <div style={{
-          position: 'absolute', inset: -10, borderRadius: '50%',
-          border: '1px solid rgba(218,255,1,0.15)',
+          position: 'absolute', inset: -14, borderRadius: '50%',
+          border: '1px solid rgba(218,255,1,0.12)',
           animation: active ? 'j-ring1 2s ease-in-out infinite' : 'none',
         }} />
-        {/* Mid ring */}
+        {/* Mid pulse ring */}
         <div style={{
-          position: 'absolute', inset: -4, borderRadius: '50%',
-          border: '1px solid rgba(218,255,1,0.3)',
-          animation: active ? 'j-ring2 2s ease-in-out 0.4s infinite' : 'none',
+          position: 'absolute', inset: -6, borderRadius: '50%',
+          border: '1.5px solid rgba(218,255,1,0.25)',
+          animation: active ? 'j-ring2 2s ease-in-out 0.35s infinite' : 'none',
         }} />
-        {/* Main circle */}
+        {/* Avatar image circle */}
         <div style={{
-          width: 130, height: 130, borderRadius: '50%',
-          background: 'radial-gradient(circle at 38% 32%, #1c1c1c, #000)',
+          width: 160, height: 160, borderRadius: '50%',
+          overflow: 'hidden',
           boxShadow: active
-            ? 'rgba(218,255,1,0.6) 0 0 0 1.5px, rgba(218,255,1,0.25) 0 0 50px'
-            : 'rgba(218,255,1,0.25) 0 0 0 1.5px, rgba(218,255,1,0.06) 0 0 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          position: 'relative', overflow: 'hidden',
+            ? 'rgba(218,255,1,0.7) 0 0 0 2px, rgba(218,255,1,0.3) 0 0 60px'
+            : 'rgba(218,255,1,0.3) 0 0 0 2px, rgba(218,255,1,0.08) 0 0 30px',
           transition: 'box-shadow 0.4s',
+          position: 'relative',
         }}>
-          {/* Hex grid */}
-          <svg width="130" height="130" style={{ position: 'absolute', opacity: 0.12 }}>
-            <defs>
-              <pattern id="hexp" x="0" y="0" width="20" height="17.3" patternUnits="userSpaceOnUse">
-                <polygon points="10,1 19,5.5 19,14.5 10,19 1,14.5 1,5.5"
-                  fill="none" stroke="#DAFF01" strokeWidth="0.5" />
-              </pattern>
-            </defs>
-            <rect width="130" height="130" fill="url(#hexp)" />
-          </svg>
-          {/* Core hex */}
-          <span style={{
-            fontSize: 48, lineHeight: 1, color: '#DAFF01', position: 'relative', zIndex: 1,
-            filter: active ? 'drop-shadow(0 0 16px #DAFF01)' : 'drop-shadow(0 0 6px rgba(218,255,1,0.4))',
-            transition: 'filter 0.3s',
-            display: 'inline-block',
-            animation: loading ? 'j-spin 5s linear infinite' : 'none',
-          }}>⬡</span>
-          {/* Waveform bars when listening */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/jarvis-avatar.jpg"
+            alt="Jarvis"
+            style={{
+              width: '100%', height: '100%', objectFit: 'cover',
+              filter: active
+                ? 'brightness(1.15) contrast(1.1)'
+                : 'brightness(0.9) contrast(1.05)',
+              transition: 'filter 0.4s',
+            }}
+          />
+          {/* Lime overlay tint when active */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: active ? 'rgba(218,255,1,0.07)' : 'transparent',
+            transition: 'background 0.4s',
+          }} />
+          {/* Listening waveform overlay at bottom */}
           {listening && (
             <div style={{
-              position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+              position: 'absolute', bottom: 18, left: '50%', transform: 'translateX(-50%)',
               display: 'flex', gap: 3, alignItems: 'center',
+              background: 'rgba(0,0,0,0.5)', borderRadius: 99, padding: '4px 10px',
             }}>
-              {[2,3,5,4,6,4,3,2].map((h, i) => (
+              {[2,3,5,7,5,3,2].map((h, i) => (
                 <div key={i} style={{
                   width: 3, height: h * 3, background: '#DAFF01', borderRadius: 2,
-                  animation: `j-bar 0.7s ease-in-out ${i * 0.08}s infinite alternate`,
+                  animation: `j-bar 0.65s ease-in-out ${i * 0.09}s infinite alternate`,
                 }} />
               ))}
             </div>
@@ -143,12 +143,12 @@ function JarvisAvatar({ loading, listening }: { loading: boolean; listening: boo
         </div>
         {/* Status dot */}
         <div style={{
-          position: 'absolute', bottom: 5, right: 5,
-          width: 15, height: 15, borderRadius: '50%',
-          background: loading ? 'rgba(218,255,1,0.5)' : listening ? '#DAFF01' : '#DAFF01',
-          boxShadow: '0 0 10px #DAFF01',
-          border: '2.5px solid #000',
-          animation: (loading || listening) ? 'j-pulse 1s ease infinite' : 'none',
+          position: 'absolute', bottom: 6, right: 6,
+          width: 16, height: 16, borderRadius: '50%',
+          background: '#DAFF01',
+          boxShadow: '0 0 12px #DAFF01',
+          border: '3px solid #000',
+          animation: active ? 'j-pulse 1s ease infinite' : 'none',
         }} />
       </div>
 
@@ -158,18 +158,17 @@ function JarvisAvatar({ loading, listening }: { loading: boolean; listening: boo
       }}>JARVIS</p>
       <p style={{
         margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em',
-        color: loading ? '#DAFF01' : listening ? '#DAFF01' : 'rgba(255,255,255,0.28)',
+        color: active ? '#DAFF01' : 'rgba(255,255,255,0.28)',
         fontFamily: 'var(--font-mono)', transition: 'color 0.3s',
       }}>
         {loading ? 'PROCESSING…' : listening ? 'LISTENING…' : 'ONLINE'}
       </p>
 
       <style>{`
-        @keyframes j-ring1 { 0%,100%{transform:scale(1);opacity:.3} 50%{transform:scale(1.09);opacity:.7} }
-        @keyframes j-ring2 { 0%,100%{transform:scale(1);opacity:.15} 50%{transform:scale(1.14);opacity:.55} }
-        @keyframes j-spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        @keyframes j-bar   { from{transform:scaleY(.3)} to{transform:scaleY(1.5)} }
-        @keyframes j-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.75)} }
+        @keyframes j-ring1 { 0%,100%{transform:scale(1);opacity:.25} 50%{transform:scale(1.08);opacity:.65} }
+        @keyframes j-ring2 { 0%,100%{transform:scale(1);opacity:.15} 50%{transform:scale(1.13);opacity:.5} }
+        @keyframes j-bar   { from{transform:scaleY(.3)} to{transform:scaleY(1.6)} }
+        @keyframes j-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
         @keyframes j-dot   { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
       `}</style>
     </div>
