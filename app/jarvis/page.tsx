@@ -18,7 +18,7 @@ interface Message {
 
 // ─── Voice hook ───────────────────────────────────────────────────────────────
 function useVoice(onResult: (text: string) => void) {
-  const recRef = useRef<SpeechRecognition | null>(null);
+  const recRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
   const supported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
@@ -29,7 +29,7 @@ function useVoice(onResult: (text: string) => void) {
     rec.continuous = false;
     rec.interimResults = false;
     rec.lang = 'en-US';
-    rec.onresult = (e: SpeechRecognitionEvent) => {
+    rec.onresult = (e: any) => {
       const text = e.results[0][0].transcript;
       onResult(text);
     };

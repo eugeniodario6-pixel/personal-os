@@ -47,9 +47,7 @@ export async function POST(req: Request) {
     model: anthropic('claude-3-5-haiku-20241022'),
     system: systemWithContext,
     messages,
-    maxTokens: 400,
-    temperature: 0.7,
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 }
