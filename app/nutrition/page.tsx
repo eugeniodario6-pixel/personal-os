@@ -84,25 +84,27 @@ function MacroBar({ logs, profile }: { logs: MealLogWithFood[]; profile: Profile
 
   return (
     <div style={{
-      background: 'var(--color-carbon)',
-      boxShadow: 'var(--shadow-card)',
-      padding: '14px 16px',
+      background: 'var(--surface)',
+      borderRadius: 24,
+      boxShadow: 'var(--ring)',
+      padding: 18,
+      margin: '12px 16px',
     }}>
       {macros.map(m => (
         <div key={m.label} style={{ marginBottom: m.label === 'Fat' ? 0 : 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
             <span className="label">{m.label}</span>
-            <span style={{ fontSize: 13, letterSpacing: '-0.011em', color: m.over ? 'var(--color-coral-red)' : 'var(--text-3)' }}>
-              <span style={{ fontWeight: 510, color: m.over ? 'var(--color-coral-red)' : 'var(--text)' }}>{m.val}</span>
+            <span style={{ fontSize: 13, letterSpacing: '-0.011em', color: m.over ? 'var(--negative)' : 'var(--text-3)' }}>
+              <span style={{ fontWeight: 510, color: m.over ? 'var(--negative)' : 'var(--text)' }}>{m.val}</span>
               {' / '}{m.target} {m.unit}
             </span>
           </div>
-          <div className="progress" style={{ height: 3 }}>
+          <div className="progress" style={{ height: 3, background: 'var(--surface-3)' }}>
             <div
               className="progress-fill"
               style={{
                 width: `${m.pct}%`,
-                background: m.over ? 'var(--color-coral-red)' : m.pct >= 90 ? 'var(--accent)' : 'var(--text)',
+                background: m.over ? 'var(--negative)' : 'var(--text)',
                 transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
               }}
             />
@@ -139,8 +141,9 @@ function FoodLogPanel({
   return (
     <div style={{
       margin: '0 0 1px',
-      background: 'var(--color-obsidian)',
+      background: 'var(--surface-2)',
       borderBottom: '1px solid var(--border)',
+      borderRadius: '24px 24px 0 0',
       animation: 'panel-in 0.18s ease',
     }}>
       <style>{`@keyframes panel-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
@@ -167,9 +170,9 @@ function FoodLogPanel({
               onClick={() => setMealType(mt)}
               style={{
                 flex: '0 0 auto', padding: '4px 12px', borderRadius: 9999,
-                border: `1px solid ${mealType === mt ? 'var(--accent)' : 'var(--border)'}`,
-                background: mealType === mt ? 'rgba(228,242,34,0.08)' : 'transparent',
-                color: mealType === mt ? 'var(--accent)' : 'var(--text-3)',
+                border: 'none',
+                background: mealType === mt ? '#fff' : 'var(--surface-3)',
+                color: mealType === mt ? '#000' : 'var(--text-3)',
                 fontSize: 12, fontWeight: 400, letterSpacing: '-0.01em', cursor: 'pointer',
                 WebkitTapHighlightColor: 'transparent', transition: 'all 0.15s',
               }}
@@ -195,8 +198,16 @@ function FoodLogPanel({
             <button
               key={q}
               onClick={() => handleQtyChange(q)}
-              className={quantity === q ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}
-              style={{ flex: 1 }}
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                borderRadius: 8,
+                border: 'none',
+                background: quantity === q ? '#fff' : 'var(--surface-3)',
+                color: quantity === q ? '#000' : 'var(--text-3)',
+                fontSize: 13, fontWeight: 510, cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent', transition: 'all 0.15s',
+              }}
             >
               {q}g
             </button>
@@ -206,8 +217,8 @@ function FoodLogPanel({
         {/* Macro preview */}
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8,
-          background: 'var(--color-graphite)',
-          borderRadius: 8, padding: '10px 12px', marginBottom: 14,
+          background: 'var(--surface-3)',
+          borderRadius: 14, padding: '10px 12px', marginBottom: 14,
         }}>
           {[
             { l: 'kcal', v: pCal },
@@ -217,7 +228,7 @@ function FoodLogPanel({
           ].map(({ l, v }) => (
             <div key={l} style={{ textAlign: 'center' }}>
               <p className="label" style={{ marginBottom: 3 }}>{l}</p>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--accent)' }}>{v}</p>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)' }}>{v}</p>
             </div>
           ))}
         </div>
@@ -225,6 +236,7 @@ function FoodLogPanel({
         {/* Log button */}
         <button
           className="btn btn-primary btn-block"
+          style={{ background: '#fff', color: '#000' }}
           onClick={() => onLog(qty, mealType)}
         >
           Log to {MEAL_LABELS[mealType]} →
@@ -245,7 +257,7 @@ function FoodRow({ food, onSelect }: { food: FoodItem | FoodResult; onSelect: ()
       onClick={() => { haptic('light'); onSelect(); }}
       style={{
         display: 'flex', width: '100%', alignItems: 'center',
-        padding: '13px 16px',
+        padding: '14px 20px',
         background: 'transparent', border: 'none',
         borderBottom: '1px solid var(--border)',
         cursor: 'pointer', textAlign: 'left',
@@ -260,7 +272,7 @@ function FoodRow({ food, onSelect }: { food: FoodItem | FoodResult; onSelect: ()
         {brand && <p className="label" style={{ margin: 0 }}>{brand}</p>}
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, marginLeft: 12 }}>
-        <span style={{ fontSize: 17, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--accent)' }}>{cal}</span>
+        <span style={{ fontSize: 20, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)' }}>{cal}</span>
         <span className="label">kcal</span>
       </div>
     </button>
@@ -282,15 +294,16 @@ function MealGroup({ type, logs, onDelete }: {
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '10px 16px',
-        background: 'var(--color-obsidian)',
+        background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border)',
+        borderRadius: 0,
       }}>
-        <span style={{ fontSize: 11, fontWeight: 510, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
+        <span style={{ fontSize: 11, fontWeight: 510, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'var(--text-5)' }}>
           {MEAL_LABELS[type]}
         </span>
         <div style={{ display: 'flex', gap: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--accent)', letterSpacing: '-0.01em', fontWeight: 510 }}>{cal} kcal</span>
-          <span style={{ fontSize: 12, color: 'var(--text-4)', letterSpacing: '-0.01em' }}>{prot}g protein</span>
+          <span style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.01em' }}>{cal} kcal</span>
+          <span style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.01em' }}>{prot}g protein</span>
         </div>
       </div>
 
@@ -305,7 +318,7 @@ function MealGroup({ type, logs, onDelete }: {
             key={log.id}
             style={{
               display: 'flex', alignItems: 'center',
-              padding: '12px 16px',
+              padding: '13px 20px',
               borderBottom: '1px solid var(--border)',
             }}
           >
@@ -318,7 +331,7 @@ function MealGroup({ type, logs, onDelete }: {
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              <span style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)' }}>
+              <span style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)' }}>
                 {logCal}
               </span>
               <button
@@ -351,19 +364,19 @@ function WeekGrid({ scores }: { scores: DailyScore[] }) {
   const scoreMap = new Map(scores.map(s => [s.date, s.total_score]));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: '1px solid var(--border)' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: '1px solid var(--border)', gap: 8, padding: '12px 16px' }}>
       {weekDays.map((date, i) => {
         const score = scoreMap.get(date) ?? null;
         const isToday = date === today;
         return (
           <div key={date} style={{
             padding: '14px 4px', textAlign: 'center',
-            borderRight: i < 6 ? '1px solid var(--border)' : 'none',
-            background: isToday ? 'rgba(228,242,34,0.05)' : 'transparent',
-            borderBottom: isToday ? '2px solid var(--accent)' : '2px solid transparent',
+            background: 'var(--surface)',
+            borderRadius: 12,
+            boxShadow: isToday ? 'var(--ring-2)' : 'none',
           }}>
             <p className="label" style={{ marginBottom: 8 }}>{DAY_LABELS[i]}</p>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: score !== null ? (score >= 75 ? 'var(--accent)' : 'var(--text-2)') : 'var(--text-4)' }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: score !== null ? (score >= 75 ? '#fff' : 'var(--text-3)') : 'var(--text-4)' }}>
               {score !== null ? score : '—'}
             </p>
           </div>
@@ -408,8 +421,8 @@ function YearGrid({ scores }: { scores: DailyScore[] }) {
               return (
                 <div key={date} title={score !== null ? `${date}: ${score}` : date} style={{
                   width: 10, height: 10, borderRadius: 2,
-                  background: isFuture ? 'transparent' : score === null ? 'var(--color-graphite)' : isAbove ? 'var(--accent)' : 'var(--color-smoke)',
-                  border: date === todayStr ? '1px solid var(--accent)' : 'none',
+                  background: isFuture ? 'transparent' : score === null ? 'var(--surface-3)' : isAbove ? 'var(--text)' : 'var(--surface-3)',
+                  border: date === todayStr ? '1px solid var(--text)' : 'none',
                 }} />
               );
             })}
@@ -444,21 +457,40 @@ function GroceryTab() {
 
   return (
     <div>
-      {/* Add row */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-        <div style={{ flex: 2 }}>
-          <p className="label" style={{ marginBottom: 6 }}>Item</p>
-          <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdd()} placeholder="Chicken breast" />
+      {/* Add row — inside a card */}
+      <div style={{
+        margin: '12px 16px',
+        background: 'var(--surface)',
+        borderRadius: 24,
+        boxShadow: 'var(--ring)',
+        padding: 18,
+      }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+          <div style={{ flex: 2 }}>
+            <p className="label" style={{ marginBottom: 6 }}>Item</p>
+            <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdd()} placeholder="Chicken breast" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p className="label" style={{ marginBottom: 6 }}>Grams</p>
+            <input type="number" value={newGrams} onChange={e => setNewGrams(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdd()} placeholder="500" />
+          </div>
+          <button
+            onClick={handleAdd}
+            disabled={adding || !newName.trim()}
+            style={{
+              flexShrink: 0, padding: '8px 16px', borderRadius: 10,
+              background: '#fff', color: '#000',
+              border: 'none', fontSize: 14, fontWeight: 510, cursor: 'pointer',
+              opacity: adding || !newName.trim() ? 0.4 : 1,
+            }}
+          >
+            Add
+          </button>
         </div>
-        <div style={{ flex: 1 }}>
-          <p className="label" style={{ marginBottom: 6 }}>Grams</p>
-          <input type="number" value={newGrams} onChange={e => setNewGrams(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdd()} placeholder="500" />
-        </div>
-        <button className="btn btn-primary" onClick={handleAdd} disabled={adding || !newName.trim()} style={{ flexShrink: 0 }}>Add</button>
       </div>
 
       {/* Week header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--color-obsidian)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
         <p className="label" style={{ margin: 0 }}>Week of {currentWeekOf()}</p>
         <p className="label" style={{ margin: 0 }}>{items.length} items</p>
       </div>
@@ -473,11 +505,11 @@ function GroceryTab() {
             onClick={() => handleToggle(item.id)}
             style={{
               width: 20, height: 20, borderRadius: 4, flexShrink: 0, marginRight: 12,
-              border: `1px solid ${item.purchased ? 'var(--color-pulse-green)' : 'var(--border-2)'}`,
-              background: item.purchased ? 'var(--color-pulse-green)' : 'transparent',
+              border: `1px solid ${item.purchased ? '#fff' : 'var(--border-2)'}`,
+              background: item.purchased ? '#fff' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              color: 'var(--color-void)', fontSize: 11, fontWeight: 510,
+              color: '#000', fontSize: 11, fontWeight: 510,
             }}
           >
             {item.purchased ? '✓' : ''}
@@ -591,19 +623,19 @@ function NutritionContent() {
   const dateStr  = new Date().toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '100px' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '16px 16px 0', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ padding: '20px 20px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
           <div>
             <p className="label" style={{ marginBottom: 4 }}>Eat · {dateStr}</p>
-            <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Fuel</h1>
+            <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Fuel</h1>
           </div>
           {/* Remaining kcal callout */}
           <div style={{ textAlign: 'right' }}>
             <p className="label" style={{ marginBottom: 4 }}>Remaining</p>
-            <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, margin: 0, color: remaining === 0 ? 'var(--accent)' : 'var(--text)' }}>
+            <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, margin: 0, color: 'var(--text)' }}>
               {remaining === 0 ? '✓' : remaining.toLocaleString()}
             </p>
             {remaining > 0 && <p className="label" style={{ margin: 0 }}>kcal left</p>}
@@ -611,7 +643,7 @@ function NutritionContent() {
         </div>
 
         {/* Main tabs */}
-        <div className="tab-bar" style={{ margin: '0 -16px', borderBottom: 'none' }}>
+        <div className="tab-bar" style={{ margin: '0 -20px', borderBottom: 'none' }}>
           {(['log', 'trends', 'grocery'] as MainTab[]).map(t => (
             <button key={t} className={`tab ${mainTab === t ? 'active' : ''}`} onClick={() => setMainTab(t)}>
               {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -620,7 +652,7 @@ function NutritionContent() {
         </div>
       </div>
 
-      {/* ── Sticky macro bar ── */}
+      {/* ── Macro bar ── */}
       <MacroBar logs={logs} profile={profile} />
 
       {/* ══ LOG TAB ══ */}
@@ -647,7 +679,7 @@ function NutritionContent() {
             />
           )}
 
-          {/* PIECE 2: Quick-add chips at top of recents */}
+          {/* Quick-add chips at top of recents */}
           {!selectedFood && logMode === 'recents' && recentFoods.length > 0 && (
             <div style={{ padding: '10px 16px 6px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', alignItems: 'center' }}>
               <span style={{ fontSize: 10, fontWeight: 510, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'var(--text-4)', flexShrink: 0 }}>Quick +100g</span>
@@ -663,12 +695,12 @@ function NutritionContent() {
                   }}
                   style={{
                     flex: '0 0 auto', padding: '6px 10px',
-                    background: 'rgba(228,242,34,0.06)', border: '1px solid rgba(228,242,34,0.2)',
+                    background: 'var(--surface-3)', border: '1px solid var(--border)',
                     borderRadius: 8, cursor: 'pointer', textAlign: 'left',
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  <span style={{ fontSize: 11, fontWeight: 510, letterSpacing: '-0.01em', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{food.name.split(' ').slice(0,2).join(' ')}</span>
+                  <span style={{ fontSize: 11, fontWeight: 510, letterSpacing: '-0.01em', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{food.name.split(' ').slice(0,2).join(' ')}</span>
                 </button>
               ))}
             </div>
@@ -677,9 +709,14 @@ function NutritionContent() {
           {/* Recents list */}
           {!selectedFood && logMode === 'recents' && (
             recentFoods.length === 0 ? (
-              <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+              <div style={{ margin: '16px 16px 0', background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: '40px 16px', textAlign: 'center' }}>
                 <p style={{ fontSize: 13, color: 'var(--text-4)', marginBottom: 16, letterSpacing: '-0.011em' }}>No recent foods yet</p>
-                <button className="btn btn-primary btn-sm" onClick={() => setLogMode('search')}>Search food →</button>
+                <button
+                  onClick={() => setLogMode('search')}
+                  style={{ padding: '8px 20px', borderRadius: 10, background: '#fff', color: '#000', border: 'none', fontSize: 14, fontWeight: 510, cursor: 'pointer' }}
+                >
+                  Search food →
+                </button>
               </div>
             ) : recentFoods.map(food => (
               <FoodRow key={food.id} food={food} onSelect={() => setSelectedFood(food)} />
@@ -698,13 +735,22 @@ function NutritionContent() {
                   autoFocus
                   style={{ flex: 1 }}
                 />
-                <button className="btn btn-primary btn-sm" onClick={doSearch} disabled={searching} style={{ flexShrink: 0 }}>
+                <button
+                  onClick={doSearch}
+                  disabled={searching}
+                  style={{
+                    flexShrink: 0, padding: '8px 16px', borderRadius: 10,
+                    background: '#fff', color: '#000',
+                    border: 'none', fontSize: 14, fontWeight: 510, cursor: 'pointer',
+                    opacity: searching ? 0.5 : 1,
+                  }}
+                >
                   {searching ? '…' : 'Go'}
                 </button>
               </div>
               {searchError && (
                 <div style={{ padding: '12px 16px' }}>
-                  <p style={{ fontSize: 13, color: 'var(--color-coral-red)', letterSpacing: '-0.011em', margin: 0 }}>{searchError}</p>
+                  <p style={{ fontSize: 13, color: 'var(--negative)', letterSpacing: '-0.011em', margin: 0 }}>{searchError}</p>
                 </div>
               )}
               {results.map((r, i) => (
@@ -717,12 +763,17 @@ function NutritionContent() {
           {!selectedFood && (
             <div style={{ marginTop: 8 }}>
               {logs.length === 0 ? (
-                <div style={{ padding: '28px 16px', textAlign: 'center' }}>
+                <div style={{ margin: '0 16px', background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: '28px 16px', textAlign: 'center' }}>
                   <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 6 }}>Nothing logged today</p>
                   <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
                     Your calorie target is {(profile?.calorie_target ?? 2000).toLocaleString()} kcal — start with breakfast.
                   </p>
-                  <button className="btn btn-primary btn-sm" onClick={() => setLogMode('search')}>Search food →</button>
+                  <button
+                    onClick={() => setLogMode('search')}
+                    style={{ padding: '8px 20px', borderRadius: 10, background: '#fff', color: '#000', border: 'none', fontSize: 14, fontWeight: 510, cursor: 'pointer' }}
+                  >
+                    Search food →
+                  </button>
                 </div>
               ) : MEAL_ORDER.map(mt => (
                 <MealGroup

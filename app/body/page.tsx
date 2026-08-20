@@ -61,7 +61,7 @@ export default function BodyPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Loading…</p>
+      <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>Loading…</p>
     </div>
   );
 
@@ -71,25 +71,25 @@ export default function BodyPage() {
     : 0;
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
-        <p className="label" style={{ marginBottom: 6 }}>Track</p>
-        <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Body Weight</h1>
+      <div style={{ padding: '20px 20px 16px' }}>
+        <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Track</p>
+        <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Body Weight</h1>
       </div>
 
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
         {/* ── Stats card ── */}
-        <div style={{ background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: '20px' }}>
+        <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, padding: 18 }}>
 
           {/* Current / deltas */}
           <div style={{ display: 'flex', gap: 24, marginBottom: path ? 16 : 0 }}>
             <div>
               <p className="label" style={{ marginBottom: 6 }}>Current</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontSize: 48, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)' }}>
+                <span style={{ fontSize: 48, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
                   {latest ? latest.weight_kg : '—'}
                 </span>
                 <span style={{ fontSize: 15, color: 'var(--text-3)', fontWeight: 400, letterSpacing: '-0.011em' }}>kg</span>
@@ -98,7 +98,7 @@ export default function BodyPage() {
             {delta !== null && (
               <div>
                 <p className="label" style={{ marginBottom: 6 }}>vs Last</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: 'var(--tracking-subheading)', color: delta < 0 ? 'var(--color-pulse-green)' : delta > 0 ? 'var(--color-coral-red)' : 'var(--text-3)', margin: 0 }}>
+                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                   {delta > 0 ? '+' : ''}{delta}
                 </p>
               </div>
@@ -106,26 +106,18 @@ export default function BodyPage() {
             {totalDelta !== null && (
               <div>
                 <p className="label" style={{ marginBottom: 6 }}>From start</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: 'var(--tracking-subheading)', color: totalDelta < 0 ? 'var(--color-pulse-green)' : totalDelta > 0 ? 'var(--color-coral-red)' : 'var(--text-3)', margin: 0 }}>
+                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                   {totalDelta > 0 ? '+' : ''}{totalDelta}
                 </p>
               </div>
             )}
           </div>
 
-          {/* PIECE 4: Prominent sparkline — thicker stroke, acid-lime color */}
+          {/* Sparkline — monochrome: white stroke, no gradient fill */}
           {path && (
             <div style={{ marginTop: 4 }}>
               <svg width="100%" viewBox="0 0 300 56" preserveAspectRatio="none" style={{ display: 'block', height: 52, marginBottom: goalWeight && startingWeight ? 16 : 0 }}>
-                {/* Gradient fill under curve */}
-                <defs>
-                  <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#e4f222" stopOpacity="0.18" />
-                    <stop offset="100%" stopColor="#e4f222" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d={path + ` L 300,56 L 0,56 Z`} fill="url(#sparkGrad)" />
-                <path d={path} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                <path d={path} fill="none" stroke="var(--text)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
               </svg>
               <p className="label" style={{ marginBottom: goalWeight && startingWeight ? 0 : undefined }}>Last {[...entries].reverse().slice(-12).length} entries</p>
             </div>
@@ -138,16 +130,16 @@ export default function BodyPage() {
                 <span className="label">Start {startingWeight}kg</span>
                 <span className="label">Goal {goalWeight}kg</span>
               </div>
-              <div className="progress">
-                <div className="progress-fill progress-fill--accent" style={{ width: `${progressPct}%` }} />
+              <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--text)', borderRadius: 2, transition: 'width 0.4s ease' }} />
               </div>
             </div>
           )}
         </div>
 
         {/* ── Log input ── */}
-        <div style={{ background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: '20px' }}>
-          <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 16 }}>
+        <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, padding: 18 }}>
+          <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 16 }}>
             {todayLogged ? 'Update today' : 'Log weight'}
           </p>
           <input
@@ -155,12 +147,16 @@ export default function BodyPage() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLog()}
             placeholder={latest ? String(latest.weight_kg) : '80.0'}
-            style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', textAlign: 'center', marginBottom: 8 }}
+            style={{
+              fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', textAlign: 'center', marginBottom: 8,
+              background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14,
+              fontVariantNumeric: 'tabular-nums',
+            }}
           />
           <input
             value={note} onChange={e => setNote(e.target.value)}
             placeholder="Note (optional)"
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: 12, background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
           />
           <button
             onClick={handleLog}
@@ -175,7 +171,7 @@ export default function BodyPage() {
         {entries.length > 0 && (
           <div>
             <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 8, paddingLeft: 4 }}>History</p>
-            <div style={{ background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, overflow: 'hidden' }}>
               {entries.map((e, i) => {
                 const prev = entries[i + 1];
                 const d = prev ? Math.round((e.weight_kg - prev.weight_kg) * 10) / 10 : null;
@@ -190,9 +186,9 @@ export default function BodyPage() {
                   >
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                        <span style={{ fontWeight: 510, color: 'var(--text)', fontSize: 20, letterSpacing: '-0.012em' }}>{e.weight_kg}kg</span>
+                        <span style={{ fontWeight: 510, color: 'var(--text)', fontSize: 20, letterSpacing: '-0.012em', fontVariantNumeric: 'tabular-nums' }}>{e.weight_kg}kg</span>
                         {d !== null && (
-                          <span style={{ fontSize: 13, letterSpacing: '-0.011em', color: d < 0 ? 'var(--color-pulse-green)' : d > 0 ? 'var(--color-coral-red)' : 'var(--text-4)' }}>
+                          <span style={{ fontSize: 13, letterSpacing: '-0.011em', color: 'var(--text-3)' }}>
                             {d > 0 ? '+' : ''}{d}
                           </span>
                         )}
@@ -203,7 +199,7 @@ export default function BodyPage() {
                     </div>
                     <button
                       onClick={() => handleDelete(e.id)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-4)', cursor: 'pointer', fontSize: 14, padding: '4px 6px', lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: 14, padding: '4px 6px', lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}
                     >
                       ✕
                     </button>
@@ -214,14 +210,14 @@ export default function BodyPage() {
           </div>
         )}
 
-        {/* PIECE 5: Compelling empty state */}
+        {/* Empty state */}
         {entries.length === 0 && (
-          <div style={{ background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: '32px 24px', textAlign: 'center' }}>
-            <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 6 }}>No weight logged yet</p>
-            <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
+          <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, padding: '32px 24px', textAlign: 'center' }}>
+            <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)', marginBottom: 6 }}>No weight logged yet</p>
+            <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
               Weigh in each morning for accurate trends — consistency unlocks the insight.
             </p>
-            <p style={{ fontSize: 12, color: 'var(--color-fog)', letterSpacing: '-0.011em' }}>↑ Log your first weigh-in above</p>
+            <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>↑ Log your first weigh-in above</p>
           </div>
         )}
       </div>

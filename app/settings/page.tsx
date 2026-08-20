@@ -11,14 +11,14 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     <div>
       <p className="label" style={{ marginBottom: 6 }}>{label}</p>
       {children}
-      {hint && <p style={{ fontSize: 12, color: 'var(--text-4)', letterSpacing: '-0.01em', marginTop: 6 }}>{hint}</p>}
+      {hint && <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', marginTop: 6 }}>{hint}</p>}
     </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ margin: '0 16px 12px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ margin: '0 20px 12px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, overflow: 'hidden' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
         <p className="label">{title}</p>
       </div>
@@ -95,23 +95,26 @@ export default function SettingsPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Loading…</p>
+      <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>Loading…</p>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
-        <p className="label" style={{ marginBottom: 6 }}>Preferences</p>
-        <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Settings</h1>
+      <div style={{ padding: '20px 20px 16px', marginBottom: 16 }}>
+        <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Preferences</p>
+        <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Settings</h1>
       </div>
 
       {/* ── Daily Goals ── */}
       <Section title="Daily goals">
         <Field label="Calorie target (kcal)">
-          <input type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)} />
+          <input
+            type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)}
+            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+          />
         </Field>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           {[
@@ -120,18 +123,30 @@ export default function SettingsPage() {
             { label: 'Fat (g)',     val: fat,     set: setFat },
           ].map(m => (
             <Field key={m.label} label={m.label}>
-              <input type="number" value={m.val} onChange={e => m.set(e.target.value)} />
+              <input
+                type="number" value={m.val} onChange={e => m.set(e.target.value)}
+                style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+              />
             </Field>
           ))}
         </div>
         <Field label="Starting weight (kg)" hint="Your baseline — set once, track progress from here">
-          <input type="number" value={startingWeight} onChange={e => setStartingWeight(e.target.value)} placeholder="e.g. 85" />
+          <input
+            type="number" value={startingWeight} onChange={e => setStartingWeight(e.target.value)} placeholder="e.g. 85"
+            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+          />
         </Field>
         <Field label="Weight goal (kg)">
-          <input type="number" value={weightGoal} onChange={e => setWeightGoal(e.target.value)} placeholder="Optional" />
+          <input
+            type="number" value={weightGoal} onChange={e => setWeightGoal(e.target.value)} placeholder="Optional"
+            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+          />
         </Field>
         <Field label="Units">
-          <select value={units} onChange={e => setUnits(e.target.value as 'metric' | 'imperial')}>
+          <select
+            value={units} onChange={e => setUnits(e.target.value as 'metric' | 'imperial')}
+            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+          >
             <option value="metric">Metric</option>
             <option value="imperial">Imperial</option>
           </select>
@@ -143,14 +158,15 @@ export default function SettingsPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-2)', margin: '0 0 2px' }}>Non-numeric mode</p>
-              <p style={{ fontSize: 12, color: 'var(--text-4)', letterSpacing: '-0.01em', margin: 0 }}>Hides calorie and weight numbers app-wide</p>
+              <p style={{ fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 2px' }}>Non-numeric mode</p>
+              <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', margin: 0 }}>Hides calorie and weight numbers app-wide</p>
             </div>
+            {/* Pill toggle: off = var(--surface-3), on = var(--text) */}
             <button
               onClick={() => { haptic('light'); setNonNumeric(!nonNumeric); }}
               style={{
                 width: 44, height: 24, borderRadius: 9999, flexShrink: 0,
-                background: nonNumeric ? 'var(--accent)' : 'var(--surface-3)',
+                background: nonNumeric ? 'var(--text)' : 'var(--surface-3)',
                 border: 'none', cursor: 'pointer', position: 'relative',
                 transition: 'background 0.2s',
                 WebkitTapHighlightColor: 'transparent',
@@ -159,7 +175,7 @@ export default function SettingsPage() {
               <span style={{
                 position: 'absolute', top: 3, left: nonNumeric ? 23 : 3,
                 width: 18, height: 18, borderRadius: '50%',
-                background: nonNumeric ? 'var(--accent-fg)' : 'var(--text-3)',
+                background: nonNumeric ? 'var(--invert)' : 'var(--text-3)',
                 transition: 'left 0.2s, background 0.2s',
               }} />
             </button>
@@ -176,7 +192,7 @@ export default function SettingsPage() {
 
       {/* ── Account ── */}
       <Section title="Account">
-        <button onClick={signOut} className="btn btn-outline btn-block">
+        <button onClick={signOut} className="btn btn-ghost btn-block">
           Sign out →
         </button>
       </Section>

@@ -59,15 +59,15 @@ export default function InsightsPage() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
-        <p className="label" style={{ marginBottom: 6 }}>Analytics</p>
-        <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Insights</h1>
+      <div style={{ padding: '20px 20px 16px' }}>
+        <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Analytics</p>
+        <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Insights</h1>
       </div>
 
-      {/* ── Period toggle ── */}
+      {/* ── Period toggle — tab-bar ── */}
       <div className="tab-bar">
         {(['week', 'month'] as const).map(p => (
           <button
@@ -82,13 +82,13 @@ export default function InsightsPage() {
 
       {loading ? (
         <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-          <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Loading…</p>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>Loading…</p>
         </div>
       ) : (
         <>
-          {/* ── Summary cards ── */}
-          <div style={{ margin: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+          {/* ── Summary card ── */}
+          <div style={{ margin: '12px 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <p className="label">Summary — {period === 'week' ? 'this week' : 'this month'}</p>
             </div>
             {summaries.map((s, i) => (
@@ -97,37 +97,37 @@ export default function InsightsPage() {
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '14px 16px',
-                  borderBottom: i < summaries.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderBottom: i < summaries.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                 }}
               >
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-2)', margin: '0 0 3px' }}>{s.label}</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-4)', letterSpacing: '-0.01em', margin: 0 }}>{s.sub}</p>
+                  <p style={{ fontSize: 13, fontWeight: 400, letterSpacing: '-0.011em', color: 'rgba(255,255,255,0.72)', margin: '0 0 3px' }}>{s.label}</p>
+                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', letterSpacing: '-0.01em', margin: 0 }}>{s.sub}</p>
                 </div>
-                <span style={{ fontSize: 20, fontWeight: 510, letterSpacing: '-0.012em', color: 'var(--text)' }}>{s.value}</span>
+                <span style={{ fontSize: 20, fontWeight: 510, letterSpacing: '-0.012em', color: '#ffffff' }}>{s.value}</span>
               </div>
             ))}
           </div>
 
-          {/* ── Patterns ── */}
-          <div style={{ margin: '0 16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+          {/* ── Patterns card ── */}
+          <div style={{ margin: '0 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <p className="label">Discovered patterns</p>
             </div>
             {insights.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Not enough data yet — keep logging.</p>
+                <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>Not enough data yet — keep logging.</p>
               </div>
             ) : insights.map((item, idx) => (
               <div
                 key={idx}
                 style={{
                   padding: '14px 16px',
-                  borderBottom: idx < insights.length - 1 ? '1px solid var(--border)' : 'none',
-                  borderLeft: '3px solid var(--accent)',
+                  borderBottom: idx < insights.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  borderLeft: '3px solid rgba(255,255,255,0.20)',
                 }}
               >
-                <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-2)', lineHeight: 1.6 }}>{item.text}</p>
+                <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text)', lineHeight: 1.6 }}>{item.text}</p>
                 <p className="label">{item.meta}</p>
               </div>
             ))}

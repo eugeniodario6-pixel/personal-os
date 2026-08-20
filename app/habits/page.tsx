@@ -40,13 +40,13 @@ export default function HabitsPage() {
   const doneCount = habits.filter(h => h.done).length;
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div style={{ padding: '20px 20px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <p className="label" style={{ marginBottom: 6 }}>Daily</p>
-          <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Habits</h1>
+          <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Daily</p>
+          <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Habits</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {habits.length > 0 && (
@@ -56,7 +56,7 @@ export default function HabitsPage() {
           )}
           <button
             onClick={() => { setMode(mode === 'add' ? 'list' : 'add'); setAddError(''); }}
-            className={mode === 'add' ? 'btn btn-outline btn-sm' : 'btn btn-primary btn-sm'}
+            className={mode === 'add' ? 'btn-ghost btn btn-sm' : 'btn btn-primary btn-sm'}
           >
             {mode === 'add' ? '← Back' : '+ New'}
           </button>
@@ -65,8 +65,8 @@ export default function HabitsPage() {
 
       {/* ── Add form ── */}
       {mode === 'add' && (
-        <div style={{ margin: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: '20px' }}>
-          <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 16 }}>New habit</p>
+        <div style={{ margin: '16px 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, padding: 20 }}>
+          <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 16 }}>New habit</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {addError && (
               <div style={{ background: 'rgba(235,87,87,0.08)', border: '1px solid rgba(235,87,87,0.2)', borderRadius: 6, padding: '10px 12px', fontSize: 13, color: 'var(--color-coral-red)', letterSpacing: '-0.011em' }}>
@@ -81,18 +81,23 @@ export default function HabitsPage() {
                 onKeyDown={e => e.key === 'Enter' && save()}
                 placeholder="e.g. Morning walk"
                 autoFocus
+                style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
               />
             </div>
             <div>
               <p className="label" style={{ marginBottom: 6 }}>Stack after (optional)</p>
-              <select value={addAfter} onChange={e => setAddAfter(e.target.value ? Number(e.target.value) : '')}>
+              <select
+                value={addAfter}
+                onChange={e => setAddAfter(e.target.value ? Number(e.target.value) : '')}
+                style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+              >
                 <option value="">None — standalone</option>
                 {habits.map(h => <option key={h.id} value={h.id}>After: {h.name}</option>)}
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
               <button onClick={save} className="btn btn-primary" style={{ flex: 1 }}>Save</button>
-              <button onClick={() => setMode('list')} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={() => setMode('list')} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -100,11 +105,11 @@ export default function HabitsPage() {
 
       {/* ── Habit list ── */}
       {mode === 'list' && (
-        <div style={{ margin: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ margin: '16px 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, overflow: 'hidden' }}>
           {habits.length === 0 ? (
             <div style={{ padding: '32px 24px', textAlign: 'center' }}>
-              <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 6 }}>No habits tracked yet</p>
-              <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
+              <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)', marginBottom: 6 }}>No habits tracked yet</p>
+              <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
                 Athletes who track daily habits hit their goals 2× more often.
               </p>
               <button
@@ -129,14 +134,14 @@ export default function HabitsPage() {
               <button
                 onClick={() => toggle(h.id)}
                 style={{
-                  width: 20, height: 20,
-                  borderRadius: 4,
-                  border: `1px solid ${h.done ? 'var(--accent)' : 'var(--border-2)'}`,
-                  background: h.done ? 'var(--accent)' : 'transparent',
+                  width: 22, height: 22,
+                  borderRadius: 5,
+                  border: `1px solid var(--border-2)`,
+                  background: h.done ? 'var(--text)' : 'transparent',
                   cursor: 'pointer', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--accent-fg)',
-                  fontSize: 11, fontWeight: 510,
+                  color: 'var(--invert)',
+                  fontSize: 12, fontWeight: 510,
                   transition: 'all 0.15s',
                   WebkitTapHighlightColor: 'transparent',
                 }}
@@ -155,7 +160,7 @@ export default function HabitsPage() {
               >
                 <span style={{
                   fontSize: 15, fontWeight: 400, letterSpacing: '-0.011em',
-                  color: h.done ? 'var(--text-4)' : 'var(--text-2)',
+                  color: h.done ? 'var(--text-3)' : 'var(--text)',
                   textDecoration: h.done ? 'line-through' : 'none',
                 }}>
                   {h.name}
@@ -173,7 +178,7 @@ export default function HabitsPage() {
               <button
                 onClick={() => deleteHabit(h.id)}
                 style={{
-                  background: 'none', border: 'none', color: 'var(--text-4)',
+                  background: 'none', border: 'none', color: 'var(--text-3)',
                   cursor: 'pointer', fontSize: 14, padding: '4px 6px', flexShrink: 0,
                   WebkitTapHighlightColor: 'transparent',
                   lineHeight: 1,

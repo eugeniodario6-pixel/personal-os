@@ -86,9 +86,9 @@ export default function MeditationPlayerPage() {
   const instructions = (session?.instructions ?? '').split('\n').filter(Boolean);
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '100px' }}>
 
-      {/* Back bar — MP-01: padding px */}
+      {/* Back bar */}
       <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={() => { if (running) stop(); else router.push('/meditation'); }}
@@ -99,10 +99,10 @@ export default function MeditationPlayerPage() {
         <span className="label">{session?.category ?? ''}</span>
       </div>
 
-      {/* Main content — MP-12: padding px */}
+      {/* Main content */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '65vh', gap: '2rem', padding: '24px 16px' }}>
 
-        {/* Title — MP-04: fontWeight 510, fontSize 32, letterSpacing -0.022em */}
+        {/* Title */}
         <div style={{ textAlign: 'center' as const }}>
           <p className="label" style={{ marginBottom: 8 }}>{session?.category ?? ''} · {session?.duration_min ?? 0} min</p>
           <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0 }}>
@@ -110,32 +110,45 @@ export default function MeditationPlayerPage() {
           </h1>
         </div>
 
-        {/* Done state — MP-10: carbon bg + shadow, text color var(--text) not var(--invert), accent checkmark */}
+        {/* Done state */}
         {done ? (
-          <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-card)', padding: '40px 48px', textAlign: 'center' as const, width: '100%', maxWidth: 360 }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12, color: 'var(--accent)' }}>✓</div>
-            {/* MP-08: fontWeight 510; MP-06/07: letterSpacing -0.022em */}
+          <div style={{
+            background: 'var(--surface-2)',
+            borderRadius: 24,
+            boxShadow: 'var(--ring)',
+            padding: '40px 48px',
+            textAlign: 'center' as const,
+            width: '100%',
+            maxWidth: 360,
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12, color: 'var(--text)' }}>✓</div>
             <p style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: '0 0 4px' }}>Complete</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text)', opacity: 0.6, margin: 0 }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', margin: 0 }}>
               {session?.duration_min ?? 0} min session finished
             </p>
           </div>
         ) : (
-          /* Timer — MP-02: var(--color-carbon) bg; timer card border per MP spec */
+          /* Timer card */
           <div style={{
-            background: 'var(--color-carbon)',
-            boxShadow: running ? 'var(--color-fog) 0px 0px 0px 1px inset' : 'var(--shadow-card)',
-            borderRadius: 'var(--radius)', padding: '40px 48px', textAlign: 'center' as const,
-            width: '100%', maxWidth: 360,
+            background: 'var(--surface)',
+            boxShadow: running ? 'var(--ring-2)' : 'var(--ring)',
+            borderRadius: 24,
+            padding: '40px 48px',
+            textAlign: 'center' as const,
+            width: '100%',
+            maxWidth: 360,
+            transition: 'box-shadow 0.2s',
           }}>
-            {/* MP-03: fontWeight 510; MP-05: letterSpacing var(--tracking-heading-lg); MP-09: keep clamp font size */}
             <div style={{
-              fontSize: 'clamp(5rem, 28vw, 8rem)', fontWeight: 510, letterSpacing: 'var(--tracking-heading-lg)', lineHeight: 0.9,
+              fontSize: 'clamp(5rem, 28vw, 8rem)',
+              fontWeight: 510,
+              letterSpacing: '-0.022em',
+              lineHeight: 0.9,
               color: 'var(--text)',
+              fontVariantNumeric: 'tabular-nums',
             }}>
               {timerText}
             </div>
-            {/* MP-13: fontWeight 400 */}
             <p style={{ marginTop: 12, fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 400 }}>
               {running ? 'in progress' : `${session?.duration_min ?? 0} min session`}
             </p>
@@ -145,13 +158,13 @@ export default function MeditationPlayerPage() {
         {/* Progress bar */}
         {running && (
           <div style={{ width: '100%', maxWidth: 360 }}>
-            <div className="progress">
-              <div className="progress-fill" style={{ width: `${progress * 100}%`, transition: 'width 1s linear' }} />
+            <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${progress * 100}%`, background: 'var(--text)', borderRadius: 2, transition: 'width 1s linear' }} />
             </div>
           </div>
         )}
 
-        {/* Action buttons — MP-12: gap px */}
+        {/* Action buttons */}
         <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 360 }}>
           {!running && !done && (
             <button onClick={start} className="btn btn-primary btn-block">
@@ -170,12 +183,19 @@ export default function MeditationPlayerPage() {
           )}
         </div>
 
-        {/* Instructions — MP-11: carbon bg + shadow, borderRadius 12; MP-12: padding px */}
+        {/* Instructions card */}
         {!running && !done && instructions.length > 0 && (
-          <div style={{ background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: 20, width: '100%', maxWidth: 360 }}>
+          <div style={{
+            background: 'var(--surface)',
+            boxShadow: 'var(--ring)',
+            borderRadius: 24,
+            padding: 20,
+            width: '100%',
+            maxWidth: 360,
+          }}>
             <p className="label" style={{ marginBottom: 12 }}>Instructions</p>
             {instructions.map((line, i) => (
-              <p key={i} style={{ margin: '0 0 0.4rem', fontSize: '0.875rem', color: 'var(--text-2)', lineHeight: 1.6 }}>{line}</p>
+              <p key={i} style={{ margin: '0 0 0.4rem', fontSize: '0.875rem', color: 'var(--text-3)', lineHeight: 1.6 }}>{line}</p>
             ))}
           </div>
         )}

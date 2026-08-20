@@ -36,29 +36,31 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100dvh',
-      display: 'flex', flexDirection: 'column', justifyContent: 'center',
-      padding: '40px 16px',
-      background: 'var(--color-void)',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      padding: '40px 24px',
+      background: '#000000',
     }}>
 
       {/* ── Brand ── */}
-      <div style={{ marginBottom: 40 }}>
-        <p style={{ fontSize: 12, fontWeight: 510, letterSpacing: '-0.01em', color: 'var(--text-4)', marginBottom: 8 }}>
+      <div style={{ marginBottom: 48 }}>
+        <p style={{ fontSize: 11, fontWeight: 400, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 16 }}>
           Personal OS
         </p>
-        <h1 style={{ margin: 0, fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)' }}>
+        <h1 style={{ margin: 0, fontSize: 'clamp(2.5rem,12vw,4rem)', fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 0.95, color: '#ffffff' }}>
           {mode === 'login' ? 'Sign in' : 'Create account'}
         </h1>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 360 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 360 }}>
 
         {/* Error */}
         {error && (
           <div style={{
             background: 'rgba(235,87,87,0.08)',
             border: '1px solid rgba(235,87,87,0.2)',
-            borderRadius: 6, padding: '10px 14px',
+            borderRadius: 12, padding: '10px 14px',
             fontSize: 13, color: 'var(--color-coral-red)',
             letterSpacing: '-0.011em',
           }}>
@@ -69,10 +71,10 @@ export default function LoginPage() {
         {/* Success */}
         {message && (
           <div style={{
-            background: 'rgba(39,166,68,0.08)',
-            border: '1px solid rgba(39,166,68,0.2)',
-            borderRadius: 6, padding: '10px 14px',
-            fontSize: 13, color: 'var(--color-pulse-green)',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid var(--border)',
+            borderRadius: 12, padding: '10px 14px',
+            fontSize: 13, color: 'var(--text)',
             letterSpacing: '-0.011em',
           }}>
             {message}
@@ -88,6 +90,7 @@ export default function LoginPage() {
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="you@example.com"
             autoComplete="email"
+            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
           />
         </div>
 
@@ -100,6 +103,7 @@ export default function LoginPage() {
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="••••••••"
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
           />
         </div>
 
@@ -107,14 +111,14 @@ export default function LoginPage() {
           onClick={handleSubmit}
           disabled={loading}
           className="btn btn-primary btn-block"
-          style={{ marginTop: 4 }}
+          style={{ marginTop: 8 }}
         >
           {loading ? '…' : mode === 'login' ? 'Sign in →' : 'Create account →'}
         </button>
 
         <button
           onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage(''); }}
-          className="btn btn-outline btn-block"
+          className="btn btn-ghost btn-block"
         >
           {mode === 'login' ? 'No account? Sign up' : 'Have an account? Sign in'}
         </button>
