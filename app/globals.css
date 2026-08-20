@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/* Inter Variable — full axis 100–900, enables weights 510 & 590 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -41,23 +42,29 @@
   --accent:     var(--color-acid-lime);
   --accent-fg:  var(--color-void);
 
-  /* ── Typography ── */
+  /* ── Typography — Families ── */
   --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono:  ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-features: "cv01" on, "ss03" on, "zero" on;
 
-  /* ── Type scale ── */
+  /* ── Typography — Weights ── */
+  --font-weight-light:   300;
+  --font-weight-regular: 400;
+  --font-weight-w510:    510;
+  --font-weight-w590:    590;
+
+  /* ── Typography — Scale (size / line-height / tracking) ── */
   --text-micro:      10px;
   --text-label:      12px;
-  --text-caption:    13px;
-  --text-body-sm:    15px;
-  --text-body:       16px;
-  --text-body-lg:    20px;
-  --text-subheading: 24px;
-  --text-heading-sm: 32px;
-  --text-heading:    48px;
-  --text-heading-lg: 64px;
-  --text-display:    72px;
+  --text-caption:    13px;  --leading-caption:    1.2;
+  --text-body-sm:    15px;  --leading-body-sm:    1.6;   --tracking-body-sm:    -0.165px;
+  --text-body:       16px;  --leading-body:       1.5;
+  --text-body-lg:    20px;  --leading-body-lg:    1.33;  --tracking-body-lg:    -0.24px;
+  --text-subheading: 24px;  --leading-subheading: 1.33;  --tracking-subheading: -0.288px;
+  --text-heading-sm: 32px;  --leading-heading-sm: 1.13;  --tracking-heading-sm: -0.704px;
+  --text-heading:    48px;  --leading-heading:    1;     --tracking-heading:    -1.056px;
+  --text-heading-lg: 64px;  --leading-heading-lg: 1;     --tracking-heading-lg: -1.408px;
+  --text-display:    72px;  --leading-display:    1;     --tracking-display:    -1.584px;
 
   /* ── Spacing ── */
   --spacing-4:   4px;
@@ -131,11 +138,12 @@
 ───────────────────────────────────────────────────────────────────────────── */
 html, body {
   background: var(--bg);
-  color: var(--text-2);
+  /* Body text = mist (#d0d6e0) per Linear spec — not pure white */
+  color: var(--color-mist);
   font-family: var(--font-inter);
   font-size: var(--text-body);
-  font-weight: 400;
-  line-height: 1.5;
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-body);
   font-feature-settings: var(--font-features);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -155,116 +163,120 @@ html, body {
    TYPOGRAPHY UTILITIES
 ───────────────────────────────────────────────────────────────────────────── */
 
-/* Display / Hero */
+/* ── Type utility classes — each uses exact token values from the scale ── */
+
 .t-display {
   font-size: var(--text-display);
-  font-weight: 510;
-  line-height: 1.0;
-  letter-spacing: -0.022em;
+  font-weight: var(--font-weight-w510);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
   color: var(--text);
   font-feature-settings: var(--font-features);
 }
 .t-heading-lg {
   font-size: var(--text-heading-lg);
-  font-weight: 510;
-  line-height: 1.0;
-  letter-spacing: -0.022em;
+  font-weight: var(--font-weight-w510);
+  line-height: var(--leading-heading-lg);
+  letter-spacing: var(--tracking-heading-lg);
   color: var(--text);
   font-feature-settings: var(--font-features);
 }
 .t-heading {
   font-size: var(--text-heading);
-  font-weight: 510;
-  line-height: 1.0;
-  letter-spacing: -0.022em;
+  font-weight: var(--font-weight-w510);
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-heading);
   color: var(--text);
   font-feature-settings: var(--font-features);
 }
 .t-heading-sm {
   font-size: var(--text-heading-sm);
-  font-weight: 400;
-  line-height: 1.13;
-  letter-spacing: -0.022em;
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-heading-sm);
+  letter-spacing: var(--tracking-heading-sm);
   color: var(--text);
 }
 .t-subheading {
   font-size: var(--text-subheading);
-  font-weight: 400;
-  line-height: 1.33;
-  letter-spacing: -0.012em;
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-subheading);
+  letter-spacing: var(--tracking-subheading);
   color: var(--text);
 }
 .t-body-lg {
   font-size: var(--text-body-lg);
-  font-weight: 590;
-  line-height: 1.33;
-  letter-spacing: -0.012em;
-  color: var(--text-2);
+  font-weight: var(--font-weight-w590);
+  line-height: var(--leading-body-lg);
+  letter-spacing: var(--tracking-body-lg);
+  color: var(--color-mist);
 }
 .t-body {
   font-size: var(--text-body);
-  font-weight: 400;
-  line-height: 1.5;
-  color: var(--text-2);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-body);
+  color: var(--color-mist);
 }
 .t-body-sm {
   font-size: var(--text-body-sm);
-  font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: -0.011em;
-  color: var(--text-2);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-body-sm);
+  letter-spacing: var(--tracking-body-sm);
+  color: var(--color-mist);
 }
 .t-caption {
   font-size: var(--text-caption);
-  font-weight: 400;
-  line-height: 1.2;
-  color: var(--text-3);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-caption);
+  color: var(--color-fog);
 }
 
-/* Legacy label classes — kept for backward compatibility, remapped to Linear scale */
+/* Label classes — caption scale, token-driven */
 .label {
   font-size: var(--text-caption);
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-caption);
   letter-spacing: 0.01em;
   text-transform: uppercase;
-  color: var(--text-4);
+  color: var(--color-fog);
 }
 .label-xs {
   font-size: 11px;
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.2;
   letter-spacing: 0.01em;
   text-transform: uppercase;
-  color: var(--text-4);
+  color: var(--color-ash);
 }
 
-/* Numbers */
+/* Numbers — all use token weights & tracking */
 .num-hero {
   font-size: clamp(4.5rem, 22vw, 8rem);
-  font-weight: 510;
-  letter-spacing: -0.022em;
-  line-height: 1.0;
+  font-weight: var(--font-weight-w510);
+  letter-spacing: var(--tracking-heading-lg); /* -1.408px ≈ -0.022em at 64px */
+  line-height: var(--leading-heading-lg);
   color: var(--text);
   font-feature-settings: var(--font-features);
 }
 .num-xl {
   font-size: var(--text-heading-sm);
-  font-weight: 510;
-  letter-spacing: -0.022em;
-  line-height: 1.0;
+  font-weight: var(--font-weight-w510);
+  letter-spacing: var(--tracking-heading-sm); /* -0.704px */
+  line-height: var(--leading-heading-sm);
   color: var(--text);
 }
 .num-sm {
   font-size: var(--text-body-lg);
-  font-weight: 400;
-  letter-spacing: -0.012em;
-  line-height: 1.0;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--tracking-body-lg);    /* -0.24px */
+  line-height: var(--leading-body-lg);
   color: var(--text);
 }
 
 .page-title {
   font-size: var(--text-heading-sm);
-  font-weight: 510;
-  letter-spacing: -0.022em;
+  font-weight: var(--font-weight-w510);
+  letter-spacing: var(--tracking-heading-sm);
+  line-height: var(--leading-heading-sm);
   color: var(--text);
 }
 
@@ -367,8 +379,8 @@ html, body {
   padding: var(--spacing-8) var(--spacing-4);
   font-family: var(--font-inter);
   font-size: var(--text-caption);
-  font-weight: 400;
-  letter-spacing: -0.01em;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--tracking-body-sm);
   background: transparent;
   color: var(--text-3);
   border: none;
@@ -393,9 +405,9 @@ html, body {
   justify-content: center;
   font-family: var(--font-inter);
   font-feature-settings: var(--font-features);
-  font-weight: 510;
+  font-weight: var(--font-weight-w510);
   font-size: 14px;
-  letter-spacing: -0.011em;
+  letter-spacing: var(--tracking-body-sm); /* -0.165px ≈ -0.011em at 15px */
   cursor: pointer;
   border: 1px solid transparent;
   border-radius: var(--radius-buttons);
