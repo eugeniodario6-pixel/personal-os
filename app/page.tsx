@@ -530,27 +530,6 @@ export default function TodayPage() {
         </div>
       </div>
 
-      {/* Floating log button */}
-      <button
-        onClick={() => { haptic('medium'); setQuickLog(true); }}
-        style={{
-          position: 'fixed', bottom: 24, right: 20, zIndex: 200,
-          width: 56, height: 56, borderRadius: '50%',
-          background: '#ffffff', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 20px rgba(255,255,255,0.15)',
-          fontSize: 22, color: '#000000', fontWeight: 300, lineHeight: 1,
-          transition: 'transform 0.15s, box-shadow 0.15s',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-        onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
-        onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
-        onTouchStart={e => (e.currentTarget.style.transform = 'scale(0.93)')}
-        onTouchEnd={e => (e.currentTarget.style.transform = 'scale(1)')}
-      >
-        +
-      </button>
-
       <QuickLogSheet open={quickLog} onClose={() => setQuickLog(false)} onLogged={() => load()} />
     </>
   );
