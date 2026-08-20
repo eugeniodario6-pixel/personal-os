@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getWeightHistory, logWeight, deleteWeightEntry, getProfile, type WeightEntry } from '@/lib/db';
+import { ScoreRing } from '@/components/ScoreRing';
 import { haptic } from '@/lib/haptic';
 
 export default function BodyPage() {
@@ -29,6 +30,7 @@ export default function BodyPage() {
   const delta    = latest && previous ? Math.round((latest.weight_kg - previous.weight_kg) * 10) / 10 : null;
   const totalDelta = latest && startingWeight ? Math.round((latest.weight_kg - startingWeight) * 10) / 10 : null;
   const todayLogged = entries[0]?.logged_at === new Date().toISOString().split('T')[0];
+  const score = todayLogged ? 100 : entries.length > 0 ? Math.min(85, entries.length * 5) : 0;
 
   const sparkPath = () => {
     const pts = [...entries].reverse().slice(-12);
@@ -76,7 +78,10 @@ export default function BodyPage() {
       {/* ── Header ── */}
       <div style={{ padding: '20px 20px 16px' }}>
         <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Track</p>
-        <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Body Weight</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Body Weight</h1>
+          <ScoreRing score={score} label={todayLogged ? 'Logged' : 'Log today'} />
+        </div>
       </div>
 
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>

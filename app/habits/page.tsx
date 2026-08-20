@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getHabits, addHabit, deactivateHabit, getHabitCompletions, toggleHabitCompletion, getHabitStreaks, todayISO, type Habit } from '@/lib/db';
+import { ScoreRing } from '@/components/ScoreRing';
 import { haptic } from '@/lib/haptic';
 
 export default function HabitsPage() {
@@ -38,6 +39,7 @@ export default function HabitsPage() {
   };
 
   const doneCount = habits.filter(h => h.done).length;
+  const score = habits.length > 0 ? Math.round((doneCount / habits.length) * 100) : 0;
 
   return (
     <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
@@ -50,9 +52,12 @@ export default function HabitsPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {habits.length > 0 && (
-            <span style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>
-              {doneCount}/{habits.length}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>
+                {doneCount}/{habits.length}
+              </span>
+              <ScoreRing score={score} size={52} />
+            </div>
           )}
           <button
             onClick={() => { setMode(mode === 'add' ? 'list' : 'add'); setAddError(''); }}

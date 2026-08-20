@@ -9,6 +9,7 @@ import {
   type LiftSetup, type TrainingWeek, type TrainingSession, type StrengthSet, type Exercise,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
+import { ScoreRing } from '@/components/ScoreRing';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const LIFTS = [
@@ -605,6 +606,7 @@ export default function PlanPage() {
 
   const nextSession = suggestedSession(sessions);
   const currentWeek = getCurrentTrainingWeek();
+  const score = Math.min(100, Math.round((sessions.length / 4) * 100));
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '6rem' }}>
@@ -620,23 +622,26 @@ export default function PlanPage() {
               TRAINING PLAN
             </h1>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '4px' }}>
-            <button onClick={() => router.push('/fitness/exercises')}
-              style={{
-                background: 'var(--surface-2)', border: 'none', borderRadius: 'var(--r-sm)',
-                padding: '0.45rem 0.75rem', fontSize: '0.6rem', letterSpacing: '0.08em',
-                color: 'var(--text-3)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 510,
-              }}>
-              LIBRARY
-            </button>
-            <button onClick={() => setShowSetup(true)}
-              style={{
-                background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r-sm)',
-                padding: '0.45rem 0.75rem', fontSize: '0.6rem', letterSpacing: '0.08em',
-                color: 'var(--text-4)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 510,
-              }}>
-              SETUP
-            </button>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '4px' }}>
+              <button onClick={() => router.push('/fitness/exercises')}
+                style={{
+                  background: 'var(--surface-2)', border: 'none', borderRadius: 'var(--r-sm)',
+                  padding: '0.45rem 0.75rem', fontSize: '0.6rem', letterSpacing: '0.08em',
+                  color: 'var(--text-3)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 510,
+                }}>
+                LIBRARY
+              </button>
+              <button onClick={() => setShowSetup(true)}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r-sm)',
+                  padding: '0.45rem 0.75rem', fontSize: '0.6rem', letterSpacing: '0.08em',
+                  color: 'var(--text-4)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 510,
+                }}>
+                SETUP
+              </button>
+            </div>
+            <ScoreRing score={score} />
           </div>
         </div>
 

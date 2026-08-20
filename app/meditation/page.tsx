@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMeditationSessions, getMeditationLogs, todayISO, type MeditationSession } from '@/lib/db';
+import { ScoreRing } from '@/components/ScoreRing';
 
 const CATS = ['All', 'Breathing', 'Body Scan', 'Sleep', 'Stress Release', 'Focus'];
 
@@ -28,6 +29,7 @@ export default function MeditationPage() {
 
   const filtered = cat === 'All' ? sessions : sessions.filter(s => s.category.toLowerCase() === cat.toLowerCase());
   const doneCount = sessions.filter(s => loggedIds.has(s.id)).length;
+  const score = sessions.length > 0 ? Math.min(100, Math.round((loggedIds.size / sessions.length) * 100)) : 0;
 
   return (
     <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
@@ -37,11 +39,7 @@ export default function MeditationPage() {
         <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Mind</p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Meditation</h1>
-          {sessions.length > 0 && (
-            <span style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>
-              {doneCount}/{sessions.length} done
-            </span>
-          )}
+          {sessions.length > 0 && <ScoreRing score={score} />}
         </div>
       </div>
 

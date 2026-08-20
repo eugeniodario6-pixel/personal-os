@@ -10,6 +10,7 @@ import {
   currentWeekOf, todayISO,
   type FoodItem, type MealLog, type DailyScore, type GroceryItem, type Profile,
 } from '@/lib/db';
+import { ScoreRing } from '@/components/ScoreRing';
 import { haptic } from '@/lib/haptic';
 import { toast } from '@/components/Toast';
 
@@ -617,10 +618,29 @@ function NutritionContent() {
     await logFoodResult(selectedFood as FoodResult, qty, mt);
   };
 
-  const totalCal = Math.round(calcTotals(logs).calories);
+  const totals   = calcTotals(logs);
+  const totalCal = Math.round(totals.calories);
   const target   = profile?.calorie_target ?? 2000;
   const remaining = Math.max(target - totalCal, 0);
   const dateStr  = new Date().toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+
+  // ── Nutrition score ─────────────────────────────────────────────────────────
+  const calorieTarget  = profile?.calorie_target ?? 2000;
+  const proteinTarget  = profile?.macro_targets?.protein ?? 150;
+  const calories       = totals.calories;
+  const protein        = totals.protein;
+  let calScore: number;
+  if (calories === 0) {
+    calScore = 0;
+  } else if (calories >= calorieTarget * 0.85 && calories <= calorieTarget * 1.1) {
+    calScore = 100;
+  } else if (calories >= calorieTarget * 0.7) {
+    calScore = 70;
+  } else {
+    calScore = Math.min(100, (calories / calorieTarget) * 100);
+  }
+  const protScore = Math.min(100, (protein / proteinTarget) * 100);
+  const nutritionScore = Math.round(calScore * 0.5 + protScore * 0.5);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '100px' }}>
@@ -632,13 +652,16 @@ function NutritionContent() {
             <p className="label" style={{ marginBottom: 4 }}>Eat · {dateStr}</p>
             <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Fuel</h1>
           </div>
-          {/* Remaining kcal callout */}
-          <div style={{ textAlign: 'right' }}>
-            <p className="label" style={{ marginBottom: 4 }}>Remaining</p>
-            <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, margin: 0, color: 'var(--text)' }}>
-              {remaining === 0 ? '✓' : remaining.toLocaleString()}
-            </p>
-            {remaining > 0 && <p className="label" style={{ margin: 0 }}>kcal left</p>}
+          {/* Score ring + Remaining kcal callout */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+            <div style={{ textAlign: 'right' }}>
+              <p className="label" style={{ marginBottom: 4 }}>Remaining</p>
+              <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, margin: 0, color: 'var(--text)' }}>
+                {remaining === 0 ? '✓' : remaining.toLocaleString()}
+              </p>
+              {remaining > 0 && <p className="label" style={{ margin: 0 }}>kcal left</p>}
+            </div>
+            <ScoreRing score={nutritionScore} />
           </div>
         </div>
 
