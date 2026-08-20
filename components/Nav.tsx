@@ -100,7 +100,7 @@ export default function Nav() {
                 width: active ? 56 : 52,
                 height: 56,
                 borderRadius: 9999,
-                background: active ? '#ffffff' : 'transparent',
+                background: active ? '#DAFF01' : 'transparent',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
                 transition: 'background 0.2s cubic-bezier(0.4,0,0.2,1), width 0.2s cubic-bezier(0.4,0,0.2,1)',
@@ -109,7 +109,7 @@ export default function Nav() {
             >
               <span style={{
                 fontSize: 20,
-                color: active ? '#000000' : 'rgba(255,255,255,0.32)',
+                color: active ? '#000000' : 'rgba(255,255,255,0.30)',
                 transition: 'color 0.2s',
                 lineHeight: 1,
               }}>

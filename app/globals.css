@@ -40,11 +40,15 @@
   --cta-bg: var(--c-950);
   --cta-fg: var(--c-0);
 
+  /* ── Acid Lime accent ── */
+  --lime:          #DAFF01;
+  --lime-fg:       #000000;
+
   /* compat aliases */
-  --accent:        var(--c-950);
-  --accent-fg:     var(--c-0);
-  --color-acid-lime: var(--c-950);
-  --positive:      var(--c-700);
+  --accent:        #DAFF01;
+  --accent-fg:     #000000;
+  --color-acid-lime: #DAFF01;
+  --positive:      #DAFF01;
   --negative:      #EB5757;
   --text-muted:    var(--text-3);
   --text-ghost:    var(--text-4);
