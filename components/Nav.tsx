@@ -7,66 +7,82 @@ import { haptic } from '@/lib/haptic';
 import { useTheme } from './ThemeProvider';
 
 const TABS = [
-  { href: '/',           label: 'Today',  icon: '◉' },
-  { href: '/nutrition',  label: 'Eat',    icon: '⊕' },
-  { href: '/fitness',    label: 'Move',   icon: '△' },
-  { href: '/body',       label: 'Body',   icon: '◈' },
-  { href: '/habits',     label: 'Habits', icon: '✦' },
+  { href: '/',           label: 'Today',     icon: '◉' },
+  { href: '/nutrition',  label: 'Eat',       icon: '⊕' },
+  { href: '/fitness',    label: 'Move',      icon: '△' },
+  { href: '/body',       label: 'Body',      icon: '◈' },
+  { href: '/habits',     label: 'Habits',    icon: '✦' },
 ];
 
 const DRAWER = [
-  { href: '/',           label: 'Today',    sub: 'Dashboard' },
-  { href: '/nutrition',  label: 'Eat',      sub: 'Nutrition' },
-  { href: '/fitness',    label: 'Move',     sub: 'Fitness' },
-  { href: '/body',       label: 'Body',     sub: 'Weight log' },
-  { href: '/habits',     label: 'Habits',   sub: 'Daily habits' },
-  { href: '/meditation', label: 'Mind',     sub: 'Meditation' },
-  { href: '/insights',   label: 'Data',     sub: 'Insights' },
-  { href: '/settings',   label: 'Settings', sub: 'Preferences' },
+  { href: '/',           label: 'Today',     sub: 'Dashboard' },
+  { href: '/nutrition',  label: 'Eat',       sub: 'Nutrition' },
+  { href: '/fitness',    label: 'Move',      sub: 'Fitness' },
+  { href: '/body',       label: 'Body',      sub: 'Weight log' },
+  { href: '/habits',     label: 'Habits',    sub: 'Daily habits' },
+  { href: '/meditation', label: 'Mind',      sub: 'Meditation' },
+  { href: '/insights',   label: 'Data',      sub: 'Insights' },
+  { href: '/settings',   label: 'Settings',  sub: 'Preferences' },
 ];
-
-const btnStyle: React.CSSProperties = {
-  width: '2.25rem', height: '2.25rem',
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-xs)',
-  cursor: 'pointer',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  WebkitTapHighlightColor: 'transparent',
-  transition: 'background 0.15s',
-};
 
 export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { theme, toggle } = useTheme();
 
-  const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
     <>
-      {/* ── Floating buttons — top right ── */}
+      {/* ── Top-right controls ── */}
       <div style={{
-        position: 'fixed', top: '1rem', right: '1rem',
+        position: 'fixed', top: 12, right: 12,
         zIndex: 300,
-        display: 'flex', gap: '0.5rem',
+        display: 'flex', gap: 6,
       }}>
         {/* Theme toggle */}
-        <button onClick={() => { haptic('light'); toggle(); }} style={btnStyle} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-          <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{theme === 'dark' ? '☀︎' : '☽'}</span>
+        <button
+          onClick={() => { haptic('light'); toggle(); }}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          style={{
+            width: 32, height: 32,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+            transition: 'background 0.15s, border-color 0.15s',
+          }}
+        >
+          <span style={{ fontSize: 13, lineHeight: 1, color: 'var(--text-3)' }}>
+            {theme === 'dark' ? '○' : '●'}
+          </span>
         </button>
 
-        {/* Menu */}
+        {/* Menu trigger */}
         <button
           onClick={() => { haptic('light'); setOpen(o => !o); }}
-          style={{ ...btnStyle, background: open ? 'var(--text)' : 'var(--surface)' }}
+          style={{
+            width: 32, height: 32,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: open ? 'var(--text)' : 'rgba(255,255,255,0.04)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+            transition: 'background 0.15s',
+          }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5, width: 13 }}>
             {[0, 1, 2].map(i => (
               <span key={i} style={{
-                display: 'block', width: '100%', height: '1.5px',
-                background: open ? 'var(--invert)' : 'var(--text)',
-                borderRadius: 2,
+                display: 'block',
+                width: '100%',
+                height: 1,
+                background: open ? 'var(--invert)' : 'var(--text-3)',
+                borderRadius: 1,
                 transition: 'background 0.15s',
               }} />
             ))}
@@ -77,8 +93,10 @@ export default function Nav() {
       {/* ── Bottom tab bar ── */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: '4.25rem',
-        background: 'var(--bg)',
+        height: 56,
+        background: 'rgba(8, 9, 10, 0.92)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         borderTop: '1px solid var(--border)',
         zIndex: 300,
         display: 'flex', alignItems: 'stretch',
@@ -87,23 +105,37 @@ export default function Nav() {
         {TABS.map(tab => {
           const active = isActive(tab.href);
           return (
-            <Link key={tab.href} href={tab.href}
+            <Link
+              key={tab.href}
+              href={tab.href}
               onClick={() => haptic('light')}
               style={{
                 flex: 1,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
-                gap: '0.2rem',
+                gap: 3,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
-                borderTop: `2px solid ${active ? 'var(--text)' : 'transparent'}`,
-                paddingTop: '0.35rem',
+                borderTop: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
+                transition: 'border-color 0.15s',
               }}
             >
-              <span style={{ fontSize: '1rem', color: active ? 'var(--text)' : 'var(--text-4)' }}>
+              <span style={{
+                fontSize: 14,
+                color: active ? 'var(--accent)' : 'var(--text-4)',
+                transition: 'color 0.15s',
+                lineHeight: 1,
+              }}>
                 {tab.icon}
               </span>
-              <span style={{ fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: active ? 'var(--text)' : 'var(--text-4)' }}>
+              <span style={{
+                fontSize: 10,
+                fontWeight: active ? 510 : 400,
+                letterSpacing: '-0.01em',
+                fontFeatureSettings: '"cv01" on, "ss03" on',
+                color: active ? 'var(--text-2)' : 'var(--text-4)',
+                transition: 'color 0.15s',
+              }}>
                 {tab.label}
               </span>
             </Link>
@@ -113,62 +145,105 @@ export default function Nav() {
 
       {/* ── Backdrop ── */}
       {open && (
-        <div onClick={() => setOpen(false)} style={{
-          position: 'fixed', inset: 0, zIndex: 298,
-          background: 'rgba(0,0,0,0.4)',
-        }} />
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 298,
+            background: 'rgba(8,9,10,0.6)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+          }}
+        />
       )}
 
       {/* ── Drawer ── */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: '72vw', maxWidth: 280,
-        background: 'var(--bg)',
-        borderLeft: '1px solid var(--border)',
+        width: '68vw', maxWidth: 260,
+        background: 'var(--color-carbon)',
+        boxShadow: 'var(--color-graphite) 0px 0px 0px 1px inset, var(--shadow-xl)',
         zIndex: 299,
         transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.22s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'transform 0.2s cubic-bezier(0.4,0,0.2,1)',
         display: 'flex', flexDirection: 'column',
-        paddingTop: '4rem',
+        paddingTop: 56,
         overflowY: 'auto',
       }}>
         {DRAWER.map(link => {
           const active = isActive(link.href);
           return (
-            <Link key={link.href} href={link.href}
+            <Link
+              key={link.href}
+              href={link.href}
               onClick={() => { haptic('light'); setOpen(false); }}
               style={{
                 display: 'flex', alignItems: 'center',
-                padding: '1rem 1.5rem',
-                background: active ? 'var(--surface)' : 'transparent',
-                borderLeft: `2px solid ${active ? 'var(--text)' : 'transparent'}`,
+                padding: '10px 16px',
+                background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
+                borderLeft: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
                 borderBottom: '1px solid var(--border)',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
+                transition: 'background 0.12s',
+                gap: 12,
               }}
             >
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '1rem', fontWeight: active ? 700 : 400, color: 'var(--text)', margin: 0, marginBottom: '0.1rem' }}>
+              {/* Active dot */}
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                background: active ? 'var(--accent)' : 'transparent',
+                transition: 'background 0.15s',
+              }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  fontSize: 14,
+                  fontWeight: active ? 510 : 400,
+                  letterSpacing: '-0.011em',
+                  color: active ? 'var(--text)' : 'var(--text-2)',
+                  margin: 0,
+                  marginBottom: 1,
+                  fontFeatureSettings: '"cv01" on, "ss03" on',
+                }}>
                   {link.label}
                 </p>
-                <p className="label" style={{ margin: 0 }}>{link.sub}</p>
+                <p style={{
+                  fontSize: 12,
+                  color: 'var(--text-4)',
+                  margin: 0,
+                  letterSpacing: '-0.01em',
+                }}>
+                  {link.sub}
+                </p>
               </div>
-              {active && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text)' }} />}
             </Link>
           );
         })}
 
-        {/* Theme toggle in drawer */}
-        <button onClick={() => { haptic('light'); toggle(); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem 1.5rem', background: 'transparent', border: 'none', borderTop: '1px solid var(--border)', cursor: 'pointer', marginTop: 'auto', WebkitTapHighlightColor: 'transparent' }}>
-          <span style={{ fontSize: '1rem', color: 'var(--text)' }}>{theme === 'dark' ? '☀︎' : '☽'}</span>
-          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)' }}>
+        {/* Theme row */}
+        <button
+          onClick={() => { haptic('light'); toggle(); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 16px',
+            background: 'transparent', border: 'none',
+            borderTop: '1px solid var(--border)',
+            cursor: 'pointer', marginTop: 'auto',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span style={{ fontSize: 13, color: 'var(--text-3)' }}>
+            {theme === 'dark' ? '○' : '●'}
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </span>
         </button>
 
-        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border)' }}>
-          <p className="label" style={{ color: 'var(--text-4)' }}>Personal OS · v0.1</p>
+        {/* Version */}
+        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 11, color: 'var(--text-4)', letterSpacing: '-0.01em', fontFamily: 'var(--font-mono)' }}>
+            Personal OS · v0.1
+          </p>
         </div>
       </div>
     </>

@@ -1,109 +1,270 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
-/* ── Dark mode (default) ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   LINEAR DESIGN SYSTEM — Personal OS
+   Midnight precision instrument · dark-canvas-first
+───────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --bg:           #000000;
-  --bg-2:         #0a0a0a;
-  --surface:      #111111;
-  --surface-2:    #1a1a1a;
-  --surface-3:    #222222;
-  --border:       #2a2a2a;
-  --border-2:     #333333;
-  --text:         #ffffff;
-  --text-2:       #aaaaaa;
-  --text-3:       #555555;
-  --text-4:       #333333;
-  --invert:       #000000;
-  --radius:       12px;
-  --radius-sm:    8px;
-  --radius-xs:    6px;
-  --pad:          1.25rem;
+  /* ── Colors ── */
+  --color-void:         #08090a;
+  --color-carbon:       #0f1011;
+  --color-obsidian:     #161718;
+  --color-graphite:     #23252a;
+  --color-smoke:        #383b3f;
+  --color-ash:          #62666d;
+  --color-fog:          #8a8f98;
+  --color-mist:         #d0d6e0;
+  --color-bone:         #e5e5e6;
+  --color-paper:        #ffffff;
+  --color-acid-lime:    #e4f222;
+  --color-pulse-green:  #27a644;
+  --color-coral-red:    #eb5757;
+  --color-signal-teal:  #02b8cc;
+  --color-iris-violet:  #6366f1;
+  --color-lavender:     #8b5cf6;
+
+  /* ── Semantic aliases (dark mode default) ── */
+  --bg:         var(--color-void);
+  --bg-2:       var(--color-carbon);
+  --surface:    var(--color-carbon);
+  --surface-2:  var(--color-obsidian);
+  --surface-3:  var(--color-graphite);
+  --border:     var(--color-graphite);
+  --border-2:   var(--color-smoke);
+  --text:       var(--color-paper);
+  --text-2:     var(--color-mist);
+  --text-3:     var(--color-fog);
+  --text-4:     var(--color-ash);
+  --invert:     var(--color-void);
+  --accent:     var(--color-acid-lime);
+  --accent-fg:  var(--color-void);
+
+  /* ── Typography ── */
+  --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:  ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-features: "cv01" on, "ss03" on, "zero" on;
+
+  /* ── Type scale ── */
+  --text-micro:      10px;
+  --text-label:      12px;
+  --text-caption:    13px;
+  --text-body-sm:    15px;
+  --text-body:       16px;
+  --text-body-lg:    20px;
+  --text-subheading: 24px;
+  --text-heading-sm: 32px;
+  --text-heading:    48px;
+  --text-heading-lg: 64px;
+  --text-display:    72px;
+
+  /* ── Spacing ── */
+  --spacing-4:   4px;
+  --spacing-8:   8px;
+  --spacing-12:  12px;
+  --spacing-16:  16px;
+  --spacing-20:  20px;
+  --spacing-24:  24px;
+  --spacing-28:  28px;
+  --spacing-32:  32px;
+  --spacing-36:  36px;
+  --spacing-40:  40px;
+  --spacing-48:  48px;
+  --spacing-56:  56px;
+  --spacing-64:  64px;
+  --spacing-80:  80px;
+  --spacing-96:  96px;
+  --spacing-128: 128px;
+  --pad:         16px;
+
+  /* ── Border radius ── */
+  --radius-xs:   2px;
+  --radius-sm:   6px;
+  --radius:      12px;
+  --radius-full: 9999px;
+  /* named roles */
+  --radius-cards:   12px;
+  --radius-buttons: 6px;
+  --radius-inputs:  6px;
+  --radius-badges:  4px;
+  --radius-pills:   9999px;
+
+  /* ── Shadows ── */
+  --shadow-sm:       rgba(0, 0, 0, 0.4) 0px 2px 4px 0px;
+  --shadow-md:       rgba(0, 0, 0, 0.2) 0px 0px 12px 0px inset;
+  --shadow-subtle:   rgb(35, 37, 42) 0px 0px 0px 1px inset;
+  --shadow-subtle-2: rgba(0, 0, 0, 0.2) 0px 0px 0px 1px;
+  --shadow-subtle-3: rgba(0, 0, 0, 0.01) 0px 5px 2px 0px, rgba(0, 0, 0, 0.04) 0px 3px 2px 0px, rgba(0, 0, 0, 0.07) 0px 1px 1px 0px, rgba(0, 0, 0, 0.08) 0px 0px 1px 0px;
+  --shadow-xl:       rgba(8, 9, 10, 0.6) 0px 4px 32px 0px;
+  --shadow-subtle-4: rgba(255, 255, 255, 0.03) 0px 0px 0px 1px inset, rgba(255, 255, 255, 0.04) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.6) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 4px 4px 0px;
+  --shadow-subtle-5: rgba(0, 0, 0, 0.1) 0px 0px 0px 2px;
+  /* card hairline — the Linear signature border */
+  --shadow-card: var(--color-graphite) 0px 0px 0px 1px inset;
 }
 
-/* ── Light mode ── */
+/* ── Light mode overrides ── */
 [data-theme="light"] {
-  --bg:           #ffffff;
-  --bg-2:         #f5f5f5;
-  --surface:      #f0f0f0;
-  --surface-2:    #e8e8e8;
-  --surface-3:    #dedede;
-  --border:       #d4d4d4;
-  --border-2:     #bbbbbb;
-  --text:         #000000;
-  --text-2:       #444444;
-  --text-3:       #888888;
-  --text-4:       #bbbbbb;
-  --invert:       #ffffff;
+  --bg:        #ffffff;
+  --bg-2:      #f5f5f7;
+  --surface:   #f0f0f2;
+  --surface-2: #e8e8ec;
+  --surface-3: #dddde2;
+  --border:    #d4d4d8;
+  --border-2:  #b8b8be;
+  --text:      #08090a;
+  --text-2:    #23252a;
+  --text-3:    #62666d;
+  --text-4:    #8a8f98;
+  --invert:    #ffffff;
+  --accent:    #b8c200;
+  --accent-fg: #ffffff;
 }
 
-/* ── Reset ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESET
+───────────────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Base ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE
+───────────────────────────────────────────────────────────────────────────── */
 html, body {
   background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 16px;
+  color: var(--text-2);
+  font-family: var(--font-inter);
+  font-size: var(--text-body);
+  font-weight: 400;
   line-height: 1.5;
+  font-feature-settings: var(--font-features);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.2s, color 0.2s;
 }
 
-/* ── Page ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAGE SHELL
+───────────────────────────────────────────────────────────────────────────── */
 .page {
   min-height: 100dvh;
   background: var(--bg);
   padding-bottom: 5rem;
 }
 
-/* ── Typography ── */
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+/* ─────────────────────────────────────────────────────────────────────────────
+   TYPOGRAPHY UTILITIES
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Display / Hero */
+.t-display {
+  font-size: var(--text-display);
+  font-weight: 510;
+  line-height: 1.0;
+  letter-spacing: -0.022em;
+  color: var(--text);
+  font-feature-settings: var(--font-features);
+}
+.t-heading-lg {
+  font-size: var(--text-heading-lg);
+  font-weight: 510;
+  line-height: 1.0;
+  letter-spacing: -0.022em;
+  color: var(--text);
+  font-feature-settings: var(--font-features);
+}
+.t-heading {
+  font-size: var(--text-heading);
+  font-weight: 510;
+  line-height: 1.0;
+  letter-spacing: -0.022em;
+  color: var(--text);
+  font-feature-settings: var(--font-features);
+}
+.t-heading-sm {
+  font-size: var(--text-heading-sm);
+  font-weight: 400;
+  line-height: 1.13;
+  letter-spacing: -0.022em;
   color: var(--text);
 }
-
-.label {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.t-subheading {
+  font-size: var(--text-subheading);
+  font-weight: 400;
+  line-height: 1.33;
+  letter-spacing: -0.012em;
+  color: var(--text);
+}
+.t-body-lg {
+  font-size: var(--text-body-lg);
+  font-weight: 590;
+  line-height: 1.33;
+  letter-spacing: -0.012em;
+  color: var(--text-2);
+}
+.t-body {
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.t-body-sm {
+  font-size: var(--text-body-sm);
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+  color: var(--text-2);
+}
+.t-caption {
+  font-size: var(--text-caption);
+  font-weight: 400;
+  line-height: 1.2;
   color: var(--text-3);
 }
 
+/* Legacy label classes — kept for backward compatibility, remapped to Linear scale */
+.label {
+  font-size: var(--text-caption);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
 .label-xs {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: var(--text-4);
 }
 
+/* Numbers */
 .num-hero {
   font-size: clamp(4.5rem, 22vw, 8rem);
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  line-height: 0.9;
+  font-weight: 510;
+  letter-spacing: -0.022em;
+  line-height: 1.0;
   color: var(--text);
+  font-feature-settings: var(--font-features);
 }
-
 .num-xl {
-  font-size: 2.25rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
+  font-size: var(--text-heading-sm);
+  font-weight: 510;
+  letter-spacing: -0.022em;
+  line-height: 1.0;
+  color: var(--text);
+}
+.num-sm {
+  font-size: var(--text-body-lg);
+  font-weight: 400;
+  letter-spacing: -0.012em;
+  line-height: 1.0;
   color: var(--text);
 }
 
-.num-sm {
-  font-size: 1.125rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
+.page-title {
+  font-size: var(--text-heading-sm);
+  font-weight: 510;
+  letter-spacing: -0.022em;
   color: var(--text);
 }
 
@@ -113,26 +274,35 @@ html, body {
   text-overflow: ellipsis;
 }
 
-.mono { font-family: 'Inter', system-ui, sans-serif; }
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: -0.013em;
+}
 
-/* ── Cards ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   CARDS & SURFACES
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Primary card — hairline inset border, no outer shadow */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--pad);
+  background: var(--color-carbon);
+  border-radius: var(--radius-cards);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-24);
 }
 
+/* Subtle nested panel */
 .panel {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
   border-radius: var(--radius-sm);
-  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-8);
 }
 
-/* ── Section ── */
+/* Section divider row */
 .section {
-  padding: 1rem var(--pad);
+  padding: var(--spacing-16) var(--pad);
   border-bottom: 1px solid var(--border);
 }
 
@@ -140,42 +310,51 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem var(--pad);
-  background: var(--surface);
+  padding: var(--spacing-8) var(--pad);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
 
-/* ── Progress ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROGRESS
+───────────────────────────────────────────────────────────────────────────── */
 .progress {
-  height: 4px;
+  height: 3px;
   background: var(--surface-3);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--text);
   transition: width 0.4s ease;
 }
 
-/* ── Stat grid ── */
+/* Accent variant */
+.progress-fill--accent {
+  background: var(--accent);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STAT GRID
+───────────────────────────────────────────────────────────────────────────── */
 .stat-grid {
   display: grid;
   border-bottom: 1px solid var(--border);
 }
 
 .stat-cell {
-  padding: 1rem 0.875rem;
+  padding: var(--spacing-16) var(--spacing-20);
   border-right: 1px solid var(--border);
 }
-
 .stat-cell:last-child { border-right: none; }
-.stat-cell.active { background: var(--surface); }
+.stat-cell.active { background: var(--surface-2); }
 
-/* ── Tab bar ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   TAB BAR
+───────────────────────────────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
   border-bottom: 1px solid var(--border);
@@ -185,20 +364,19 @@ html, body {
 
 .tab {
   flex: 1;
-  padding: 0.75rem 0.5rem;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  padding: var(--spacing-8) var(--spacing-4);
+  font-family: var(--font-inter);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  letter-spacing: -0.01em;
   background: transparent;
   color: var(--text-3);
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .tab.active {
@@ -206,76 +384,149 @@ html, body {
   border-bottom-color: var(--text);
 }
 
-/* ── Buttons ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.02em;
+  font-family: var(--font-inter);
+  font-feature-settings: var(--font-features);
+  font-weight: 510;
+  font-size: 14px;
+  letter-spacing: -0.011em;
   cursor: pointer;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-buttons);
+  padding: 10px 16px;
   transition: opacity 0.15s, transform 0.1s;
   -webkit-tap-highlight-color: transparent;
   text-decoration: none;
+  white-space: nowrap;
 }
-.btn:active { opacity: 0.7; transform: scale(0.97); }
+.btn:active { opacity: 0.75; transform: scale(0.97); }
 
-.btn-primary  { background: var(--text);    color: var(--invert); border-color: var(--text); }
-.btn-outline  { background: transparent;    color: var(--text);   border-color: var(--border-2); }
-.btn-ghost    { background: var(--surface-2); color: var(--text-2); border-color: var(--border); }
-.btn-block    { width: 100%; padding: 0.9rem; font-size: 0.9rem; border-radius: var(--radius); }
-.btn-sm       { padding: 0.4rem 0.875rem; font-size: 0.65rem; }
-.btn.disabled { opacity: 0.4; cursor: not-allowed; }
+/* Primary — acid-lime CTA; one per view */
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-subtle-3);
+}
 
-/* ── Row (list item) ── */
+/* Outline / ghost */
+.btn-outline {
+  background: transparent;
+  color: var(--text-2);
+  border-color: var(--border);
+}
+.btn-outline:hover { border-color: var(--border-2); color: var(--text); }
+
+/* Ghost fill */
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  border-color: transparent;
+}
+
+/* Pill */
+.btn-pill {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
+  font-size: var(--text-label);
+  font-weight: 400;
+}
+
+/* Full-width */
+.btn-block { width: 100%; padding: 10px 16px; }
+
+/* Small */
+.btn-sm { padding: 4px 10px; font-size: var(--text-caption); font-weight: 400; }
+
+/* Disabled */
+.btn.disabled, .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ROW (list item)
+───────────────────────────────────────────────────────────────────────────── */
 .row {
   display: flex;
   align-items: center;
-  padding: 0.875rem var(--pad);
+  padding: var(--spacing-12) var(--pad);
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.1s;
   background: transparent;
 }
-.row:active { background: var(--surface); }
+.row:active { background: var(--surface-2); }
 
-/* ── Badge ── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   BADGE / TAG
+───────────────────────────────────────────────────────────────────────────── */
 .badge {
-  display: inline-block;
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 0.15rem 0.45rem;
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-inter);
+  font-size: var(--text-label);
+  font-weight: 400;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-badges);
   color: var(--text-3);
   white-space: nowrap;
+  line-height: 1.6;
 }
 
-/* ── Input / Select ── */
+/* Color variants */
+.badge--green  { background: rgba(39, 166, 68, 0.15);  color: var(--color-pulse-green); }
+.badge--red    { background: rgba(235, 87, 87, 0.15);   color: var(--color-coral-red); }
+.badge--violet { background: rgba(99, 102, 241, 0.15);  color: var(--color-iris-violet); }
+.badge--lavender { background: rgba(139, 92, 246, 0.15); color: var(--color-lavender); }
+.badge--teal   { background: rgba(2, 184, 204, 0.15);   color: var(--color-signal-teal); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   INPUTS
+───────────────────────────────────────────────────────────────────────────── */
 input, select, textarea {
   width: 100%;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.9375rem;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.75rem 1rem;
+  font-family: var(--font-inter);
+  font-feature-settings: var(--font-features);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.011em;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-inputs);
+  padding: 12px 14px;
   outline: none;
   -webkit-appearance: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
-input:focus, select:focus, textarea:focus { border-color: var(--text); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--text-2);
+  color: var(--text);
+}
 input::placeholder, textarea::placeholder { color: var(--text-4); }
 
-/* ── Number tween ── */
+/* Light mode input adjustment */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TRANSITIONS
+───────────────────────────────────────────────────────────────────────────── */
+.t-fast   { transition-duration: 100ms; }
+.t-medium { transition-duration: 200ms; }
+.t-slow   { transition-duration: 350ms; }
+
 .num-tween { transition: opacity 0.15s; }
-.num-tween.updating { opacity: 0.4; }
+.num-tween.updating { opacity: 0.35; }

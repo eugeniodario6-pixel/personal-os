@@ -7,8 +7,10 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
+  // Full weight range — Inter variable covers 100–900
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
   display: 'swap',
+  // Enable Linear's OpenType features via CSS; font-feature-settings in globals.css
 });
 
 export const metadata: Metadata = {
@@ -26,7 +28,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#000000',
+  themeColor: '#08090a',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
