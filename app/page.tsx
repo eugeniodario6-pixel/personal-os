@@ -320,7 +320,7 @@ export default function TodayPage() {
               className="t-hero"
               style={{
                 lineHeight: 0.9,
-                color: 'var(--text)',
+                color: '#DAFF01',
                 fontFeatureSettings: '"cv01" on, "ss03" on, "zero" on',
               }}
             >
