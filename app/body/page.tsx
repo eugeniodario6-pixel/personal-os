@@ -98,7 +98,7 @@ export default function BodyPage() {
             {delta !== null && (
               <div>
                 <p className="label" style={{ marginBottom: 6 }}>vs Last</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', color: delta < 0 ? 'var(--color-pulse-green)' : delta > 0 ? 'var(--color-coral-red)' : 'var(--text-3)', margin: 0 }}>
+                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: 'var(--tracking-subheading)', color: delta < 0 ? 'var(--color-pulse-green)' : delta > 0 ? 'var(--color-coral-red)' : 'var(--text-3)', margin: 0 }}>
                   {delta > 0 ? '+' : ''}{delta}
                 </p>
               </div>
@@ -106,7 +106,7 @@ export default function BodyPage() {
             {totalDelta !== null && (
               <div>
                 <p className="label" style={{ marginBottom: 6 }}>From start</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', color: totalDelta < 0 ? 'var(--color-pulse-green)' : totalDelta > 0 ? 'var(--color-coral-red)' : 'var(--text-3)', margin: 0 }}>
+                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: 'var(--tracking-subheading)', color: totalDelta < 0 ? 'var(--color-pulse-green)' : totalDelta > 0 ? 'var(--color-coral-red)' : 'var(--text-3)', margin: 0 }}>
                   {totalDelta > 0 ? '+' : ''}{totalDelta}
                 </p>
               </div>

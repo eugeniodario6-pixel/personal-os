@@ -30,7 +30,7 @@ export function Skeleton({ width = '100%', height = 16, radius = 4, style = {} }
 
 export function DashboardSkeleton() {
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '5rem', paddingBottom: '5rem' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4.5rem', paddingBottom: '6rem' }}>
       {/* Hero */}
       <div style={{ padding: '0 16px 32px', borderBottom: '1px solid var(--border)' }}>
         <Skeleton width={120} height={11} radius={3} style={{ marginBottom: 24 }} />

@@ -86,7 +86,6 @@ function MacroBar({ logs, profile }: { logs: MealLogWithFood[]; profile: Profile
     <div style={{
       background: 'var(--color-carbon)',
       boxShadow: 'var(--shadow-card)',
-      borderBottom: '1px solid var(--border)',
       padding: '14px 16px',
     }}>
       {macros.map(m => (
@@ -286,7 +285,7 @@ function MealGroup({ type, logs, onDelete }: {
         background: 'var(--color-obsidian)',
         borderBottom: '1px solid var(--border)',
       }}>
-        <span style={{ fontSize: 11, fontWeight: 510, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
+        <span style={{ fontSize: 11, fontWeight: 510, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
           {MEAL_LABELS[type]}
         </span>
         <div style={{ display: 'flex', gap: 8 }}>

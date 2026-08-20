@@ -97,6 +97,15 @@
   --radius-badges:  4px;
   --radius-pills:   9999px;
 
+  /* ── Compatibility aliases (map old vars → new tokens) ── */
+  --positive:      var(--color-pulse-green);
+  --negative:      var(--color-coral-red);
+  --accent-dim:    rgba(228, 242, 34, 0.4);
+  --text-muted:    var(--text-3);
+  --text-ghost:    var(--text-4);
+  --page-pad:      16px;
+  --border-strong: var(--color-smoke);
+
   /* ── Shadows ── */
   --shadow-sm:       rgba(0, 0, 0, 0.4) 0px 2px 4px 0px;
   --shadow-md:       rgba(0, 0, 0, 0.2) 0px 0px 12px 0px inset;
@@ -126,6 +135,20 @@
   --invert:    #ffffff;
   --accent:    #b8c200;
   --accent-fg: #ffffff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BACKWARD-COMPAT ALIASES — map stale vars to real tokens
+   Fixes 36 issues across fitness/plan, exercises, calculators, components
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --positive:      var(--color-pulse-green);
+  --negative:      var(--color-coral-red);
+  --accent-dim:    rgba(228, 242, 34, 0.35);
+  --text-muted:    var(--text-3);
+  --text-ghost:    var(--text-4);
+  --page-pad:      16px;
+  --border-strong: var(--color-smoke);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -542,3 +565,71 @@ input::placeholder, textarea::placeholder { color: var(--text-4); }
 
 .num-tween { transition: opacity 0.15s; }
 .num-tween.updating { opacity: 0.35; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LEGACY + COMPAT UTILITY CLASSES
+   Used by fitness/plan, fitness/exercises, fitness/calculators and
+   components that predate the Linear token rewrite.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Page header zone */
+.page-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Body copy */
+.body {
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-body);
+  color: var(--color-mist);
+}
+.body-sm {
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-body-sm);
+  letter-spacing: var(--tracking-body-sm);
+  color: var(--color-mist);
+}
+
+/* Elevated nested panel */
+.card-dark {
+  background: var(--color-obsidian);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-12);
+}
+
+/* Number medium — sits between num-sm (20px) and num-xl (32px) */
+.num-md {
+  font-size: var(--text-subheading); /* 24px */
+  font-weight: var(--font-weight-w510);
+  letter-spacing: var(--tracking-subheading); /* -0.288px */
+  line-height: var(--leading-subheading);
+  color: var(--text);
+}
+
+/* Badge fill — badge with a tinted background */
+.badge-fill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-badges);
+  padding: 2px 6px;
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+}
+
+/* Phase accent colours — used in training plan */
+.phase-base  { color: var(--color-signal-teal); }
+.phase-build { color: var(--color-acid-lime); }
+.phase-camp  { color: var(--color-iris-violet); }
+.phase-taper { color: var(--color-fog); }
+
+/* Semantic text colour utilities */
+.text-accent   { color: var(--accent); }
+.text-positive { color: var(--color-pulse-green); }
+.text-negative { color: var(--color-coral-red); }
+.text-muted    { color: var(--text-3); }
+.text-ghost    { color: var(--text-4); }

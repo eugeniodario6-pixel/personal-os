@@ -37,7 +37,7 @@ export default function LoginPage() {
     <div style={{
       minHeight: '100dvh',
       display: 'flex', flexDirection: 'column', justifyContent: 'center',
-      padding: '40px 24px',
+      padding: '40px 16px',
       background: 'var(--color-void)',
     }}>
 

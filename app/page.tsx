@@ -78,7 +78,7 @@ function Segment({ label, val, path }: { label: string; val: number; path: strin
       </div>
       <p style={{
         fontSize: 10, fontWeight: active ? 510 : 400,
-        letterSpacing: '0.04em', textTransform: 'uppercase',
+        letterSpacing: '0.01em', textTransform: 'uppercase',
         color: active ? 'var(--text-2)' : 'var(--text-4)',
         margin: 0, transition: 'color 0.2s',
       }}>

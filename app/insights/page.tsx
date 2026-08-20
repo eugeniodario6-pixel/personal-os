@@ -124,7 +124,7 @@ export default function InsightsPage() {
                 style={{
                   padding: '14px 16px',
                   borderBottom: idx < insights.length - 1 ? '1px solid var(--border)' : 'none',
-                  borderLeft: '2px solid var(--accent)',
+                  borderLeft: '3px solid var(--accent)',
                 }}
               >
                 <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-2)', lineHeight: 1.6 }}>{item.text}</p>

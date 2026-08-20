@@ -12,6 +12,7 @@ export default function MeditationPage() {
   const [loggedIds, setLoggedIds] = useState<Set<number>>(new Set());
   const [cat, setCat]             = useState('All');
   const [suggested, setSuggested] = useState<MeditationSession | null>(null);
+  const [loading, setLoading]     = useState(true);
 
   const load = useCallback(async () => {
     const today = todayISO();
@@ -20,7 +21,8 @@ export default function MeditationPage() {
     setLoggedIds(ids);
     setSessions(all);
     setSuggested(all.find(s => !ids.has(s.id)) ?? all[0] ?? null);
-  }, []);
+    setLoading(false);
+  }, [])
 
   useEffect(() => { load(); }, [load]);
 
@@ -84,9 +86,13 @@ export default function MeditationPage() {
       </div>
 
       {/* ── Session list ── */}
-      {sessions.length === 0 ? (
-        <div style={{ padding: '40px 16px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center', letterSpacing: '-0.011em' }}>
-          Loading sessions…
+      {loading ? (
+        <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', margin: 0 }}>Loading…</p>
+        </div>
+      ) : sessions.length === 0 ? (
+        <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', margin: 0 }}>No sessions available.</p>
         </div>
       ) : (
         <div style={{ margin: '0 16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>

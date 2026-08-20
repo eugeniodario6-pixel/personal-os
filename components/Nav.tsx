@@ -131,7 +131,7 @@ export default function Nav() {
               <span style={{
                 fontSize: 10,
                 fontWeight: active ? 510 : 400,
-                letterSpacing: '-0.01em',
+                letterSpacing: '0.01em',
                 fontFeatureSettings: '"cv01" on, "ss03" on',
                 color: active ? 'var(--text-2)' : 'var(--text-4)',
                 transition: 'color 0.15s',
@@ -210,7 +210,7 @@ export default function Nav() {
                   fontSize: 12,
                   color: 'var(--text-4)',
                   margin: 0,
-                  letterSpacing: '-0.01em',
+                  letterSpacing: '0.01em',
                 }}>
                   {link.sub}
                 </p>

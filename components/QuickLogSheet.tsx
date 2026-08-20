@@ -177,7 +177,7 @@ export default function QuickLogSheet({ open, onClose, onLogged }: Props) {
               {/* Food info */}
               <div style={{
                 background: 'var(--color-obsidian)',
-                borderRadius: 10, padding: '12px 14px', marginBottom: 14,
+                borderRadius: 12, padding: '12px 14px', marginBottom: 14,
                 boxShadow: 'var(--shadow-card)',
               }}>
                 <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)' }}>{selected.name}</p>
@@ -213,7 +213,7 @@ export default function QuickLogSheet({ open, onClose, onLogged }: Props) {
                 display: 'grid', gridTemplateColumns: 'repeat(4,1fr)',
                 gap: 8, marginBottom: 16,
                 background: 'var(--color-obsidian)',
-                borderRadius: 10, padding: '12px',
+                borderRadius: 12, padding: '12px',
               }}>
                 {[
                   { label: 'kcal', val: previewCal },
