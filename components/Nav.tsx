@@ -2,16 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { haptic } from '@/lib/haptic';
+import { useTheme } from './ThemeProvider';
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
-  { href: '/',          icon: '◉', label: 'Today'  },
-  { href: '/nutrition', icon: '⊕', label: 'Eat'    },
-  { href: '/fitness',   icon: '△', label: 'Move'   },
-  { href: '/body',      icon: '◈', label: 'Body'   },
-  { href: '/habits',    icon: '✦', label: 'Habits' },
+  { href: '/',           label: 'Today',  icon: '◉' },
+  { href: '/nutrition',  label: 'Eat',    icon: '⊕' },
+  { href: '/fitness',    label: 'Move',   icon: '△' },
+  { href: '/body',       label: 'Body',   icon: '◈' },
+  { href: '/habits',     label: 'Habits', icon: '✦' },
 ];
 
 const DRAWER = [
@@ -25,66 +25,49 @@ const DRAWER = [
   { href: '/settings',   label: 'Settings', sub: 'Preferences' },
 ];
 
-// ── Sliding pill nav ──────────────────────────────────────────────────────────
 export default function Nav() {
-  const pathname  = usePathname();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [pillX, setPillX] = useState(0);
-  const [ready, setReady] = useState(false);
-  const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const barRef  = useRef<HTMLDivElement>(null);
+  const { theme, toggle } = useTheme();
 
-  const activeIdx = TABS.findIndex(t =>
-    t.href === '/' ? pathname === '/' : pathname.startsWith(t.href)
-  );
-
-  // Compute pill position from tab element centres
-  useEffect(() => {
-    const updatePill = () => {
-      const bar = barRef.current;
-      const tab = tabRefs.current[activeIdx];
-      if (!bar || !tab) return;
-      const barRect = bar.getBoundingClientRect();
-      const tabRect = tab.getBoundingClientRect();
-      setPillX(tabRect.left - barRect.left + tabRect.width / 2 - PILL / 2);
-      setReady(true);
-    };
-    updatePill();
-    window.addEventListener('resize', updatePill);
-    return () => window.removeEventListener('resize', updatePill);
-  }, [activeIdx]);
-
-  const PILL    = 44;   // pill circle diameter px
-  const BAR_H   = 60;   // bar height px
-  const PAD     = 8;    // inner pad
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
     <>
-      {/* ── Menu button — top right ── */}
-      <button
-        onClick={() => { haptic('light'); setOpen(o => !o); }}
-        style={{
-          position: 'fixed', top: 14, right: 16, zIndex: 400,
-          width: 36, height: 36, borderRadius: '50%',
-          background: open ? '#ffffff' : '#141414',
-          boxShadow: open ? 'none' : 'rgba(255,255,255,0.08) 0px 0px 0px 1px inset',
-          border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          WebkitTapHighlightColor: 'transparent',
-          transition: 'background 0.2s',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 14 }}>
-          {[0, 1, 2].map(i => (
-            <span key={i} style={{
-              display: 'block', width: '100%', height: 1.5,
-              background: open ? '#000000' : 'rgba(255,255,255,0.7)',
-              borderRadius: 1,
-              transition: 'background 0.2s',
-            }} />
-          ))}
-        </div>
-      </button>
+      {/* ── Top-right menu button ── */}
+      <div style={{
+        position: 'fixed', top: 16, right: 16,
+        zIndex: 300,
+      }}>
+        <button
+          onClick={() => { haptic('light'); setOpen(o => !o); }}
+          style={{
+            width: 36, height: 36,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#141414',
+            borderRadius: '50%',
+            border: 'none',
+            boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+            transition: 'background 0.15s',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5, width: 14 }}>
+            {[0, 1, 2].map(i => (
+              <span key={i} style={{
+                display: 'block',
+                width: '100%',
+                height: 1.5,
+                background: open ? 'var(--text)' : 'var(--text-3)',
+                borderRadius: 1,
+                transition: 'background 0.15s',
+              }} />
+            ))}
+          </div>
+        </button>
+      </div>
 
       {/* ── Floating pill tab bar ── */}
       <div style={{
@@ -93,73 +76,49 @@ export default function Nav() {
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 300,
-        paddingBottom: 'env(safe-area-inset-bottom)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '8px 10px',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+        background: '#141414',
+        borderRadius: 9999,
+        boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset, rgba(0,0,0,0.5) 0px 8px 32px 0px',
       }}>
-        <div
-          ref={barRef}
-          style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            height: BAR_H,
-            background: '#141414',
-            borderRadius: BAR_H / 2,
-            boxShadow: 'rgba(255,255,255,0.08) 0px 0px 0px 1px inset',
-            padding: `0 ${PAD}px`,
-            gap: 0,
-          }}
-        >
-          {/* Sliding white pill */}
-          {ready && (
-            <div style={{
-              position: 'absolute',
-              top: (BAR_H - PILL) / 2,
-              left: pillX,
-              width: PILL,
-              height: PILL,
-              borderRadius: '50%',
-              background: '#ffffff',
-              transition: 'left 0.38s cubic-bezier(0.34, 1.3, 0.64, 1)',
-              pointerEvents: 'none',
-              zIndex: 0,
-            }} />
-          )}
-
-          {/* Tab items */}
-          {TABS.map((tab, i) => {
-            const active = i === activeIdx;
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                ref={el => { tabRefs.current[i] = el; }}
-                onClick={() => haptic('light')}
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 56,
-                  height: BAR_H,
-                  textDecoration: 'none',
-                  WebkitTapHighlightColor: 'transparent',
-                  flexShrink: 0,
-                }}
-              >
-                <span style={{
-                  fontSize: 17,
-                  lineHeight: 1,
-                  color: active ? '#000000' : 'rgba(255,255,255,0.55)',
-                  transition: 'color 0.25s',
-                  userSelect: 'none',
-                }}>
-                  {tab.icon}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+        {TABS.map(tab => {
+          const active = isActive(tab.href);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              onClick={() => haptic('light')}
+              title={tab.label}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 44,
+                height: 36,
+                borderRadius: 9999,
+                background: active ? '#242424' : 'transparent',
+                textDecoration: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                transition: 'background 0.15s',
+                boxShadow: active ? 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset' : 'none',
+              }}
+            >
+              <span style={{
+                fontSize: 16,
+                color: active ? '#ffffff' : 'rgba(255,255,255,0.30)',
+                transition: 'color 0.15s',
+                lineHeight: 1,
+                fontWeight: active ? 510 : 400,
+              }}>
+                {tab.icon}
+              </span>
+            </Link>
+          );
+        })}
       </div>
 
       {/* ── Backdrop ── */}
@@ -168,9 +127,9 @@ export default function Nav() {
           onClick={() => setOpen(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 298,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
           }}
         />
       )}
@@ -178,20 +137,18 @@ export default function Nav() {
       {/* ── Drawer ── */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: '72vw', maxWidth: 280,
+        width: '68vw', maxWidth: 260,
         background: '#141414',
-        boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset',
+        boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset, rgba(0,0,0,0.6) 0px 0px 40px 0px',
         zIndex: 299,
         transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.22s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'transform 0.2s cubic-bezier(0.4,0,0.2,1)',
         display: 'flex', flexDirection: 'column',
-        paddingTop: 56,
+        paddingTop: 60,
         overflowY: 'auto',
       }}>
         {DRAWER.map(link => {
-          const active = link.href === '/'
-            ? pathname === '/'
-            : pathname.startsWith(link.href);
+          const active = isActive(link.href);
           return (
             <Link
               key={link.href}
@@ -199,31 +156,37 @@ export default function Nav() {
               onClick={() => { haptic('light'); setOpen(false); }}
               style={{
                 display: 'flex', alignItems: 'center',
-                padding: '12px 20px',
-                background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
+                padding: '10px 16px',
+                background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
+                borderLeft: `2px solid ${active ? 'rgba(255,255,255,0.5)' : 'transparent'}`,
                 borderBottom: '1px solid rgba(255,255,255,0.06)',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
+                transition: 'background 0.12s',
                 gap: 12,
               }}
             >
               <span style={{
                 width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                background: active ? '#ffffff' : 'transparent',
+                background: active ? 'rgba(255,255,255,0.7)' : 'transparent',
+                transition: 'background 0.15s',
               }} />
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  fontSize: 15, fontWeight: active ? 510 : 400,
+                  fontSize: 14,
+                  fontWeight: active ? 510 : 400,
                   letterSpacing: '-0.011em',
-                  color: active ? '#ffffff' : 'rgba(255,255,255,0.55)',
-                  margin: '0 0 2px',
+                  color: active ? '#ffffff' : 'rgba(255,255,255,0.50)',
+                  margin: 0, marginBottom: 1,
+                  fontFeatureSettings: '"cv01" on, "ss03" on',
                 }}>
                   {link.label}
                 </p>
                 <p style={{
-                  fontSize: 11, color: 'rgba(255,255,255,0.3)',
-                  margin: 0, letterSpacing: '0.01em',
-                  textTransform: 'uppercase' as const,
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.25)',
+                  margin: 0,
+                  letterSpacing: '-0.01em',
                 }}>
                   {link.sub}
                 </p>
@@ -232,9 +195,28 @@ export default function Nav() {
           );
         })}
 
-        {/* Version */}
-        <div style={{ marginTop: 'auto', padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
+        {/* Theme toggle */}
+        <button
+          onClick={() => { haptic('light'); toggle(); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 16px',
+            background: 'transparent', border: 'none',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            cursor: 'pointer', marginTop: 'auto',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.28)' }}>
+            {theme === 'dark' ? '○' : '●'}
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '-0.011em' }}>
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </span>
+        </button>
+
+        <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', letterSpacing: '-0.01em', fontFamily: 'var(--font-mono)' }}>
             Personal OS · v0.1
           </p>
         </div>
