@@ -647,6 +647,33 @@ function NutritionContent() {
             />
           )}
 
+          {/* PIECE 2: Quick-add chips at top of recents */}
+          {!selectedFood && logMode === 'recents' && recentFoods.length > 0 && (
+            <div style={{ padding: '10px 16px 6px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', alignItems: 'center' }}>
+              <span style={{ fontSize: 10, fontWeight: 510, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'var(--text-4)', flexShrink: 0 }}>Quick +100g</span>
+              {recentFoods.slice(0, 3).map(food => (
+                <button
+                  key={food.id}
+                  onClick={async () => {
+                    haptic('medium');
+                    const mt = currentMealType();
+                    await addMealLog({ date: todayISO(), meal_type: mt, food_item_id: food.id, quantity: 100, logged_at: new Date().toISOString(), source: 'manual' });
+                    toast(`${food.name} +100g ✓`);
+                    await reloadAndScore();
+                  }}
+                  style={{
+                    flex: '0 0 auto', padding: '6px 10px',
+                    background: 'rgba(228,242,34,0.06)', border: '1px solid rgba(228,242,34,0.2)',
+                    borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 510, letterSpacing: '-0.01em', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{food.name.split(' ').slice(0,2).join(' ')}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Recents list */}
           {!selectedFood && logMode === 'recents' && (
             recentFoods.length === 0 ? (
@@ -690,8 +717,12 @@ function NutritionContent() {
           {!selectedFood && (
             <div style={{ marginTop: 8 }}>
               {logs.length === 0 ? (
-                <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Nothing logged today</p>
+                <div style={{ padding: '28px 16px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 6 }}>Nothing logged today</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
+                    Your calorie target is {(profile?.calorie_target ?? 2000).toLocaleString()} kcal — start with breakfast.
+                  </p>
+                  <button className="btn btn-primary btn-sm" onClick={() => setLogMode('search')}>Search food →</button>
                 </div>
               ) : MEAL_ORDER.map(mt => (
                 <MealGroup

@@ -102,13 +102,16 @@ export default function HabitsPage() {
       {mode === 'list' && (
         <div style={{ margin: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
           {habits.length === 0 ? (
-            <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12, letterSpacing: '-0.011em' }}>No habits yet</p>
+            <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+              <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 6 }}>No habits tracked yet</p>
+              <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
+                Athletes who track daily habits hit their goals 2× more often.
+              </p>
               <button
                 onClick={() => setMode('add')}
                 className="btn btn-primary btn-sm"
               >
-                Add your first →
+                Add your first habit →
               </button>
             </div>
           ) : habits.map((h, idx) => (

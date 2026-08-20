@@ -113,11 +113,22 @@ export default function BodyPage() {
             )}
           </div>
 
-          {/* Sparkline */}
+          {/* PIECE 4: Prominent sparkline — thicker stroke, acid-lime color */}
           {path && (
-            <svg width="100%" viewBox="0 0 300 48" preserveAspectRatio="none" style={{ display: 'block', height: 40, marginBottom: goalWeight && startingWeight ? 16 : 0 }}>
-              <path d={path} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.7" />
-            </svg>
+            <div style={{ marginTop: 4 }}>
+              <svg width="100%" viewBox="0 0 300 56" preserveAspectRatio="none" style={{ display: 'block', height: 52, marginBottom: goalWeight && startingWeight ? 16 : 0 }}>
+                {/* Gradient fill under curve */}
+                <defs>
+                  <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#e4f222" stopOpacity="0.18" />
+                    <stop offset="100%" stopColor="#e4f222" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d={path + ` L 300,56 L 0,56 Z`} fill="url(#sparkGrad)" />
+                <path d={path} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              </svg>
+              <p className="label" style={{ marginBottom: goalWeight && startingWeight ? 0 : undefined }}>Last {[...entries].reverse().slice(-12).length} entries</p>
+            </div>
           )}
 
           {/* Goal progress */}
@@ -203,9 +214,14 @@ export default function BodyPage() {
           </div>
         )}
 
+        {/* PIECE 5: Compelling empty state */}
         {entries.length === 0 && (
-          <div style={{ background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: '40px 24px', textAlign: 'center' }}>
-            <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>No entries yet. Log your first weight above.</p>
+          <div style={{ background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: '32px 24px', textAlign: 'center' }}>
+            <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 6 }}>No weight logged yet</p>
+            <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
+              Weigh in each morning for accurate trends — consistency unlocks the insight.
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--color-fog)', letterSpacing: '-0.011em' }}>↑ Log your first weigh-in above</p>
           </div>
         )}
       </div>
