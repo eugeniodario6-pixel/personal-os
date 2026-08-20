@@ -190,21 +190,82 @@ function ThinkingDots() {
   );
 }
 
-// ─── Bubble ────────────────────────────────────────────────────────────────────
-function Bubble({ msg }: { msg: Message }) {
+// ─── Bubble — tap Jarvis messages to speak ────────────────────────────────────
+function Bubble({ msg, ttsEnabled }: { msg: Message; ttsEnabled: boolean }) {
   const isUser = msg.role === 'user';
+  const [speaking, setSpeaking] = useState(false);
+
+  const handleTap = () => {
+    if (isUser || !ttsEnabled || !msg.content) return;
+    if (speaking) {
+      window.speechSynthesis?.cancel();
+      setSpeaking(false);
+      return;
+    }
+    setSpeaking(true);
+    const doSpeak = () => {
+      const utt = new SpeechSynthesisUtterance(msg.content);
+      utt.rate = 1.0;
+      utt.pitch = 0.85;
+      utt.volume = 1;
+      const voices = window.speechSynthesis.getVoices();
+      const preferred =
+        voices.find(v => v.name.includes('Daniel')) ||
+        voices.find(v => v.name.includes('Aaron')) ||
+        voices.find(v => v.name.includes('Alex')) ||
+        voices.find(v => v.name === 'Google UK English Male') ||
+        voices.find(v => v.lang === 'en-GB') ||
+        voices.find(v => v.lang.startsWith('en'));
+      if (preferred) utt.voice = preferred;
+      utt.onend = () => setSpeaking(false);
+      utt.onerror = () => setSpeaking(false);
+      window.speechSynthesis.speak(utt);
+    };
+    if (window.speechSynthesis.getVoices().length > 0) {
+      doSpeak();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => doSpeak();
+    }
+  };
+
   return (
     <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
-      <div style={{
-        maxWidth: '80%', padding: '12px 16px',
-        borderRadius: isUser ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-        background: isUser ? '#DAFF01' : '#141414',
-        boxShadow: isUser ? 'none' : 'rgba(255,255,255,0.06) 0 0 0 1px inset',
-        color: isUser ? '#000' : '#fff',
-        fontSize: '0.9rem', lineHeight: 1.55, letterSpacing: '-0.011em',
-        whiteSpace: 'pre-wrap',
-      }}>
+      <div
+        onClick={handleTap}
+        style={{
+          maxWidth: '80%', padding: '12px 16px',
+          borderRadius: isUser ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+          background: isUser ? '#DAFF01' : speaking ? '#1a1a1a' : '#141414',
+          boxShadow: isUser ? 'none' : speaking
+            ? 'rgba(218,255,1,0.4) 0 0 0 1px inset'
+            : 'rgba(255,255,255,0.06) 0 0 0 1px inset',
+          color: isUser ? '#000' : '#fff',
+          fontSize: '0.9rem', lineHeight: 1.55, letterSpacing: '-0.011em',
+          whiteSpace: 'pre-wrap',
+          cursor: isUser ? 'default' : 'pointer',
+          transition: 'box-shadow 0.2s',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
         {msg.content}
+        {!isUser && msg.content && (
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+            {speaking ? (
+              <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                {[1,2,3,2,1].map((h, i) => (
+                  <div key={i} style={{
+                    width: 2, height: h * 3, background: '#DAFF01', borderRadius: 1,
+                    animation: `j-bar 0.6s ease-in-out ${i * 0.1}s infinite alternate`,
+                  }} />
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
+                TAP TO SPEAK
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -361,7 +422,7 @@ export default function JarvisPage() {
           cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 510,
           transition: 'all 0.2s',
         }}>
-          {ttsEnabled ? '◉ SPEAK' : '○ MUTE'}
+          {ttsEnabled ? '◉ VOICE ON' : '○ VOICE OFF'}
         </button>
       </div>
 
@@ -369,7 +430,7 @@ export default function JarvisPage() {
       <div style={{ flex: 1, overflowY: 'auto', padding: '80px 20px 260px', display: 'flex', flexDirection: 'column' }}>
         <JarvisAvatar loading={loading} listening={listening} />
 
-        {messages.map(msg => <Bubble key={msg.id} msg={msg} />)}
+        {messages.map(msg => <Bubble key={msg.id} msg={msg} ttsEnabled={ttsEnabled} />)}
 
         {loading && messages[messages.length - 1]?.role === 'user' && (
           <div style={{ display: 'flex', marginBottom: 12 }}>
