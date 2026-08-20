@@ -2,145 +2,164 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { haptic } from '@/lib/haptic';
-import { useTheme } from './ThemeProvider';
 
+// ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
-  { href: '/',           label: 'Today',     icon: '◉' },
-  { href: '/nutrition',  label: 'Eat',       icon: '⊕' },
-  { href: '/fitness',    label: 'Move',      icon: '△' },
-  { href: '/body',       label: 'Body',      icon: '◈' },
-  { href: '/habits',     label: 'Habits',    icon: '✦' },
+  { href: '/',          icon: '◉', label: 'Today'  },
+  { href: '/nutrition', icon: '⊕', label: 'Eat'    },
+  { href: '/fitness',   icon: '△', label: 'Move'   },
+  { href: '/body',      icon: '◈', label: 'Body'   },
+  { href: '/habits',    icon: '✦', label: 'Habits' },
 ];
 
 const DRAWER = [
-  { href: '/',           label: 'Today',     sub: 'Dashboard' },
-  { href: '/nutrition',  label: 'Eat',       sub: 'Nutrition' },
-  { href: '/fitness',    label: 'Move',      sub: 'Fitness' },
-  { href: '/body',       label: 'Body',      sub: 'Weight log' },
-  { href: '/habits',     label: 'Habits',    sub: 'Daily habits' },
-  { href: '/meditation', label: 'Mind',      sub: 'Meditation' },
-  { href: '/insights',   label: 'Data',      sub: 'Insights' },
-  { href: '/settings',   label: 'Settings',  sub: 'Preferences' },
+  { href: '/',           label: 'Today',    sub: 'Dashboard' },
+  { href: '/nutrition',  label: 'Eat',      sub: 'Nutrition' },
+  { href: '/fitness',    label: 'Move',     sub: 'Fitness' },
+  { href: '/body',       label: 'Body',     sub: 'Weight log' },
+  { href: '/habits',     label: 'Habits',   sub: 'Daily habits' },
+  { href: '/meditation', label: 'Mind',     sub: 'Meditation' },
+  { href: '/insights',   label: 'Data',     sub: 'Insights' },
+  { href: '/settings',   label: 'Settings', sub: 'Preferences' },
 ];
 
+// ── Sliding pill nav ──────────────────────────────────────────────────────────
 export default function Nav() {
-  const pathname = usePathname();
+  const pathname  = usePathname();
   const [open, setOpen] = useState(false);
-  const { theme, toggle } = useTheme();
+  const [pillX, setPillX] = useState(0);
+  const [ready, setReady] = useState(false);
+  const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const barRef  = useRef<HTMLDivElement>(null);
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const activeIdx = TABS.findIndex(t =>
+    t.href === '/' ? pathname === '/' : pathname.startsWith(t.href)
+  );
+
+  // Compute pill position from tab element centres
+  useEffect(() => {
+    const updatePill = () => {
+      const bar = barRef.current;
+      const tab = tabRefs.current[activeIdx];
+      if (!bar || !tab) return;
+      const barRect = bar.getBoundingClientRect();
+      const tabRect = tab.getBoundingClientRect();
+      setPillX(tabRect.left - barRect.left + tabRect.width / 2 - PILL / 2);
+      setReady(true);
+    };
+    updatePill();
+    window.addEventListener('resize', updatePill);
+    return () => window.removeEventListener('resize', updatePill);
+  }, [activeIdx]);
+
+  const PILL    = 44;   // pill circle diameter px
+  const BAR_H   = 60;   // bar height px
+  const PAD     = 8;    // inner pad
 
   return (
     <>
-      {/* ── Top-right controls ── */}
-      <div style={{
-        position: 'fixed', top: 12, right: 12,
-        zIndex: 300,
-        display: 'flex', gap: 6,
-      }}>
-        {/* Theme toggle */}
-        <button
-          onClick={() => { haptic('light'); toggle(); }}
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          style={{
-            width: 32, height: 32,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            cursor: 'pointer',
-            WebkitTapHighlightColor: 'transparent',
-            transition: 'background 0.15s, border-color 0.15s',
-          }}
-        >
-          <span style={{ fontSize: 13, lineHeight: 1, color: 'var(--text-3)' }}>
-            {theme === 'dark' ? '○' : '●'}
-          </span>
-        </button>
+      {/* ── Menu button — top right ── */}
+      <button
+        onClick={() => { haptic('light'); setOpen(o => !o); }}
+        style={{
+          position: 'fixed', top: 14, right: 16, zIndex: 400,
+          width: 36, height: 36, borderRadius: '50%',
+          background: open ? '#ffffff' : '#141414',
+          boxShadow: open ? 'none' : 'rgba(255,255,255,0.08) 0px 0px 0px 1px inset',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+          transition: 'background 0.2s',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 14 }}>
+          {[0, 1, 2].map(i => (
+            <span key={i} style={{
+              display: 'block', width: '100%', height: 1.5,
+              background: open ? '#000000' : 'rgba(255,255,255,0.7)',
+              borderRadius: 1,
+              transition: 'background 0.2s',
+            }} />
+          ))}
+        </div>
+      </button>
 
-        {/* Menu trigger */}
-        <button
-          onClick={() => { haptic('light'); setOpen(o => !o); }}
-          style={{
-            width: 32, height: 32,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: open ? 'var(--text)' : 'rgba(255,255,255,0.04)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            cursor: 'pointer',
-            WebkitTapHighlightColor: 'transparent',
-            transition: 'background 0.15s',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5, width: 13 }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{
-                display: 'block',
-                width: '100%',
-                height: 1,
-                background: open ? 'var(--invert)' : 'var(--text-3)',
-                borderRadius: 1,
-                transition: 'background 0.15s',
-              }} />
-            ))}
-          </div>
-        </button>
-      </div>
-
-      {/* ── Bottom tab bar ── */}
+      {/* ── Floating pill tab bar ── */}
       <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: 56,
-        background: 'rgba(8, 9, 10, 0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderTop: '1px solid var(--border)',
+        position: 'fixed',
+        bottom: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
         zIndex: 300,
-        display: 'flex', alignItems: 'stretch',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
-        {TABS.map(tab => {
-          const active = isActive(tab.href);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              onClick={() => haptic('light')}
-              style={{
-                flex: 1,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: 3,
-                textDecoration: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                borderTop: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
-                transition: 'border-color 0.15s',
-              }}
-            >
-              <span style={{
-                fontSize: 14,
-                color: active ? 'var(--accent)' : 'var(--text-4)',
-                transition: 'color 0.15s',
-                lineHeight: 1,
-              }}>
-                {tab.icon}
-              </span>
-              <span style={{
-                fontSize: 10,
-                fontWeight: active ? 510 : 400,
-                letterSpacing: '0.01em',
-                fontFeatureSettings: '"cv01" on, "ss03" on',
-                color: active ? 'var(--text-2)' : 'var(--text-4)',
-                transition: 'color 0.15s',
-              }}>
-                {tab.label}
-              </span>
-            </Link>
-          );
-        })}
+        <div
+          ref={barRef}
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            height: BAR_H,
+            background: '#141414',
+            borderRadius: BAR_H / 2,
+            boxShadow: 'rgba(255,255,255,0.08) 0px 0px 0px 1px inset',
+            padding: `0 ${PAD}px`,
+            gap: 0,
+          }}
+        >
+          {/* Sliding white pill */}
+          {ready && (
+            <div style={{
+              position: 'absolute',
+              top: (BAR_H - PILL) / 2,
+              left: pillX,
+              width: PILL,
+              height: PILL,
+              borderRadius: '50%',
+              background: '#ffffff',
+              transition: 'left 0.38s cubic-bezier(0.34, 1.3, 0.64, 1)',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }} />
+          )}
+
+          {/* Tab items */}
+          {TABS.map((tab, i) => {
+            const active = i === activeIdx;
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                ref={el => { tabRefs.current[i] = el; }}
+                onClick={() => haptic('light')}
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 56,
+                  height: BAR_H,
+                  textDecoration: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{
+                  fontSize: 17,
+                  lineHeight: 1,
+                  color: active ? '#000000' : 'rgba(255,255,255,0.55)',
+                  transition: 'color 0.25s',
+                  userSelect: 'none',
+                }}>
+                  {tab.icon}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Backdrop ── */}
@@ -149,9 +168,9 @@ export default function Nav() {
           onClick={() => setOpen(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 298,
-            background: 'rgba(8,9,10,0.6)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
           }}
         />
       )}
@@ -159,18 +178,20 @@ export default function Nav() {
       {/* ── Drawer ── */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: '68vw', maxWidth: 260,
-        background: 'var(--color-carbon)',
-        boxShadow: 'var(--color-graphite) 0px 0px 0px 1px inset, var(--shadow-xl)',
+        width: '72vw', maxWidth: 280,
+        background: '#141414',
+        boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset',
         zIndex: 299,
         transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.2s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'transform 0.22s cubic-bezier(0.4,0,0.2,1)',
         display: 'flex', flexDirection: 'column',
         paddingTop: 56,
         overflowY: 'auto',
       }}>
         {DRAWER.map(link => {
-          const active = isActive(link.href);
+          const active = link.href === '/'
+            ? pathname === '/'
+            : pathname.startsWith(link.href);
           return (
             <Link
               key={link.href}
@@ -178,39 +199,31 @@ export default function Nav() {
               onClick={() => { haptic('light'); setOpen(false); }}
               style={{
                 display: 'flex', alignItems: 'center',
-                padding: '10px 16px',
-                background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
-                borderLeft: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
-                borderBottom: '1px solid var(--border)',
+                padding: '12px 20px',
+                background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
-                transition: 'background 0.12s',
                 gap: 12,
               }}
             >
-              {/* Active dot */}
               <span style={{
                 width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                background: active ? 'var(--accent)' : 'transparent',
-                transition: 'background 0.15s',
+                background: active ? '#ffffff' : 'transparent',
               }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: 1 }}>
                 <p style={{
-                  fontSize: 14,
-                  fontWeight: active ? 510 : 400,
+                  fontSize: 15, fontWeight: active ? 510 : 400,
                   letterSpacing: '-0.011em',
-                  color: active ? 'var(--text)' : 'var(--text-2)',
-                  margin: 0,
-                  marginBottom: 1,
-                  fontFeatureSettings: '"cv01" on, "ss03" on',
+                  color: active ? '#ffffff' : 'rgba(255,255,255,0.55)',
+                  margin: '0 0 2px',
                 }}>
                   {link.label}
                 </p>
                 <p style={{
-                  fontSize: 12,
-                  color: 'var(--text-4)',
-                  margin: 0,
-                  letterSpacing: '0.01em',
+                  fontSize: 11, color: 'rgba(255,255,255,0.3)',
+                  margin: 0, letterSpacing: '0.01em',
+                  textTransform: 'uppercase' as const,
                 }}>
                   {link.sub}
                 </p>
@@ -219,29 +232,9 @@ export default function Nav() {
           );
         })}
 
-        {/* Theme row */}
-        <button
-          onClick={() => { haptic('light'); toggle(); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 16px',
-            background: 'transparent', border: 'none',
-            borderTop: '1px solid var(--border)',
-            cursor: 'pointer', marginTop: 'auto',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <span style={{ fontSize: 13, color: 'var(--text-3)' }}>
-            {theme === 'dark' ? '○' : '●'}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </span>
-        </button>
-
         {/* Version */}
-        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 11, color: 'var(--text-4)', letterSpacing: '-0.01em', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ marginTop: 'auto', padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
             Personal OS · v0.1
           </p>
         </div>
