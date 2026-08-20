@@ -130,11 +130,34 @@ export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function getUserId(): Promise<string> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  return user.id;
+// Cache userId for the session — auth.getUser() is async and called on every
+// db function; batching into a single in-flight promise eliminates N redundant
+// round-trips per page load.
+let _userIdCache: string | null = null;
+let _userIdInflight: Promise<string> | null = null;
+
+export function clearUserIdCache() {
+  _userIdCache = null;
+  _userIdInflight = null;
+  _seeded = false;
 }
+
+async function getUserId(): Promise<string> {
+  if (_userIdCache) return _userIdCache;
+  if (_userIdInflight) return _userIdInflight;
+  _userIdInflight = supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!user) throw new Error('Not authenticated');
+    _userIdCache = user.id;
+    _userIdInflight = null;
+    return user.id;
+  });
+  return _userIdInflight;
+}
+
+// Clear cache on sign-out so next login gets a fresh userId
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') clearUserIdCache();
+});
 
 // ── Profile ────────────────────────────────────────────────────────────────
 
@@ -407,6 +430,41 @@ export async function getHabitStreak(habitId: number): Promise<number> {
   return streak;
 }
 
+// Batch version — fetches completions for all habits in ONE query instead of N.
+// Returns a map of habitId → streak count.
+export async function getHabitStreaks(habitIds: number[]): Promise<Map<number, number>> {
+  if (habitIds.length === 0) return new Map();
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('habit_completion')
+    .select('habit_id, date, completed_at')
+    .eq('user_id', userId)
+    .in('habit_id', habitIds)
+    .not('completed_at', 'is', null)
+    .order('date', { ascending: false });
+
+  const byHabit = new Map<number, Set<string>>();
+  for (const row of data ?? []) {
+    if (!byHabit.has(row.habit_id)) byHabit.set(row.habit_id, new Set());
+    byHabit.get(row.habit_id)!.add(row.date);
+  }
+
+  const today = new Date();
+  const result = new Map<number, number>();
+  for (const id of habitIds) {
+    const dates = byHabit.get(id) ?? new Set<string>();
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      if (dates.has(d.toISOString().slice(0, 10))) streak++;
+      else break;
+    }
+    result.set(id, streak);
+  }
+  return result;
+}
+
 export async function getTodayHabitStatus(): Promise<{ completed: number; total: number }> {
   const habits = await getHabits();
   const completions = await getHabitCompletions(todayISO());
@@ -475,7 +533,11 @@ const DEFAULT_HABITS = [
   { name: 'No screens before bed', active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
 ];
 
+// Guard so seedUserData only runs once per browser session, not on every page load.
+let _seeded = false;
+
 export async function seedUserData(): Promise<void> {
+  if (_seeded) return;
   const userId = await getUserId();
 
   const { count: tCount } = await supabase
@@ -530,6 +592,7 @@ export async function seedUserData(): Promise<void> {
       score_weights: { protein: 0.4, calories: 0.3, carbs: 0.2, fat: 0.1 },
     });
   }
+  _seeded = true;
 }
 
 // ── Training Plan ──────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  getProfile, getHabits, getHabitCompletions, getHabitStreak,
+  getProfile, getHabits, getHabitCompletions, getHabitStreaks,
   getMeditationSessions, getMeditationLogs, getTodayMacros,
   getWorkoutLogs, toggleHabitCompletion, seedUserData,
   todayISO, type Habit, type MeditationSession,
@@ -47,9 +47,10 @@ export default function TodayPage() {
       setCalories(Math.round(macros.calories));
       setCalTarget(profile?.calorie_target ?? 2000);
       const doneIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
-      const habitData = await Promise.all(activeHabits.map(async h => ({
-        ...h, done: doneIds.has(h.id), streak: await getHabitStreak(h.id),
-      })));
+      const streaks = await getHabitStreaks(activeHabits.map(h => h.id));
+      const habitData = activeHabits.map(h => ({
+        ...h, done: doneIds.has(h.id), streak: streaks.get(h.id) ?? 0,
+      }));
       setHabits(habitData);
       setWorkouts(workouts.length);
       setMedDone(medLogs.some(m => m.completed));
