@@ -534,8 +534,8 @@ export default function TodayPage() {
       <button
         onClick={() => { haptic('medium'); setQuickLog(true); }}
         style={{
-          position: 'fixed', bottom: 88, right: 20, zIndex: 200,
-          width: 52, height: 52, borderRadius: '50%',
+          position: 'fixed', bottom: 24, right: 20, zIndex: 200,
+          width: 56, height: 56, borderRadius: '50%',
           background: '#ffffff', border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 0 20px rgba(255,255,255,0.15)',
