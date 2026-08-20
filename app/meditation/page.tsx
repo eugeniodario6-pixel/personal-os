@@ -4,13 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMeditationSessions, getMeditationLogs, todayISO, type MeditationSession } from '@/lib/db';
 
-const CATS = ['ALL', 'BREATHING', 'BODY SCAN', 'SLEEP', 'STRESS RELEASE', 'FOCUS'];
+const CATS = ['All', 'Breathing', 'Body Scan', 'Sleep', 'Stress Release', 'Focus'];
 
 export default function MeditationPage() {
   const router = useRouter();
   const [sessions, setSessions]   = useState<MeditationSession[]>([]);
   const [loggedIds, setLoggedIds] = useState<Set<number>>(new Set());
-  const [cat, setCat]             = useState('ALL');
+  const [cat, setCat]             = useState('All');
   const [suggested, setSuggested] = useState<MeditationSession | null>(null);
 
   const load = useCallback(async () => {
@@ -24,25 +24,31 @@ export default function MeditationPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = cat === 'ALL' ? sessions : sessions.filter(s => s.category.toUpperCase() === cat);
+  const filtered = cat === 'All' ? sessions : sessions.filter(s => s.category.toLowerCase() === cat.toLowerCase());
+  const doneCount = sessions.filter(s => loggedIds.has(s.id)).length;
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
 
-      {/* Header */}
-      <div style={{ padding: '1.5rem var(--pad) 1rem' }}>
-        <p className="label" style={{ marginBottom: '0.35rem' }}>Mind</p>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)', margin: 0 }}>Meditation</h1>
+      {/* ── Header ── */}
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
+        <p className="label" style={{ marginBottom: 6 }}>Mind</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Meditation</h1>
+          {sessions.length > 0 && (
+            <span style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>
+              {doneCount}/{sessions.length} done
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Suggested session */}
+      {/* ── Suggested ── */}
       {suggested && (
-        <div
-          onClick={() => router.push(`/meditation/${suggested.id}`)}
-          style={{ margin: '0 var(--pad) 1rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.25rem', cursor: 'pointer' }}
-        >
-          <p className="label" style={{ marginBottom: '0.5rem' }}>Start Here</p>
-          <p style={{ margin: '0 0 0.75rem', fontWeight: 700, fontSize: '1.125rem', letterSpacing: '-0.02em', color: 'var(--text)' }}>
+        <div style={{ margin: '16px', padding: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, cursor: 'pointer' }}
+          onClick={() => router.push(`/meditation/${suggested.id}`)}>
+          <p className="label" style={{ marginBottom: 8 }}>Suggested</p>
+          <p style={{ margin: '0 0 12px', fontWeight: 510, fontSize: 20, letterSpacing: '-0.012em', color: 'var(--text)', lineHeight: 1.33 }}>
             {suggested.name}
           </p>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -57,17 +63,19 @@ export default function MeditationPage() {
         </div>
       )}
 
-      {/* Category filter */}
-      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0 var(--pad) 1rem', scrollbarWidth: 'none' as any }}>
+      {/* ── Category filter ── */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '0 16px 16px', scrollbarWidth: 'none' }}>
         {CATS.map(c => (
-          <button key={c} onClick={() => setCat(c)}
+          <button
+            key={c}
+            onClick={() => setCat(c)}
+            className={cat === c ? 'btn btn-sm' : 'btn btn-outline btn-sm'}
             style={{
-              flex: '0 0 auto', padding: '0.4rem 0.875rem',
-              borderRadius: 999, cursor: 'pointer', whiteSpace: 'nowrap',
-              fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em',
-              background: cat === c ? 'var(--text)' : 'var(--surface)',
+              flex: '0 0 auto',
+              borderRadius: 9999,
+              background: cat === c ? 'var(--text)' : 'transparent',
               color: cat === c ? 'var(--invert)' : 'var(--text-3)',
-              border: `1px solid ${cat === c ? 'var(--text)' : 'var(--border)'}`,
+              borderColor: cat === c ? 'var(--text)' : 'var(--border)',
             }}
           >
             {c}
@@ -75,40 +83,54 @@ export default function MeditationPage() {
         ))}
       </div>
 
-      {/* Session list */}
+      {/* ── Session list ── */}
       {sessions.length === 0 ? (
-        <div style={{ padding: '2rem var(--pad)', color: 'var(--text-3)', fontSize: '0.875rem', textAlign: 'center' as const }}>
+        <div style={{ padding: '40px 16px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center', letterSpacing: '-0.011em' }}>
           Loading sessions…
         </div>
       ) : (
-        <div style={{ margin: '0 var(--pad)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+        <div style={{ margin: '0 16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
           {filtered.map((s, idx) => {
             const done = loggedIds.has(s.id);
             return (
-              <button key={s.id} onClick={() => router.push(`/meditation/${s.id}`)}
+              <button
+                key={s.id}
+                onClick={() => router.push(`/meditation/${s.id}`)}
                 style={{
-                  display: 'flex', width: '100%', alignItems: 'center', padding: '1rem 1.25rem',
-                  border: 'none', borderBottom: idx < filtered.length - 1 ? '1px solid var(--border)' : 'none',
-                  cursor: 'pointer', textAlign: 'left' as const,
-                  background: done ? 'var(--surface-2)' : 'transparent',
+                  display: 'flex', width: '100%', alignItems: 'center',
+                  padding: '12px 16px',
+                  border: 'none',
+                  borderBottom: idx < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+                  cursor: 'pointer', textAlign: 'left',
+                  background: done ? 'rgba(255,255,255,0.02)' : 'transparent',
+                  WebkitTapHighlightColor: 'transparent',
+                  transition: 'background 0.1s',
                 }}
               >
+                {/* Done indicator */}
                 <div style={{
-                  width: 28, height: 28, borderRadius: 'var(--radius-xs)', flexShrink: 0,
-                  border: `2px solid ${done ? 'var(--text)' : 'var(--border-2)'}`,
-                  background: done ? 'var(--text)' : 'transparent',
+                  width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                  border: `1px solid ${done ? 'var(--accent)' : 'var(--border-2)'}`,
+                  background: done ? 'var(--accent)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--invert)', fontSize: '0.8rem', fontWeight: 700, marginRight: '0.875rem',
+                  color: 'var(--accent-fg)', fontSize: 10, fontWeight: 510,
+                  marginRight: 12, transition: 'all 0.15s',
                 }}>
                   {done ? '✓' : ''}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: '0 0 0.2rem', fontWeight: 600, fontSize: '0.9375rem', color: done ? 'var(--text-3)' : 'var(--text)', textDecoration: done ? 'line-through' : 'none' }}>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    margin: '0 0 2px', fontWeight: 400, fontSize: 15,
+                    letterSpacing: '-0.011em',
+                    color: done ? 'var(--text-4)' : 'var(--text-2)',
+                    textDecoration: done ? 'line-through' : 'none',
+                  }}>
                     {s.name}
                   </p>
                   <p className="label">{s.category} · {s.duration_min} min</p>
                 </div>
-                <span style={{ color: 'var(--text-4)', fontSize: '1rem', marginLeft: '0.5rem' }}>›</span>
+                <span style={{ color: 'var(--text-4)', fontSize: 16, marginLeft: 8 }}>›</span>
               </button>
             );
           })}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getHabits, addHabit, deactivateHabit, getHabitCompletions, toggleHabitCompletion, getHabitStreak, todayISO, type Habit } from '@/lib/db';
+import { getHabits, addHabit, deactivateHabit, getHabitCompletions, toggleHabitCompletion, getHabitStreaks, todayISO, type Habit } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
 
 export default function HabitsPage() {
@@ -15,9 +15,8 @@ export default function HabitsPage() {
     const today = todayISO();
     const [all, completions] = await Promise.all([getHabits(), getHabitCompletions(today)]);
     const completedIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
-    const enriched = await Promise.all(all.map(async h => ({
-      ...h, done: completedIds.has(h.id), streak: await getHabitStreak(h.id),
-    })));
+    const streaks = await getHabitStreaks(all.map(h => h.id));
+    const enriched = all.map(h => ({ ...h, done: completedIds.has(h.id), streak: streaks.get(h.id) ?? 0 }));
     setHabits(enriched);
   }, []);
 
@@ -38,88 +37,122 @@ export default function HabitsPage() {
     await load(); setMode('list');
   };
 
+  const doneCount = habits.filter(h => h.done).length;
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
 
-      {/* Header */}
-      <div style={{ padding: '1.5rem var(--pad) 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      {/* ── Header ── */}
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <p className="label" style={{ marginBottom: '0.35rem' }}>Daily</p>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)', margin: 0 }}>Habits</h1>
+          <p className="label" style={{ marginBottom: 6 }}>Daily</p>
+          <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Habits</h1>
         </div>
-        <button
-          onClick={() => { setMode(mode === 'add' ? 'list' : 'add'); setAddError(''); }}
-          className={mode === 'add' ? 'btn btn-ghost btn-sm' : 'btn btn-primary btn-sm'}
-        >
-          {mode === 'add' ? '← Back' : '+ New'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {habits.length > 0 && (
+            <span style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>
+              {doneCount}/{habits.length}
+            </span>
+          )}
+          <button
+            onClick={() => { setMode(mode === 'add' ? 'list' : 'add'); setAddError(''); }}
+            className={mode === 'add' ? 'btn btn-outline btn-sm' : 'btn btn-primary btn-sm'}
+          >
+            {mode === 'add' ? '← Back' : '+ New'}
+          </button>
+        </div>
       </div>
 
-      {/* Add form */}
+      {/* ── Add form ── */}
       {mode === 'add' && (
-        <div style={{ margin: '0 var(--pad) 1rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.25rem' }}>
-          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)', marginBottom: '1rem' }}>New Habit</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ margin: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, padding: '20px' }}>
+          <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', marginBottom: 16 }}>New habit</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {addError && (
-              <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', fontSize: '0.8rem', color: 'var(--text-2)' }}>
-                ⚠ {addError}
+              <div style={{ background: 'rgba(235,87,87,0.08)', border: '1px solid rgba(235,87,87,0.2)', borderRadius: 6, padding: '10px 12px', fontSize: 13, color: 'var(--color-coral-red)', letterSpacing: '-0.011em' }}>
+                {addError}
               </div>
             )}
             <div>
-              <p className="label" style={{ marginBottom: '0.4rem' }}>Habit Name *</p>
-              <input value={addName} onChange={e => setAddName(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="e.g. Morning walk" />
+              <p className="label" style={{ marginBottom: 6 }}>Habit name</p>
+              <input
+                value={addName}
+                onChange={e => setAddName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && save()}
+                placeholder="e.g. Morning walk"
+                autoFocus
+              />
             </div>
             <div>
-              <p className="label" style={{ marginBottom: '0.4rem' }}>Stacked After (optional)</p>
+              <p className="label" style={{ marginBottom: 6 }}>Stack after (optional)</p>
               <select value={addAfter} onChange={e => setAddAfter(e.target.value ? Number(e.target.value) : '')}>
-                <option value="">None — standalone habit</option>
+                <option value="">None — standalone</option>
                 {habits.map(h => <option key={h.id} value={h.id}>After: {h.name}</option>)}
               </select>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={save} className="btn btn-primary" style={{ flex: 1 }}>Save Habit</button>
-              <button onClick={() => setMode('list')} className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
+            <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
+              <button onClick={save} className="btn btn-primary" style={{ flex: 1 }}>Save</button>
+              <button onClick={() => setMode('list')} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Habit list */}
+      {/* ── Habit list ── */}
       {mode === 'list' && (
-        <div style={{ margin: '0 var(--pad)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+        <div style={{ margin: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
           {habits.length === 0 ? (
-            <div style={{ padding: '2.5rem', textAlign: 'center' as const }}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-3)', marginBottom: '0.5rem' }}>No habits yet</p>
-              <button onClick={() => setMode('add')} style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-2)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+            <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12, letterSpacing: '-0.011em' }}>No habits yet</p>
+              <button
+                onClick={() => setMode('add')}
+                className="btn btn-primary btn-sm"
+              >
                 Add your first →
               </button>
             </div>
           ) : habits.map((h, idx) => (
-            <div key={h.id} style={{
-              display: 'flex', alignItems: 'center', padding: '0.875rem 1rem',
-              borderBottom: idx < habits.length - 1 ? '1px solid var(--border)' : 'none',
-              background: h.done ? 'var(--surface-2)' : 'transparent',
-            }}>
+            <div
+              key={h.id}
+              style={{
+                display: 'flex', alignItems: 'center',
+                padding: '12px 16px',
+                borderBottom: idx < habits.length - 1 ? '1px solid var(--border)' : 'none',
+                background: h.done ? 'rgba(255,255,255,0.02)' : 'transparent',
+                transition: 'background 0.15s',
+              }}
+            >
               {/* Checkbox */}
-              <button onClick={() => toggle(h.id)} style={{
-                width: 28, height: 28, borderRadius: 'var(--radius-xs)', border: `2px solid ${h.done ? 'var(--text)' : 'var(--border-2)'}`,
-                background: h.done ? 'var(--text)' : 'transparent',
-                cursor: 'pointer', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--invert)', fontSize: '0.8rem', fontWeight: 700,
-                transition: 'all 0.15s',
-              }}>
+              <button
+                onClick={() => toggle(h.id)}
+                style={{
+                  width: 20, height: 20,
+                  borderRadius: 4,
+                  border: `1px solid ${h.done ? 'var(--accent)' : 'var(--border-2)'}`,
+                  background: h.done ? 'var(--accent)' : 'transparent',
+                  cursor: 'pointer', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--accent-fg)',
+                  fontSize: 11, fontWeight: 510,
+                  transition: 'all 0.15s',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
                 {h.done ? '✓' : ''}
               </button>
 
               {/* Name */}
-              <button onClick={() => toggle(h.id)} style={{
-                flex: 1, background: 'transparent', border: 'none', cursor: 'pointer',
-                textAlign: 'left', padding: '0 0.875rem',
-              }}>
+              <button
+                onClick={() => toggle(h.id)}
+                style={{
+                  flex: 1, background: 'transparent', border: 'none', cursor: 'pointer',
+                  textAlign: 'left', padding: '0 12px',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
                 <span style={{
-                  fontSize: '0.9375rem', fontWeight: 500,
-                  color: h.done ? 'var(--text-3)' : 'var(--text)',
+                  fontSize: 15, fontWeight: 400, letterSpacing: '-0.011em',
+                  color: h.done ? 'var(--text-4)' : 'var(--text-2)',
                   textDecoration: h.done ? 'line-through' : 'none',
                 }}>
                   {h.name}
@@ -128,20 +161,23 @@ export default function HabitsPage() {
 
               {/* Streak */}
               {h.streak > 0 && (
-                <span style={{
-                  fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.04em',
-                  color: 'var(--text-2)', border: '1px solid var(--border-2)',
-                  borderRadius: 999, padding: '0.2rem 0.55rem', marginRight: '0.5rem',
-                }}>
+                <span className="badge" style={{ marginRight: 8 }}>
                   {h.streak}d 🔥
                 </span>
               )}
 
               {/* Delete */}
-              <button onClick={() => deleteHabit(h.id)} style={{
-                background: 'none', border: 'none', color: 'var(--text-4)',
-                cursor: 'pointer', fontSize: '0.9rem', padding: '0.25rem 0.4rem', flexShrink: 0,
-              }}>✕</button>
+              <button
+                onClick={() => deleteHabit(h.id)}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--text-4)',
+                  cursor: 'pointer', fontSize: 14, padding: '4px 6px', flexShrink: 0,
+                  WebkitTapHighlightColor: 'transparent',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>

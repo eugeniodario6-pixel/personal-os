@@ -70,7 +70,7 @@ export default function TodayPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p className="label">Loading...</p>
+      <p style={{ fontSize: '13px', fontWeight: 400, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>Loading...</p>
     </div>
   );
 
@@ -83,11 +83,11 @@ export default function TodayPage() {
 
         {/* Score */}
         <div style={{ marginBottom: '1.5rem' }}>
-          <div style={{ fontSize: 'clamp(5rem, 26vw, 9rem)', fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 0.88, color: 'var(--text)' }}>
+          <div style={{ fontSize: 'clamp(5rem, 26vw, 9rem)', fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 0.88, color: 'var(--text)' }}>
             {score}
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginTop: '0.75rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 700, letterSpacing: '0.12em', color: 'var(--text)' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)' }}>
               {scoreLabel(score)}
             </span>
             <span className="label">/ 100 today</span>
@@ -116,7 +116,7 @@ export default function TodayPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--border)' }}>
         <div style={{ padding: '1.25rem var(--pad)', borderRight: '1px solid var(--border)' }}>
           <p className="label" style={{ marginBottom: '0.5rem' }}>Calories</p>
-          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.25rem' }}>
+          <p style={{ fontSize: '2rem', fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.25rem' }}>
             {calories.toLocaleString()}
           </p>
           <p className="label" style={{ marginBottom: '0.75rem' }}>/ {calorieTarget.toLocaleString()}</p>
@@ -124,8 +124,8 @@ export default function TodayPage() {
         </div>
         <div style={{ padding: '1.25rem var(--pad)' }}>
           <p className="label" style={{ marginBottom: '0.5rem' }}>Habits</p>
-          <p style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.25rem' }}>
-            {habitDone}<span style={{ fontSize: '1.1rem', color: 'var(--text-4)', fontWeight: 500 }}>/{habits.length}</span>
+          <p style={{ fontSize: '2rem', fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.25rem' }}>
+            {habitDone}<span style={{ fontSize: '1.1rem', color: 'var(--text-4)', fontWeight: 400 }}>/{habits.length}</span>
           </p>
           <p className="label" style={{ marginBottom: '0.75rem' }}>{habits.length > 0 ? `${Math.round(habitPct)}% done` : 'none set'}</p>
           <div className="progress"><div className="progress-fill" style={{ width: `${Math.min(habitPct, 100)}%` }} /></div>
@@ -135,26 +135,51 @@ export default function TodayPage() {
       {/* ── Status cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid var(--border)' }}>
         <button onClick={() => { haptic('light'); router.push('/fitness'); }}
-          style={{ padding: '1.25rem var(--pad)', background: workoutsToday > 0 ? 'var(--text)' : 'var(--bg)', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', textAlign: 'left' as const }}>
-          <p className="label" style={{ marginBottom: '0.35rem', color: workoutsToday > 0 ? 'var(--invert)' : 'var(--text-3)', opacity: 0.7 }}>Workouts</p>
-          <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.04em', color: workoutsToday > 0 ? 'var(--invert)' : 'var(--text)', margin: 0 }}>{workoutsToday}</p>
+          style={{
+            padding: '1.25rem var(--pad)',
+            background: workoutsToday > 0 ? 'var(--surface-2)' : 'var(--bg)',
+            border: 'none',
+            borderRight: '1px solid var(--border)',
+            borderLeft: workoutsToday > 0 ? '2px solid var(--accent)' : '2px solid transparent',
+            cursor: 'pointer',
+            textAlign: 'left' as const,
+          }}>
+          <p className="label" style={{ marginBottom: '0.35rem', color: 'var(--text-3)' }}>Workouts</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0 }}>{workoutsToday}</p>
         </button>
         <button onClick={() => { haptic('light'); router.push('/meditation'); }}
-          style={{ padding: '1.25rem var(--pad)', background: medDone ? 'var(--text)' : 'var(--bg)', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
-          <p className="label" style={{ marginBottom: '0.35rem', color: medDone ? 'var(--invert)' : 'var(--text-3)', opacity: 0.7 }}>Meditation</p>
-          <p style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.04em', color: medDone ? 'var(--invert)' : 'var(--text)', margin: 0 }}>{medDone ? '✓' : '—'}</p>
+          style={{
+            padding: '1.25rem var(--pad)',
+            background: medDone ? 'var(--surface-2)' : 'var(--bg)',
+            border: 'none',
+            borderLeft: medDone ? '2px solid var(--accent)' : '2px solid transparent',
+            cursor: 'pointer',
+            textAlign: 'left' as const,
+          }}>
+          <p className="label" style={{ marginBottom: '0.35rem', color: 'var(--text-3)' }}>Meditation</p>
+          <p style={{ fontSize: '1.75rem', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0 }}>{medDone ? '✓' : '—'}</p>
         </button>
       </div>
 
       {/* ── Quick actions ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid var(--border)' }}>
         {[
-          { label: '+ Meal',    path: '/nutrition?action=add' },
-          { label: '+ Workout', path: '/fitness?action=add' },
-          { label: '+ Meditate',path: '/meditation' },
+          { label: '+ Meal',     path: '/nutrition?action=add' },
+          { label: '+ Workout',  path: '/fitness?action=add' },
+          { label: '+ Meditate', path: '/meditation' },
         ].map((b, i) => (
           <button key={b.label} onClick={() => { haptic('light'); router.push(b.path); }}
-            style={{ padding: '0.875rem 0.5rem', background: 'transparent', border: 'none', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-3)' }}>
+            style={{
+              padding: '0.875rem 0.5rem',
+              background: 'transparent',
+              border: 'none',
+              borderRight: i < 2 ? '1px solid var(--border)' : 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 400,
+              letterSpacing: '-0.011em',
+              color: 'var(--text-3)',
+            }}>
             {b.label}
           </button>
         ))}
@@ -163,9 +188,9 @@ export default function TodayPage() {
       {/* ── Habits ── */}
       <div style={{ borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem var(--pad)', borderBottom: '1px solid var(--border)' }}>
-          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Habits</p>
+          <p style={{ fontSize: '13px', fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', margin: 0 }}>Habits</p>
           <button onClick={() => { haptic('light'); router.push('/habits'); }}
-            style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}>
+            style={{ fontSize: '13px', fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}>
             Manage →
           </button>
         </div>
@@ -173,21 +198,32 @@ export default function TodayPage() {
         {habits.length === 0 ? (
           <div style={{ padding: '2rem var(--pad)', textAlign: 'center' as const }}>
             <p className="label" style={{ marginBottom: '0.5rem' }}>No habits yet</p>
-            <button onClick={() => router.push('/habits')} style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-2)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+            <button onClick={() => router.push('/habits')} style={{ fontSize: '13px', fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-2)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
               Add your first →
             </button>
           </div>
         ) : habits.map(h => (
           <button key={h.id} onClick={() => toggle(h.id)}
             style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', padding: '0.875rem var(--pad)', background: h.done ? 'var(--surface)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', textAlign: 'left' as const, WebkitTapHighlightColor: 'transparent' }}>
-            <div style={{ width: 24, height: 24, borderRadius: 'var(--radius-xs)', border: `2px solid ${h.done ? 'var(--text)' : 'var(--border-2)'}`, background: h.done ? 'var(--text)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
-              {h.done && <span style={{ fontSize: '0.7rem', color: 'var(--invert)', fontWeight: 700 }}>✓</span>}
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: 'var(--radius-xs)',
+              border: `2px solid ${h.done ? 'var(--accent)' : 'var(--border-2)'}`,
+              background: h.done ? 'var(--accent)' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              transition: 'all 0.15s',
+            }}>
+              {h.done && <span style={{ fontSize: '0.7rem', color: 'var(--accent-fg)', fontWeight: 510 }}>✓</span>}
             </div>
-            <span style={{ flex: 1, fontSize: '0.9375rem', fontWeight: 500, color: h.done ? 'var(--text-3)' : 'var(--text)', textDecoration: h.done ? 'line-through' : 'none' }}>
+            <span style={{ flex: 1, fontSize: '0.9375rem', fontWeight: 400, color: h.done ? 'var(--text-3)' : 'var(--text)', textDecoration: h.done ? 'line-through' : 'none' }}>
               {h.name}
             </span>
             {h.streak > 0 && (
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-3)', border: '1px solid var(--border-2)', borderRadius: 999, padding: '0.15rem 0.5rem' }}>
+              <span className="badge">
                 {h.streak}d 🔥
               </span>
             )}
@@ -199,18 +235,22 @@ export default function TodayPage() {
       {suggested && (
         <div style={{ borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem var(--pad)', borderBottom: '1px solid var(--border)' }}>
-            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Suggested</p>
+            <p style={{ fontSize: '13px', fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-2)', margin: 0 }}>Suggested</p>
             <span className="label">{suggested.duration_min} min</span>
           </div>
           <button onClick={() => { haptic('light'); router.push(`/meditation/${suggested.id}`); }}
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1.25rem var(--pad)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
             <div>
-              <p style={{ margin: '0 0 0.35rem', fontWeight: 700, fontSize: '1.125rem', letterSpacing: '-0.02em', color: 'var(--text)' }}>{suggested.name}</p>
+              <p style={{ margin: '0 0 0.35rem', fontWeight: 510, fontSize: '1.125rem', letterSpacing: '-0.022em', color: 'var(--text)' }}>{suggested.name}</p>
               <p className="label">{suggested.category}</p>
             </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.5rem 1rem', background: 'var(--text)', color: 'var(--invert)', borderRadius: 'var(--radius-xs)', flexShrink: 0 }}>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={(e) => { e.stopPropagation(); haptic('light'); router.push(`/meditation/${suggested.id}`); }}
+              style={{ flexShrink: 0 }}
+            >
               Start →
-            </span>
+            </button>
           </button>
         </div>
       )}

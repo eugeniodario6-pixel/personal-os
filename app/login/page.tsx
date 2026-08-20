@@ -15,17 +15,16 @@ export default function LoginPage() {
 
   const handleSubmit = async () => {
     setError(''); setMessage('');
-    if (!email.trim() || !password.trim()) { setError('EMAIL AND PASSWORD REQUIRED'); return; }
+    if (!email.trim() || !password.trim()) { setError('Email and password required'); return; }
     setLoading(true);
-
     try {
       if (mode === 'signup') {
         const { error: err } = await supabase.auth.signUp({ email, password });
-        if (err) { setError(err.message.toUpperCase()); return; }
-        setMessage('CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT, THEN LOG IN.');
+        if (err) { setError(err.message); return; }
+        setMessage('Check your email to confirm your account, then sign in.');
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-        if (err) { setError(err.message.toUpperCase()); return; }
+        if (err) { setError(err.message); return; }
         router.push('/');
         router.refresh();
       }
@@ -35,40 +34,65 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ fontFamily: 'var(--font-mono)', minHeight: '100dvh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '2rem 1.5rem', background: 'var(--bg)' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <p className="label" style={{ marginBottom: '0.5rem' }}>PERSONAL OS</p>
-        <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: 'var(--text)' }}>
-          {mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+    <div style={{
+      minHeight: '100dvh',
+      display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      padding: '40px 24px',
+      background: 'var(--color-void)',
+    }}>
+
+      {/* ── Brand ── */}
+      <div style={{ marginBottom: 40 }}>
+        <p style={{ fontSize: 12, fontWeight: 510, letterSpacing: '-0.01em', color: 'var(--text-4)', marginBottom: 8 }}>
+          Personal OS
+        </p>
+        <h1 style={{ margin: 0, fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)' }}>
+          {mode === 'login' ? 'Sign in' : 'Create account'}
         </h1>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 400 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 360 }}>
+
+        {/* Error */}
         {error && (
-          <p style={{ margin: 0, color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--text-muted)', padding: '0.75rem', fontSize: '0.75rem' }}>
-            ⚠ {error}
-          </p>
+          <div style={{
+            background: 'rgba(235,87,87,0.08)',
+            border: '1px solid rgba(235,87,87,0.2)',
+            borderRadius: 6, padding: '10px 14px',
+            fontSize: 13, color: 'var(--color-coral-red)',
+            letterSpacing: '-0.011em',
+          }}>
+            {error}
+          </div>
         )}
+
+        {/* Success */}
         {message && (
-          <p style={{ margin: 0, color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)', padding: '0.75rem', fontSize: '0.75rem' }}>
-            ✓ {message}
-          </p>
+          <div style={{
+            background: 'rgba(39,166,68,0.08)',
+            border: '1px solid rgba(39,166,68,0.2)',
+            borderRadius: 6, padding: '10px 14px',
+            fontSize: 13, color: 'var(--color-pulse-green)',
+            letterSpacing: '-0.011em',
+          }}>
+            {message}
+          </div>
         )}
 
         <div>
-          <p className="label" style={{ marginBottom: '0.25rem' }}>EMAIL</p>
+          <p className="label" style={{ marginBottom: 6 }}>Email</p>
           <input
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            placeholder="YOU@EXAMPLE.COM"
+            placeholder="you@example.com"
             autoComplete="email"
           />
         </div>
 
         <div>
-          <p className="label" style={{ marginBottom: '0.25rem' }}>PASSWORD</p>
+          <p className="label" style={{ marginBottom: 6 }}>Password</p>
           <input
             type="password"
             value={password}
@@ -82,17 +106,17 @@ export default function LoginPage() {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className={`btn btn-primary btn-block${loading ? ' disabled' : ''}`}
-          style={{ opacity: loading ? 0.6 : 1 }}
+          className="btn btn-primary btn-block"
+          style={{ marginTop: 4 }}
         >
-          {loading ? 'LOADING...' : mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+          {loading ? '…' : mode === 'login' ? 'Sign in →' : 'Create account →'}
         </button>
 
         <button
           onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage(''); }}
-          className="btn btn-ghost btn-block"
+          className="btn btn-outline btn-block"
         >
-          {mode === 'login' ? 'NO ACCOUNT? SIGN UP →' : 'HAVE AN ACCOUNT? SIGN IN →'}
+          {mode === 'login' ? 'No account? Sign up' : 'Have an account? Sign in'}
         </button>
       </div>
     </div>

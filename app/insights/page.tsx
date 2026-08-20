@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getMealLogs, getWorkoutLogs, getWorkoutHistory, getHabits, getHabitCompletions, getMeditationLogs, getInsights, todayISO } from '@/lib/db';
+import { getMealLogs, getWorkoutLogs, getHabits, getHabitCompletions, getMeditationLogs, getInsights, todayISO } from '@/lib/db';
 
 export default function InsightsPage() {
   const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [summaries, setSummaries] = useState<{ label: string; sub: string; value: string }[]>([]);
   const [insights, setInsights] = useState<{ text: string; meta: string }[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     const today = new Date();
     const days = period === 'week' ? 7 : 30;
     const dates: string[] = [];
@@ -18,93 +20,120 @@ export default function InsightsPage() {
       dates.push(d.toISOString().slice(0, 10));
     }
 
-    const [activeHabits, insightRows] = await Promise.all([
-      getHabits(),
-      getInsights(),
-    ]);
+    const [activeHabits, insightRows] = await Promise.all([getHabits(), getInsights()]);
 
-    // Fetch per-date data
-    const mealLogArrays = await Promise.all(dates.map(d => getMealLogs(d)));
-    const workoutLogArrays = await Promise.all(dates.map(d => getWorkoutLogs(d)));
-    const habitCompletionArrays = await Promise.all(dates.map(d => getHabitCompletions(d)));
-    const medLogArrays = await Promise.all(dates.map(d => getMeditationLogs(d)));
+    const mealLogArrays     = await Promise.all(dates.map(d => getMealLogs(d)));
+    const workoutLogArrays  = await Promise.all(dates.map(d => getWorkoutLogs(d)));
+    const habitCompArrays   = await Promise.all(dates.map(d => getHabitCompletions(d)));
+    const medLogArrays      = await Promise.all(dates.map(d => getMeditationLogs(d)));
 
-    const mealLogs = mealLogArrays.flat();
-    const workoutLogs = workoutLogArrays.flat();
-    const habitCompletions = habitCompletionArrays.flat();
-    const medLogs = medLogArrays.flat();
+    const mealLogs      = mealLogArrays.flat();
+    const workoutLogs   = workoutLogArrays.flat();
+    const habitComps    = habitCompArrays.flat();
+    const medLogs       = medLogArrays.flat();
 
-    // Avg calories
     let totalCal = 0;
     for (const log of mealLogs) {
       if (log.food) totalCal += log.food.calories * (log.quantity / log.food.serving_size);
     }
     const avgCal = days > 0 ? Math.round(totalCal / days) : 0;
 
-    // Habit completion %
     const totalPossible = activeHabits.length * days;
-    const completed = habitCompletions.filter(c => c.completed_at).length;
-    const habitPct = totalPossible > 0 ? Math.round((completed / totalPossible) * 100) : 0;
+    const completed     = habitComps.filter(c => c.completed_at).length;
+    const habitPct      = totalPossible > 0 ? Math.round((completed / totalPossible) * 100) : 0;
 
     setSummaries([
-      { label: 'AVG CALORIES / DAY', sub: `OVER ${days} DAYS`, value: `${avgCal} KCAL` },
-      { label: 'WORKOUTS', sub: `LAST ${days} DAYS`, value: String(workoutLogs.length) },
-      { label: 'HABITS COMPLETION', sub: `${completed} OF ${totalPossible} POSSIBLE`, value: `${habitPct}%` },
-      { label: 'MEDITATION SESSIONS', sub: `LAST ${days} DAYS`, value: String(medLogs.filter(m => m.completed).length) },
+      { label: 'Avg calories / day', sub: `Over ${days} days`,              value: `${avgCal} kcal` },
+      { label: 'Workouts',           sub: `Last ${days} days`,              value: String(workoutLogs.length) },
+      { label: 'Habit completion',   sub: `${completed} of ${totalPossible} possible`, value: `${habitPct}%` },
+      { label: 'Meditation sessions',sub: `Last ${days} days`,              value: String(medLogs.filter(m => m.completed).length) },
     ]);
 
     setInsights(insightRows.map(i => ({
       text: i.relationship,
-      meta: `${i.data_points} DATA POINTS · ${Math.round(i.confidence * 100)}% CONFIDENCE`,
+      meta: `${i.data_points} data points · ${Math.round(i.confidence * 100)}% confidence`,
     })));
+    setLoading(false);
   }, [period]);
 
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div style={{ fontFamily: 'var(--font-mono)' }}>
-      <div style={{ padding: '1rem', borderBottom: '2px solid var(--border-strong)' }}>
-        <p className="label" style={{ marginBottom: '0.25rem' }}>INSIGHTS</p>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)' }}>DATA</h1>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4rem', paddingBottom: '5rem' }}>
+
+      {/* ── Header ── */}
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
+        <p className="label" style={{ marginBottom: 6 }}>Analytics</p>
+        <h1 style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.13, color: 'var(--text)', margin: 0 }}>Insights</h1>
       </div>
 
-      <div style={{ display: 'flex', borderBottom: '2px solid var(--border-strong)' }}>
+      {/* ── Period toggle ── */}
+      <div className="tab-bar">
         {(['week', 'month'] as const).map(p => (
-          <button key={p} onClick={() => setPeriod(p)}
-            style={{ flex: 1, padding: '0.6rem 1rem', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', textAlign: 'center', border: 'none', background: 'var(--bg)', cursor: 'pointer', marginBottom: -2, color: period === p ? 'var(--text)' : 'var(--text-ghost)', borderBottom: `2px solid ${period === p ? 'var(--text)' : 'var(--text-ghost)'}`, fontFamily: 'var(--font-mono)' }}>
-            {p === 'week' ? 'THIS WEEK' : 'THIS MONTH'}
+          <button
+            key={p}
+            className={`tab ${period === p ? 'active' : ''}`}
+            onClick={() => setPeriod(p)}
+          >
+            {p === 'week' ? 'This week' : 'This month'}
           </button>
         ))}
       </div>
 
-      <div style={{ borderBottom: '2px solid var(--border-strong)' }}>
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
-          <span className="label">SUMMARY — {period === 'week' ? 'THIS WEEK' : 'THIS MONTH'}</span>
+      {loading ? (
+        <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Loading…</p>
         </div>
-        {summaries.map(s => (
-          <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1rem', borderBottom: '1px solid var(--border)' }}>
-            <div>
-              <p className="label">{s.label}</p>
-              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-ghost)' }}>{s.sub}</p>
+      ) : (
+        <>
+          {/* ── Summary cards ── */}
+          <div style={{ margin: '16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+              <p className="label">Summary — {period === 'week' ? 'this week' : 'this month'}</p>
             </div>
-            <span style={{ fontWeight: 700, fontSize: '1.125rem', color: 'var(--text)' }}>{s.value}</span>
+            {summaries.map((s, i) => (
+              <div
+                key={s.label}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '14px 16px',
+                  borderBottom: i < summaries.length - 1 ? '1px solid var(--border)' : 'none',
+                }}
+              >
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-2)', margin: '0 0 3px' }}>{s.label}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-4)', letterSpacing: '-0.01em', margin: 0 }}>{s.sub}</p>
+                </div>
+                <span style={{ fontSize: 20, fontWeight: 510, letterSpacing: '-0.012em', color: 'var(--text)' }}>{s.value}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div>
-        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
-          <span className="label">DISCOVERED PATTERNS</span>
-        </div>
-        {insights.length === 0 ? (
-          <div style={{ padding: '1.5rem 1rem', color: 'var(--text-ghost)', fontSize: '0.75rem' }}>NOT ENOUGH DATA YET — KEEP LOGGING.</div>
-        ) : insights.map((i, idx) => (
-          <div key={idx} style={{ padding: '1rem', borderBottom: '1px solid var(--border)', borderLeft: '3px solid var(--border-strong)' }}>
-            <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text)', lineHeight: 1.6 }}>{i.text}</p>
-            <p className="label">{i.meta}</p>
+          {/* ── Patterns ── */}
+          <div style={{ margin: '0 16px', background: 'var(--color-carbon)', boxShadow: 'var(--shadow-card)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+              <p className="label">Discovered patterns</p>
+            </div>
+            {insights.length === 0 ? (
+              <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+                <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Not enough data yet — keep logging.</p>
+              </div>
+            ) : insights.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  padding: '14px 16px',
+                  borderBottom: idx < insights.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderLeft: '2px solid var(--accent)',
+                }}
+              >
+                <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text-2)', lineHeight: 1.6 }}>{item.text}</p>
+                <p className="label">{item.meta}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 }
