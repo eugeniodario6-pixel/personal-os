@@ -72,18 +72,18 @@ export default function Nav() {
       {/* ── Floating pill tab bar ── */}
       <div style={{
         position: 'fixed',
-        bottom: 20,
+        bottom: 24,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 300,
         display: 'flex',
         alignItems: 'center',
-        gap: 4,
-        padding: '8px 10px',
-        paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+        gap: 0,
+        padding: '7px',
+        paddingBottom: 'max(7px, env(safe-area-inset-bottom))',
         background: '#141414',
         borderRadius: 9999,
-        boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset, rgba(0,0,0,0.5) 0px 8px 32px 0px',
+        boxShadow: 'rgba(255,255,255,0.07) 0px 0px 0px 1px inset, rgba(0,0,0,0.6) 0px 12px 40px 0px',
       }}>
         {TABS.map(tab => {
           const active = isActive(tab.href);
@@ -97,22 +97,21 @@ export default function Nav() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 44,
-                height: 36,
+                width: active ? 56 : 52,
+                height: 56,
                 borderRadius: 9999,
-                background: active ? '#242424' : 'transparent',
+                background: active ? '#ffffff' : 'transparent',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
-                transition: 'background 0.15s',
-                boxShadow: active ? 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset' : 'none',
+                transition: 'background 0.2s cubic-bezier(0.4,0,0.2,1), width 0.2s cubic-bezier(0.4,0,0.2,1)',
+                flexShrink: 0,
               }}
             >
               <span style={{
-                fontSize: 16,
-                color: active ? '#ffffff' : 'rgba(255,255,255,0.30)',
-                transition: 'color 0.15s',
+                fontSize: 20,
+                color: active ? '#000000' : 'rgba(255,255,255,0.32)',
+                transition: 'color 0.2s',
                 lineHeight: 1,
-                fontWeight: active ? 510 : 400,
               }}>
                 {tab.icon}
               </span>
