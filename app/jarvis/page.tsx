@@ -65,6 +65,123 @@ function speak(text: string) {
   window.speechSynthesis.speak(utt);
 }
 
+// ─── Jarvis Avatar ────────────────────────────────────────────────────────────
+function JarvisAvatar({ loading, speaking }: { loading: boolean; speaking: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 0 24px' }}>
+      <div style={{ position: 'relative', width: 120, height: 120 }}>
+        {/* Outer pulse ring */}
+        <div style={{
+          position: 'absolute', inset: -8,
+          borderRadius: '50%',
+          border: '1px solid rgba(218,255,1,0.2)',
+          animation: (loading || speaking) ? 'jarvis-ring-1 2s ease-in-out infinite' : 'none',
+        }} />
+        {/* Mid pulse ring */}
+        <div style={{
+          position: 'absolute', inset: -3,
+          borderRadius: '50%',
+          border: '1px solid rgba(218,255,1,0.35)',
+          animation: (loading || speaking) ? 'jarvis-ring-2 2s ease-in-out 0.3s infinite' : 'none',
+        }} />
+        {/* Main circle */}
+        <div style={{
+          width: 120, height: 120, borderRadius: '50%',
+          background: 'radial-gradient(circle at 40% 35%, #1a1a1a, #000)',
+          boxShadow: loading || speaking
+            ? 'rgba(218,255,1,0.5) 0px 0px 0px 1.5px, rgba(218,255,1,0.2) 0px 0px 40px'
+            : 'rgba(218,255,1,0.3) 0px 0px 0px 1.5px, rgba(218,255,1,0.08) 0px 0px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'box-shadow 0.4s',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          {/* Inner hex grid pattern */}
+          <svg width="120" height="120" style={{ position: 'absolute', opacity: 0.15 }}>
+            <defs>
+              <pattern id="hex" x="0" y="0" width="20" height="17.3" patternUnits="userSpaceOnUse">
+                <polygon points="10,1 19,5.5 19,14.5 10,19 1,14.5 1,5.5" fill="none" stroke="#DAFF01" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="120" height="120" fill="url(#hex)" />
+          </svg>
+          {/* Core icon */}
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+            <div style={{
+              fontSize: 42, lineHeight: 1,
+              color: '#DAFF01',
+              filter: loading || speaking ? 'drop-shadow(0 0 12px #DAFF01)' : 'drop-shadow(0 0 6px rgba(218,255,1,0.5))',
+              transition: 'filter 0.3s',
+              animation: loading ? 'jarvis-spin 4s linear infinite' : 'none',
+            }}>
+              ⬡
+            </div>
+          </div>
+          {/* Speaking waveform overlay */}
+          {speaking && (
+            <div style={{
+              position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)',
+              display: 'flex', gap: 3, alignItems: 'center',
+            }}>
+              {[1,2,3,4,3,2,1].map((h, i) => (
+                <div key={i} style={{
+                  width: 3, height: h * 4,
+                  background: '#DAFF01',
+                  borderRadius: 2,
+                  animation: `jarvis-wave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
+                }} />
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Status dot */}
+        <div style={{
+          position: 'absolute', bottom: 4, right: 4,
+          width: 14, height: 14, borderRadius: '50%',
+          background: loading ? 'rgba(218,255,1,0.6)' : '#DAFF01',
+          boxShadow: '0 0 8px #DAFF01',
+          border: '2px solid #000',
+          animation: loading ? 'jarvis-pulse 1s ease infinite' : 'none',
+        }} />
+      </div>
+
+      <p style={{
+        margin: '16px 0 4px',
+        fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.15em',
+        color: '#ffffff', fontFamily: 'var(--font-mono)',
+      }}>
+        JARVIS
+      </p>
+      <p style={{
+        margin: 0, fontSize: '0.55rem', letterSpacing: '0.12em',
+        color: loading ? '#DAFF01' : 'rgba(255,255,255,0.3)',
+        fontFamily: 'var(--font-mono)',
+        transition: 'color 0.3s',
+      }}>
+        {loading ? 'PROCESSING…' : speaking ? 'SPEAKING…' : 'ONLINE'}
+      </p>
+
+      <style>{`
+        @keyframes jarvis-ring-1 {
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.08); opacity: 0.8; }
+        }
+        @keyframes jarvis-ring-2 {
+          0%, 100% { transform: scale(1); opacity: 0.2; }
+          50% { transform: scale(1.12); opacity: 0.6; }
+        }
+        @keyframes jarvis-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes jarvis-wave {
+          from { transform: scaleY(0.4); }
+          to { transform: scaleY(1.4); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ─── Thinking dots ────────────────────────────────────────────────────────────
 function ThinkingDots() {
   return (
@@ -324,15 +441,11 @@ export default function JarvisPage() {
 
       {/* ── Messages ── */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '80px 20px 160px',
+        flex: 1, overflowY: 'auto', padding: '80px 20px 280px',
         display: 'flex', flexDirection: 'column',
       }}>
-        {messages.length === 0 && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
-            <ThinkingDots />
-            <p style={{ fontSize: '0.65rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-mono)' }}>BOOTING…</p>
-          </div>
-        )}
+        {/* Avatar — always visible at top */}
+        <JarvisAvatar loading={loading} speaking={false} />
 
         {messages.map(msg => <Bubble key={msg.id} msg={msg} />)}
         {loading && messages[messages.length - 1]?.role === 'user' && (
@@ -373,12 +486,13 @@ export default function JarvisPage() {
       {/* ── Input bar ── */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'rgba(0,0,0,0.9)',
+        zIndex: 400,
+        background: 'rgba(0,0,0,0.95)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderTop: '1px solid rgba(255,255,255,0.06)',
         padding: '12px 16px',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+        paddingBottom: 'max(100px, calc(env(safe-area-inset-bottom) + 88px))',
       }}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           {/* Voice button */}

@@ -9,8 +9,8 @@ import { useTheme } from './ThemeProvider';
 const TABS = [
   { href: '/',           label: 'Today',  icon: '◉' },
   { href: '/nutrition',  label: 'Eat',    icon: '⊕' },
+  { href: '/jarvis',     label: 'Jarvis', icon: '⬡', lime: true },
   { href: '/fitness',    label: 'Move',   icon: '△' },
-  { href: '/body',       label: 'Body',   icon: '◈' },
   { href: '/habits',     label: 'Habits', icon: '✦' },
 ];
 
@@ -87,6 +87,7 @@ export default function Nav() {
       }}>
         {TABS.map(tab => {
           const active = isActive(tab.href);
+          const isJarvis = (tab as any).lime;
           return (
             <Link
               key={tab.href}
@@ -97,21 +98,27 @@ export default function Nav() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: active ? 56 : 52,
+                width: active ? 56 : isJarvis ? 54 : 52,
                 height: 56,
                 borderRadius: 9999,
-                background: active ? '#DAFF01' : 'transparent',
+                background: active
+                  ? (isJarvis ? '#DAFF01' : '#DAFF01')
+                  : isJarvis ? 'transparent' : 'transparent',
+                boxShadow: !active && isJarvis
+                  ? 'rgba(218,255,1,0.5) 0px 0px 0px 1.5px inset, rgba(218,255,1,0.15) 0px 0px 12px'
+                  : 'none',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
-                transition: 'background 0.2s cubic-bezier(0.4,0,0.2,1), width 0.2s cubic-bezier(0.4,0,0.2,1)',
+                transition: 'all 0.2s cubic-bezier(0.4,0,0.2,1)',
                 flexShrink: 0,
               }}
             >
               <span style={{
-                fontSize: 20,
-                color: active ? '#000000' : 'rgba(255,255,255,0.30)',
+                fontSize: isJarvis ? 22 : 20,
+                color: active ? '#000000' : isJarvis ? '#DAFF01' : 'rgba(255,255,255,0.30)',
                 transition: 'color 0.2s',
                 lineHeight: 1,
+                filter: !active && isJarvis ? 'drop-shadow(0 0 6px #DAFF01)' : 'none',
               }}>
                 {tab.icon}
               </span>
