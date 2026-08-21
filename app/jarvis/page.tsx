@@ -35,6 +35,21 @@ const STORAGE_KEY_VOICE   = 'jarvis_voice';
 const STORAGE_KEY_HISTORY = 'jarvis_history';
 const MAX_HISTORY         = 20;
 
+// ─── iOS audio unlock ─────────────────────────────────────────────────────────
+// iOS Safari blocks audio.play() unless triggered by a user gesture.
+// We pre-create and unlock an Audio element on first user tap, then reuse it.
+let _unlockedAudio: HTMLAudioElement | null = null;
+
+function unlockAudio() {
+  if (_unlockedAudio) return;
+  try {
+    _unlockedAudio = new Audio();
+    _unlockedAudio.src = 'data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+    _unlockedAudio.volume = 0;
+    _unlockedAudio.play().catch(() => {});
+  } catch { /* ignore */ }
+}
+
 // ─── ElevenLabs TTS ────────────────────────────────────────────────────────────
 async function speakElevenLabs(
   text: string,
@@ -50,11 +65,20 @@ async function speakElevenLabs(
     if (!res.ok) return null;
     const blob  = await res.blob();
     const url   = URL.createObjectURL(blob);
-    const audio = new Audio(url);
+    // Reuse pre-unlocked audio element if available, else create new
+    const audio = _unlockedAudio ?? new Audio();
+    audio.src = url;
+    audio.volume = 1;
     if (onEnd) audio.onended = onEnd;
-    audio.play();
+    const playPromise = audio.play();
+    if (playPromise) playPromise.catch(() => {
+      // Fallback: create fresh Audio and try again
+      const a2 = new Audio(url);
+      if (onEnd) a2.onended = onEnd;
+      a2.play().catch(() => onEnd?.());
+    });
     return audio;
-  } catch { return null; }
+  } catch { onEnd?.(); return null; }
 }
 
 function speakBrowser(text: string, onEnd?: () => void): void {
@@ -320,7 +344,7 @@ function ConversationMode({
       {/* Mic button — big */}
       {micSupported && (
         <button
-          onClick={onToggleMic}
+          onClick={() => { unlockAudio(); onToggleMic(); }}
           disabled={loading || speaking}
           style={{
             width: 80, height: 80, borderRadius: '50%',
@@ -543,6 +567,7 @@ export default function JarvisPage() {
 
   // ── Mode switch ───────────────────────────────────────────────────────────────
   const enterConversation = () => {
+    unlockAudio(); // must be inside user gesture
     setMode('conversation');
     autoListenRef.current = true;
     haptic('medium');
@@ -660,7 +685,7 @@ export default function JarvisPage() {
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 400, background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 16px', paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 84px))' }}>
         <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           {micSupported && (
-            <button type="button" onClick={() => { haptic('light'); toggleMic(); }} style={{ flexShrink: 0, width: 46, height: 46, borderRadius: '50%', background: listening ? '#DAFF01' : '#141414', border: listening ? 'none' : '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 19, boxShadow: listening ? '0 0 24px rgba(218,255,1,0.5)' : 'none', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent', color: listening ? '#000' : 'rgba(255,255,255,0.45)' }}>🎙</button>
+            <button type="button" onClick={() => { unlockAudio(); haptic('light'); toggleMic(); }} style={{ flexShrink: 0, width: 46, height: 46, borderRadius: '50%', background: listening ? '#DAFF01' : '#141414', border: listening ? 'none' : '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 19, boxShadow: listening ? '0 0 24px rgba(218,255,1,0.5)' : 'none', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent', color: listening ? '#000' : 'rgba(255,255,255,0.45)' }}>🎙</button>
           )}
           <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder={listening ? 'Listening…' : 'Ask Jarvis…'} disabled={loading || listening} style={{ flex: 1, background: '#141414', border: `1px solid ${listening ? 'rgba(218,255,1,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 22, padding: '12px 18px', color: '#fff', fontSize: '0.9rem', fontFamily: 'var(--font)', outline: 'none', letterSpacing: '-0.011em', transition: 'border 0.2s' }} />
           <button type="submit" disabled={!input.trim() || loading} style={{ flexShrink: 0, width: 46, height: 46, borderRadius: '50%', background: input.trim() && !loading ? '#DAFF01' : '#141414', border: 'none', cursor: input.trim() && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, transition: 'all 0.15s', color: input.trim() && !loading ? '#000' : 'rgba(255,255,255,0.2)', WebkitTapHighlightColor: 'transparent' }}>↑</button>
