@@ -147,17 +147,18 @@ export async function POST(req: Request) {
           ({ action: 'renameHabit', ...input }),
       },
       logWorkout: {
-        description: 'Log a general workout session',
+        description: 'Log a workout session — use session_type to classify it',
         inputSchema: z.object({
-          name: z.string(),
+          name: z.string().describe('Workout name e.g. "Strength", "Cardio", "Boxing", "Agility"'),
+          session_type: z.enum(['strength', 'cardio', 'boxing', 'agility']).describe('Type of session'),
           duration_min: z.number().optional(),
           intensity: z.enum(['low', 'moderate', 'high']).optional(),
         }),
-        execute: async (input: { name: string; duration_min?: number; intensity?: 'low' | 'moderate' | 'high' }) =>
-          ({ action: 'logWorkout', name: input.name, duration_min: input.duration_min ?? 60, intensity: input.intensity ?? 'high' }),
+        execute: async (input: { name: string; session_type: 'strength' | 'cardio' | 'boxing' | 'agility'; duration_min?: number; intensity?: 'low' | 'moderate' | 'high' }) =>
+          ({ action: 'logWorkout', name: input.name, session_type: input.session_type, duration_min: input.duration_min ?? 60, intensity: input.intensity ?? 'high' }),
       },
       logStrengthSession: {
-        description: 'Log a strength training session with sets',
+        description: 'Log a strength training session with specific sets/reps/weight',
         inputSchema: z.object({
           exercise: z.string(),
           sets: z.number(),

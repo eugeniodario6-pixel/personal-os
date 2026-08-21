@@ -212,9 +212,28 @@ export default function JarvisPage() {
           await renameHabit(toolCall.habit_id as number, toolCall.new_name as string);
           break;
 
-        case 'logWorkout':
-          await addWorkoutLog({ date: today, template_id: null, name: toolCall.name as string, duration_min: toolCall.duration_min as number, intensity: (toolCall.intensity as 'low' | 'moderate' | 'high') ?? 'high', calories_burned: null, source: 'manual', logged_at: new Date().toISOString() });
+        case 'logWorkout': {
+          // Write to workout_log (dashboard + progress page reads this)
+          await addWorkoutLog({
+            date: today,
+            template_id: null,
+            name: toolCall.name as string,
+            duration_min: toolCall.duration_min as number,
+            intensity: (toolCall.intensity as 'low' | 'moderate' | 'high') ?? 'high',
+            calories_burned: null,
+            source: 'manual',
+            logged_at: new Date().toISOString(),
+          });
+          // Also write to training_sessions (fitness plan page + workoutDone context flag reads this)
+          await createTrainingSession({
+            week: getWeek(),
+            session_type: (toolCall.session_type as 'strength' | 'cardio' | 'boxing' | 'agility') ?? 'strength',
+            date: today,
+            rpe: null,
+            notes: toolCall.name as string,
+          });
           break;
+        }
 
         case 'logStrengthSession': {
           const week = getWeek();
