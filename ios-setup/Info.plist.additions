@@ -1,0 +1,25 @@
+<!-- Add these keys to the Xcode-generated Info.plist -->
+<!-- Located at: ios/App/App/Info.plist after running: npx cap add ios -->
+
+<!-- HealthKit usage descriptions (required by Apple) -->
+<key>NSHealthShareUsageDescription</key>
+<string>Personal OS reads your health data — workouts, heart rate, sleep, and body metrics — to give you a complete picture of your performance.</string>
+
+<key>NSHealthUpdateUsageDescription</key>
+<string>Personal OS writes workout and nutrition data to Apple Health to keep all your health apps in sync.</string>
+
+<!-- Motion & Fitness (for step count, activity rings) -->
+<key>NSMotionUsageDescription</key>
+<string>Personal OS uses motion data to track your daily activity and movement patterns.</string>
+
+<!-- Background fetch (for syncing Garmin/HealthKit data) -->
+<key>UIBackgroundModes</key>
+<array>
+    <string>fetch</string>
+    <string>remote-notification</string>
+    <string>processing</string>
+</array>
+
+<!-- Face ID (optional, for app lock) -->
+<key>NSFaceIDUsageDescription</key>
+<string>Use Face ID to quickly and securely unlock Personal OS.</string>
