@@ -21,15 +21,11 @@ interface Message {
   content: string;
 }
 
-type VoiceKey = 'charlotte' | 'sarah' | 'alice' | 'matilda' | 'rachel' | 'browser';
+type VoiceKey = 'sarah' | 'browser';
 
 const VOICE_OPTIONS: { key: VoiceKey; name: string; desc: string }[] = [
-  { key: 'charlotte', name: 'Charlotte', desc: 'British · Warm' },
-  { key: 'sarah',     name: 'Sarah',     desc: 'American · Soft' },
-  { key: 'alice',     name: 'Alice',     desc: 'British · Confident' },
-  { key: 'matilda',   name: 'Matilda',   desc: 'American · Warm' },
-  { key: 'rachel',    name: 'Rachel',    desc: 'American · Calm' },
-  { key: 'browser',   name: 'Browser',   desc: 'Built-in · Free' },
+  { key: 'sarah',   name: 'Sarah',   desc: 'American · Soft' },
+  { key: 'browser', name: 'Browser', desc: 'Built-in · Free' },
 ];
 
 const STORAGE_KEY_VOICE   = 'jarvis_voice';
@@ -92,23 +88,38 @@ function speakBrowser(text: string, onEnd?: () => void): void {
 
 // ─── Voice input ───────────────────────────────────────────────────────────────
 function useVoiceInput(onResult: (text: string) => void) {
-  const recRef = useRef<any>(null);
-  const [listening, setListening] = useState(false);
+  const recRef      = useRef<any>(null);
+  const onResultRef = useRef(onResult);
+  const listeningRef = useRef(false);
+  const [listening, setListeningState] = useState(false);
   const supported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
+  // Always keep ref current — never stale inside recognition callback
+  useEffect(() => { onResultRef.current = onResult; }, [onResult]);
+
+  const setListening = (v: boolean) => { listeningRef.current = v; setListeningState(v); };
+
   const start = useCallback(() => {
-    if (!supported || listening) return;
+    if (!supported || listeningRef.current) return;
     const SR  = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const rec = new SR();
     rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
-    rec.onresult = (e: any) => { setListening(false); onResult(e.results[0][0].transcript); };
-    rec.onend    = () => setListening(false);
-    rec.onerror  = () => setListening(false);
-    recRef.current = rec; rec.start(); setListening(true);
-  }, [listening, supported, onResult]);
+    // Always calls latest sendMessage via ref — fixes stale closure conversation loop
+    rec.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      setListening(false);
+      onResultRef.current(transcript);
+    };
+    rec.onend   = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recRef.current = rec;
+    rec.start();
+    setListening(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supported]);
 
-  const stop = useCallback(() => { recRef.current?.stop(); setListening(false); }, []);
-  const toggle = useCallback(() => listening ? stop() : start(), [listening, start, stop]);
+  const stop   = useCallback(() => { recRef.current?.stop(); setListening(false); }, []);
+  const toggle = useCallback(() => listeningRef.current ? stop() : start(), [start, stop]);
 
   return { listening, toggle, start, stop, supported };
 }
@@ -143,7 +154,7 @@ export default function JarvisPage() {
   const [loading, setLoading]       = useState(false);
   const [speaking, setSpeaking]     = useState(false);
   const [context, setContext]       = useState<Record<string, unknown> | null>(null);
-  const [voice, setVoice]           = useState<VoiceKey>('charlotte');
+  const [voice, setVoice]           = useState<VoiceKey>('sarah');
   const [showVoicePicker, setShowVoicePicker] = useState(false);
   const [lastJarvisText, setLastJarvisText]   = useState('');
   const autoListenRef  = useRef(false);
@@ -306,7 +317,7 @@ export default function JarvisPage() {
   }, []);
 
   // ── Speak ─────────────────────────────────────────────────────────────────────
-  const currentVoiceRef = useRef<VoiceKey>('charlotte');
+  const currentVoiceRef = useRef<VoiceKey>('sarah');
   useEffect(() => { currentVoiceRef.current = voice; }, [voice]);
 
   const speakText = useCallback((text: string, onEnd?: () => void) => {
