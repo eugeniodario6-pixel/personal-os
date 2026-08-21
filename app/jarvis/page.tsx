@@ -13,6 +13,7 @@ import {
   addStrengthSets, computeDailyScore, todayISO, getCurrentTrainingWeek as getWeek,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
+import JarvisOrb from '@/components/JarvisOrb';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface Message {
@@ -20,15 +21,15 @@ interface Message {
   content: string;
 }
 
-type VoiceKey = 'daniel' | 'george' | 'brian' | 'eric' | 'adam' | 'browser';
+type VoiceKey = 'charlotte' | 'sarah' | 'alice' | 'matilda' | 'rachel' | 'browser';
 
 const VOICE_OPTIONS: { key: VoiceKey; name: string; desc: string }[] = [
-  { key: 'daniel',  name: 'Daniel',  desc: 'British · Formal' },
-  { key: 'george',  name: 'George',  desc: 'British · Warm' },
-  { key: 'brian',   name: 'Brian',   desc: 'American · Deep' },
-  { key: 'eric',    name: 'Eric',    desc: 'American · Smooth' },
-  { key: 'adam',    name: 'Adam',    desc: 'American · Dominant' },
-  { key: 'browser', name: 'Browser', desc: 'Built-in · Free' },
+  { key: 'charlotte', name: 'Charlotte', desc: 'British · Warm' },
+  { key: 'sarah',     name: 'Sarah',     desc: 'American · Soft' },
+  { key: 'alice',     name: 'Alice',     desc: 'British · Confident' },
+  { key: 'matilda',   name: 'Matilda',   desc: 'American · Warm' },
+  { key: 'rachel',    name: 'Rachel',    desc: 'American · Calm' },
+  { key: 'browser',   name: 'Browser',   desc: 'Built-in · Free' },
 ];
 
 const STORAGE_KEY_VOICE   = 'jarvis_voice';
@@ -142,12 +143,13 @@ export default function JarvisPage() {
   const [loading, setLoading]       = useState(false);
   const [speaking, setSpeaking]     = useState(false);
   const [context, setContext]       = useState<Record<string, unknown> | null>(null);
-  const [voice, setVoice]           = useState<VoiceKey>('daniel');
+  const [voice, setVoice]           = useState<VoiceKey>('charlotte');
   const [showVoicePicker, setShowVoicePicker] = useState(false);
   const [lastJarvisText, setLastJarvisText]   = useState('');
-  const autoListenRef = useRef(false);
-  const messagesRef   = useRef<Message[]>([]);
-  const contextRef    = useRef<Record<string, unknown> | null>(null);
+  const autoListenRef  = useRef(false);
+  const startMicRef    = useRef<() => void>(() => {}); // always-current ref to mic start
+  const messagesRef    = useRef<Message[]>([]);
+  const contextRef     = useRef<Record<string, unknown> | null>(null);
 
   // Keep refs in sync for use inside callbacks
   useEffect(() => { messagesRef.current = messages; }, [messages]);
@@ -304,7 +306,7 @@ export default function JarvisPage() {
   }, []);
 
   // ── Speak ─────────────────────────────────────────────────────────────────────
-  const currentVoiceRef = useRef<VoiceKey>('daniel');
+  const currentVoiceRef = useRef<VoiceKey>('charlotte');
   useEffect(() => { currentVoiceRef.current = voice; }, [voice]);
 
   const speakText = useCallback((text: string, onEnd?: () => void) => {
@@ -359,7 +361,7 @@ export default function JarvisPage() {
       // Speak — auto-listen after done in conversation mode
       if (assistantText) {
         speakText(assistantText, () => {
-          if (autoListenRef.current) setTimeout(() => voiceInput.start(), 500);
+          if (autoListenRef.current) setTimeout(() => startMicRef.current(), 500);
         });
       }
 
@@ -375,6 +377,10 @@ export default function JarvisPage() {
   }, [loading, speakText, executeAction]);
 
   const voiceInput = useVoiceInput(sendMessage);
+  // Keep startMicRef always pointing to the latest start fn — fixes stale closure in speakText callback
+  useEffect(() => { startMicRef.current = voiceInput.start; }, [voiceInput.start]);
+  // Auto-enable continuous listen after first mic tap
+  useEffect(() => { if (voiceInput.listening) autoListenRef.current = true; }, [voiceInput.listening]);
 
   // ── Load context ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -425,17 +431,17 @@ export default function JarvisPage() {
           const realScore = score?.total_score ?? (await computeDailyScore(today))?.total_score ?? 0;
           const s = realScore;
           const boot = s >= 75
-            ? `Systems online. Score at ${s}. Strong start — what do you need?`
+            ? `Veronica online. Score at ${s}. Strong start — what do you need?`
             : s >= 50
-            ? `Systems online. Score at ${s}. Room to push today — what's the move?`
+            ? `Veronica online. Score at ${s}. Room to push today — what's the move?`
             : s > 0
-            ? `Systems online. Score at ${s}. We've got work to do. Where do you want to start?`
-            : `Systems online. Nothing logged yet today — let's get the day started. What's first?`;
+            ? `Veronica online. Score at ${s}. We've got work to do. Where do you want to start?`
+            : `Veronica online. Nothing logged yet today — let's get started. What's first?`;
           setMessages([{ role: 'assistant', content: boot }]);
           setLastJarvisText(boot);
         }
       } catch {
-        const boot = 'Jarvis online. What do you need?';
+        const boot = 'Veronica online. What do you need?';
         setMessages([{ role: 'assistant', content: boot }]);
         setLastJarvisText(boot);
       }
@@ -477,44 +483,14 @@ export default function JarvisPage() {
         </button>
       </div>
 
-      {/* ── Avatar ── */}
+      {/* ── Avatar — WebGL Orb ── */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, justifyContent: 'center', width: '100%', padding: '0 32px' }}>
-        <div style={{ position: 'relative', width: 220, height: 220, marginBottom: 32 }}>
-          {/* Pulse rings */}
-          <div style={{ position: 'absolute', inset: -18, borderRadius: '50%', border: '1px solid rgba(218,255,1,0.10)', animation: avatarActive ? 'j-ring1 2s ease-in-out infinite' : 'none' }} />
-          <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: '1.5px solid rgba(218,255,1,0.20)', animation: avatarActive ? 'j-ring2 2s ease-in-out 0.35s infinite' : 'none' }} />
-          {speaking && <div style={{ position: 'absolute', inset: -28, borderRadius: '50%', border: '1px solid rgba(218,255,1,0.06)', animation: 'j-ring1 3s ease-in-out 0.7s infinite' }} />}
-
-          {/* Avatar circle */}
-          <div style={{ width: 220, height: 220, borderRadius: '50%', overflow: 'hidden', boxShadow: avatarActive ? 'rgba(218,255,1,0.65) 0 0 0 2px, rgba(218,255,1,0.25) 0 0 80px' : 'rgba(218,255,1,0.25) 0 0 0 2px, rgba(218,255,1,0.06) 0 0 40px', transition: 'box-shadow 0.5s', position: 'relative' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/jarvis-avatar.jpg" alt="Jarvis" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: avatarActive ? 'brightness(1.15) contrast(1.1)' : 'brightness(0.85) contrast(1.05)', transition: 'filter 0.5s' }} />
-            <div style={{ position: 'absolute', inset: 0, background: avatarActive ? 'rgba(218,255,1,0.06)' : 'transparent', transition: 'background 0.5s' }} />
-
-            {/* Waveform when listening */}
-            {voiceInput.listening && (
-              <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(0,0,0,0.55)', borderRadius: 99, padding: '6px 14px' }}>
-                {[2,3,6,9,6,3,2].map((h, i) => (
-                  <div key={i} style={{ width: 4, height: h * 4, background: '#DAFF01', borderRadius: 2, animation: `j-bar 0.65s ease-in-out ${i * 0.09}s infinite alternate` }} />
-                ))}
-              </div>
-            )}
-            {/* Waveform when speaking */}
-            {speaking && !voiceInput.listening && (
-              <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(0,0,0,0.55)', borderRadius: 99, padding: '6px 14px' }}>
-                {[1,2,4,7,4,2,1].map((h, i) => (
-                  <div key={i} style={{ width: 4, height: h * 4, background: 'rgba(218,255,1,0.55)', borderRadius: 2, animation: `j-bar 0.85s ease-in-out ${i * 0.12}s infinite alternate` }} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Status dot */}
-          <div style={{ position: 'absolute', bottom: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: '#DAFF01', boxShadow: '0 0 14px #DAFF01', border: '4px solid #000', animation: avatarActive ? 'j-pulse 1s ease infinite' : 'none' }} />
+        <div style={{ marginBottom: 32, position: 'relative' }}>
+          <JarvisOrb loading={loading} listening={voiceInput.listening} speaking={speaking} size={240} />
         </div>
 
         {/* Name + state */}
-        <p style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.2em', color: '#fff', fontFamily: 'var(--font-mono)' }}>JARVIS</p>
+        <p style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.2em', color: '#fff', fontFamily: 'var(--font-mono)' }}>VERONICA</p>
         <p style={{ margin: '0 0 28px', fontSize: '0.58rem', letterSpacing: '0.12em', color: stateColor, fontFamily: 'var(--font-mono)', transition: 'color 0.3s', minHeight: 14 }}>{state}</p>
 
         {/* Last Jarvis utterance */}
