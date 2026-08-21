@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import {
   getLiftSetup, upsertLiftSetup, getTrainingWeek, getCurrentTrainingWeek,
   getTrainingSessions, createTrainingSession, addStrengthSets, getExercises,
-  calcPrescribedWeight, addWorkoutLog,
+  calcPrescribedWeight, addWorkoutLog, getExercisePRs, getRecentSetsForExercise,
   type LiftSetup, type TrainingWeek, type TrainingSession, type StrengthSet, type Exercise,
+  type ExercisePR, type RecentSet,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
 import { ScoreRing } from '@/components/ScoreRing';
@@ -50,8 +51,12 @@ function suggestedSession(sessions: TrainingSession[]): SessionType {
 }
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
-function ExerciseCard({ ex, prescribed, children }: {
-  ex: Exercise; prescribed?: number | null; children?: React.ReactNode;
+function ExerciseCard({ ex, prescribed, pr, lastSet, currentWeight, children }: {
+  ex: Exercise; prescribed?: number | null;
+  pr?: ExercisePR | null;
+  lastSet?: RecentSet | null;
+  currentWeight?: number | null;
+  children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -81,6 +86,41 @@ function ExerciseCard({ ex, prescribed, children }: {
               {ex.equipment}
             </span>
           </div>
+          {/* PR + LAST badges */}
+          {(pr || lastSet) && (
+            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' as const }}>
+              {pr && (
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.04em',
+                  color: 'var(--text-3)', background: 'var(--surface)',
+                  border: '1px solid var(--border-2)',
+                  padding: '0.2rem 0.5rem', borderRadius: 'var(--r-xs)',
+                }}>
+                  BEST: {pr.actual_weight}kg × {pr.reps}
+                </span>
+              )}
+              {lastSet && lastSet.actual_weight != null && lastSet.reps != null && (
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.04em',
+                  color: 'var(--text-4)', background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  padding: '0.2rem 0.5rem', borderRadius: 'var(--r-xs)',
+                }}>
+                  LAST: {lastSet.actual_weight}kg × {lastSet.reps}
+                </span>
+              )}
+              {pr && currentWeight != null && currentWeight > pr.actual_weight && (
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.04em',
+                  color: '#a3e635', fontWeight: 700,
+                  padding: '0.2rem 0.5rem', borderRadius: 'var(--r-xs)',
+                  background: 'rgba(163,230,53,0.1)', border: '1px solid rgba(163,230,53,0.3)',
+                }}>
+                  🏆 NEW PR
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <button onClick={() => setOpen(o => !o)}
           style={{
@@ -177,6 +217,8 @@ export default function PlanPage() {
   const [activeSession, setActiveSession] = useState<SessionType | null>(null);
   const [showSetup, setShowSetup] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exercisePRs, setExercisePRs] = useState<Map<string, ExercisePR>>(new Map());
+  const [recentSets, setRecentSets] = useState<Map<string, RecentSet | null>>(new Map());
 
   const [setupWeights, setSetupWeights] = useState<Record<string, string>>(
     Object.fromEntries(LIFTS.map(l => [l.key, '']))
@@ -194,13 +236,16 @@ export default function PlanPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [planData, liftData, sessionData, exData] = await Promise.all([
+    const exerciseNames = LIFTS.map(l => l.key);
+    const [planData, liftData, sessionData, exData, prData] = await Promise.all([
       getTrainingWeek(week), getLiftSetup(), getTrainingSessions(week), getExercises(),
+      getExercisePRs(exerciseNames),
     ]);
     setPlan(planData);
     setLifts(liftData);
     setSessions(sessionData);
     setExercises(exData);
+    setExercisePRs(prData);
     setLoading(false);
   }, [week]);
 
@@ -219,6 +264,10 @@ export default function PlanPage() {
     setSets(newSets);
     setSessionRPE('');
     setSessionNotes('');
+    // Load most recent set for each lift
+    Promise.all(
+      LIFTS.map(l => getRecentSetsForExercise(l.key, 1).then(rows => [l.key, rows[0] ?? null] as [string, RecentSet | null]))
+    ).then(entries => setRecentSets(new Map(entries)));
   }, [activeSession]);
 
   const hasSetup = lifts.length > 0;
@@ -412,10 +461,18 @@ export default function PlanPage() {
           const ex = getExerciseByName(l.key);
           const pw = getPrescribedWeight(l.key);
           const liftSets = sets[l.key] ?? [];
+          const liftPR = exercisePRs.get(l.key) ?? null;
+          const liftLastSet = recentSets.get(l.key) ?? null;
+          // highest weight entered in today's sets for this lift
+          const todayMaxWeight = liftSets.reduce<number | null>((max, s) => {
+            const w = parseFloat(s.actual_weight);
+            if (isNaN(w)) return max;
+            return max == null ? w : Math.max(max, w);
+          }, null);
           return (
             <div key={l.key}>
               {ex
-                ? <ExerciseCard ex={ex} prescribed={pw}>
+                ? <ExerciseCard ex={ex} prescribed={pw} pr={liftPR} lastSet={liftLastSet} currentWeight={todayMaxWeight}>
                     <div style={{ padding: '0 20px 20px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1.5rem 1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.35rem' }}>
                         <span />
