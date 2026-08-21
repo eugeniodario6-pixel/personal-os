@@ -12,7 +12,7 @@ import {
 import { ScoreRing } from '@/components/ScoreRing';
 import { haptic } from '@/lib/haptic';
 import { toast } from '@/components/Toast';
-import { scoreFoodQuality, qualityLabel } from '@/lib/foodQuality';
+import { scoreFoodQuality, qualityLabel, type FoodQualityBreakdown } from '@/lib/foodQuality';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface MealLogWithFood extends MealLog { food: FoodItem | null; }
@@ -107,48 +107,118 @@ function MacroChart({ logs, profile }: { logs: MealLogWithFood[]; profile: Profi
   );
 }
 
+// ─── Mini score bar ──────────────────────────────────────────────────────────
+function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = Math.min(100, (value / max) * 100);
+  return (
+    <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+      <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 0.4s ease' }} />
+    </div>
+  );
+}
+
+// ─── Quality breakdown panel ──────────────────────────────────────────────────
+function QualityBreakdown({ breakdown }: { breakdown: FoodQualityBreakdown }) {
+  const { proteinDensityScore, macroBalanceScore, wholeFoodScore, primaryDriver } = breakdown;
+  const accentColor = '#DAFF01';
+  const dimColor = 'rgba(255,255,255,0.35)';
+
+  const rows = [
+    { label: 'Protein density', value: proteinDensityScore, max: 40 },
+    { label: 'Macro balance',   value: macroBalanceScore,   max: 30 },
+    { label: 'Food type',       value: wholeFoodScore,      max: 30,
+      suffix: wholeFoodScore === 30 ? '— Whole food ✓' : wholeFoodScore === 0 ? '— Processed ✗' : '— Neutral' },
+  ];
+
+  return (
+    <div style={{
+      margin: '8px 0 4px',
+      padding: '10px 12px',
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: 6,
+    }}>
+      {rows.map(row => {
+        const barColor = row.value / row.max >= 0.75 ? accentColor : row.value / row.max >= 0.4 ? dimColor : 'rgba(255,80,80,0.7)';
+        return (
+          <div key={row.label} style={{ marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+              <span style={{ fontSize: '0.5rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', width: 90, flexShrink: 0 }}>
+                {row.label.toUpperCase()}
+              </span>
+              <MiniBar value={row.value} max={row.max} color={barColor} />
+              <span style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: barColor, fontWeight: 600, flexShrink: 0, marginLeft: 4 }}>
+                {row.value}/{row.max}
+              </span>
+              {'suffix' in row && row.suffix && (
+                <span style={{ fontSize: '0.48rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{row.suffix}</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      <p style={{ margin: '6px 0 0', fontSize: '0.55rem', color: 'var(--text-4)', fontFamily: 'var(--font-mono)', letterSpacing: '0.02em', fontStyle: 'italic' }}>
+        {primaryDriver}
+      </p>
+    </div>
+  );
+}
+
 // ─── Log entry row ────────────────────────────────────────────────────────────
-function LogEntry({ log, onDelete }: { log: MealLogWithFood; onDelete: () => void }) {
+function LogEntry({ log, onDelete, expanded, onToggleExpand }: {
+  log: MealLogWithFood;
+  onDelete: () => void;
+  expanded: boolean;
+  onToggleExpand: () => void;
+}) {
   if (!log.food) return null;
   const r = log.quantity / log.food.serving_size;
   const cal = Math.round(log.food.calories * r);
   const prot = Math.round(log.food.protein * r * 10) / 10;
-  const score = scoreFoodQuality(log.food);
-  const { label: qLabel, color: qColor } = qualityLabel(score);
+  const breakdown = scoreFoodQuality(log.food);
+  const { label: qLabel, color: qColor } = qualityLabel(breakdown.score);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-2)', letterSpacing: '-0.011em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {log.food.name}
+    <div style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-2)', letterSpacing: '-0.011em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {log.food.name}
+            </p>
+            <button
+              onClick={() => { haptic('light'); onToggleExpand(); }}
+              style={{
+                flexShrink: 0,
+                fontSize: '0.5rem',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                fontFamily: 'var(--font-mono)',
+                color: qColor,
+                background: expanded ? `rgba(218,255,1,0.08)` : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${qColor}`,
+                borderRadius: 3,
+                padding: '1px 4px',
+                lineHeight: 1.6,
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {qLabel.toUpperCase()} {expanded ? '▲' : '▼'}
+            </button>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+            {log.quantity}{log.food.serving_unit} · {prot}g PRO
           </p>
-          <span style={{
-            flexShrink: 0,
-            fontSize: '0.5rem',
-            fontWeight: 600,
-            letterSpacing: '0.06em',
-            fontFamily: 'var(--font-mono)',
-            color: qColor,
-            background: 'rgba(255,255,255,0.05)',
-            border: `1px solid ${qColor}`,
-            borderRadius: 3,
-            padding: '1px 4px',
-            lineHeight: 1.6,
-          }}>
-            {qLabel.toUpperCase()}
-          </span>
         </div>
-        <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
-          {log.quantity}{log.food.serving_unit} · {prot}g PRO
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{cal}</span>
+          <button onClick={() => { haptic('light'); onDelete(); }} style={{
+            background: 'none', border: 'none', color: 'var(--text-5)', cursor: 'pointer',
+            fontSize: 14, padding: '4px', lineHeight: 1,
+          }}>✕</button>
+        </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{cal}</span>
-        <button onClick={() => { haptic('light'); onDelete(); }} style={{
-          background: 'none', border: 'none', color: 'var(--text-5)', cursor: 'pointer',
-          fontSize: 14, padding: '4px', lineHeight: 1,
-        }}>✕</button>
-      </div>
+      {expanded && <QualityBreakdown breakdown={breakdown} />}
     </div>
   );
 }
@@ -275,6 +345,7 @@ function NutritionContent() {
   const [profile, setProfile]         = useState<Profile | null>(null);
   const [selectedFood, setSelectedFood] = useState<FoodResult | FoodItem | null>(null);
   const [mode, setMode]               = useState<'idle' | 'recents' | 'search'>('idle');
+  const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
   // Search
   const [query, setQuery]       = useState('');
@@ -340,15 +411,22 @@ function NutritionContent() {
   // Daily food quality score (weighted avg by calories)
   const logsWithFood = logs.filter(l => l.food);
   let dailyQualityScore = 0;
+  let weakestLink: { name: string; score: number } | null = null;
   if (logsWithFood.length > 0) {
     let totalWeightedScore = 0;
     let totalCals = 0;
+    let lowestScore = Infinity;
     for (const l of logsWithFood) {
       const food = l.food!;
       const r = l.quantity / food.serving_size;
       const cal = food.calories * r;
-      totalWeightedScore += scoreFoodQuality(food) * Math.max(cal, 1);
+      const breakdown = scoreFoodQuality(food);
+      totalWeightedScore += breakdown.score * Math.max(cal, 1);
       totalCals += Math.max(cal, 1);
+      if (breakdown.score < lowestScore) {
+        lowestScore = breakdown.score;
+        weakestLink = { name: food.name, score: breakdown.score };
+      }
     }
     dailyQualityScore = Math.round(totalWeightedScore / totalCals);
   }
@@ -416,9 +494,9 @@ function NutritionContent() {
           boxShadow: 'var(--ring)',
         }}>
           {/* Quality score */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-            <span style={{ fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>QUALITY</span>
-            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: qualityColor, fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>QUALITY</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: qualityColor, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
               {dailyQualityScore}<span style={{ fontSize: '0.55rem', color: 'var(--text-5)', fontWeight: 400 }}>/100</span>
             </span>
             <span style={{
@@ -430,9 +508,18 @@ function NutritionContent() {
               borderRadius: 3,
               padding: '1px 5px',
               lineHeight: 1.6,
+              flexShrink: 0,
             }}>
               {qualityLabel(dailyQualityScore).label.toUpperCase()}
             </span>
+            {weakestLink && weakestLink.score < dailyQualityScore && (
+              <span style={{
+                fontSize: '0.45rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)',
+                letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                · ⚠️ {weakestLink.name.split(' ').slice(0,3).join(' ')} ({weakestLink.score}/100)
+              </span>
+            )}
           </div>
           {/* Eating window */}
           {eatingWindow && (
@@ -560,11 +647,24 @@ function NutritionContent() {
               {mealLogs.length > 0 ? (
                 <div style={{ background: 'var(--surface)', borderRadius: 'var(--r)', padding: '0 16px', boxShadow: 'var(--ring)' }}>
                   {mealLogs.map(log => (
-                    <LogEntry key={log.id} log={log} onDelete={async () => {
-                      await deleteMealLog(log.id);
-                      toast('Removed', 'info');
-                      await reloadAndScore();
-                    }} />
+                    <LogEntry
+                      key={log.id}
+                      log={log}
+                      expanded={expandedLogs.has(log.id)}
+                      onToggleExpand={() => {
+                        setExpandedLogs(prev => {
+                          const next = new Set(prev);
+                          if (next.has(log.id)) next.delete(log.id);
+                          else next.add(log.id);
+                          return next;
+                        });
+                      }}
+                      onDelete={async () => {
+                        await deleteMealLog(log.id);
+                        toast('Removed', 'info');
+                        await reloadAndScore();
+                      }}
+                    />
                   ))}
                 </div>
               ) : (

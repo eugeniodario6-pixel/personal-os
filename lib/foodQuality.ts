@@ -1,6 +1,14 @@
 // Food quality scoring for Personal OS
 // Score 0-100 based on food characteristics
 
+export interface FoodQualityBreakdown {
+  score: number;
+  proteinDensityScore: number; // 0-40
+  macroBalanceScore: number;   // 0-30
+  wholeFoodScore: number;      // 0-30
+  primaryDriver: string;       // e.g. "Low protein density" | "High fat ratio" | "Whole food" | "Processed ingredients"
+}
+
 export function scoreFoodQuality(food: {
   name: string;
   calories: number;
@@ -8,18 +16,20 @@ export function scoreFoodQuality(food: {
   carbs: number;
   fat: number;
   serving_size: number;
-}): number {
+}): FoodQualityBreakdown {
   // Protein density score (0-40): protein / calories * 400, capped at 40
-  const proteinDensity = Math.min(40, (food.protein / Math.max(food.calories, 1)) * 400);
+  const proteinDensityScore = Math.round(Math.min(40, (food.protein / Math.max(food.calories, 1)) * 400));
 
   // Macro balance score (0-30): penalise if >50% cals from fat, or >60% from carbs with <15% from protein
   const calFromProtein = (food.protein * 4) / Math.max(food.calories, 1);
   const calFromFat = (food.fat * 9) / Math.max(food.calories, 1);
   const calFromCarbs = (food.carbs * 4) / Math.max(food.calories, 1);
-  let macroScore = 30;
-  if (calFromFat > 0.5) macroScore -= 15;
-  if (calFromCarbs > 0.6 && calFromProtein < 0.15) macroScore -= 20;
-  macroScore = Math.max(0, macroScore);
+  let macroBalanceScore = 30;
+  let highFat = false;
+  let highCarbLowPro = false;
+  if (calFromFat > 0.5) { macroBalanceScore -= 15; highFat = true; }
+  if (calFromCarbs > 0.6 && calFromProtein < 0.15) { macroBalanceScore -= 20; highCarbLowPro = true; }
+  macroBalanceScore = Math.max(0, macroBalanceScore);
 
   // Whole food indicator (0-30): check name for processed food keywords
   const processedKeywords = [
@@ -32,11 +42,32 @@ export function scoreFoodQuality(food: {
     'sweet potato', 'avocado',
   ];
   const nameLower = food.name.toLowerCase();
-  let wholeScore = 15; // neutral
-  if (wholeKeywords.some(k => nameLower.includes(k))) wholeScore = 30;
-  if (processedKeywords.some(k => nameLower.includes(k))) wholeScore = 0;
+  let wholeFoodScore = 15; // neutral
+  let isProcessed = false;
+  let isWhole = false;
+  if (wholeKeywords.some(k => nameLower.includes(k))) { wholeFoodScore = 30; isWhole = true; }
+  if (processedKeywords.some(k => nameLower.includes(k))) { wholeFoodScore = 0; isProcessed = true; }
 
-  return Math.round(proteinDensity + macroScore + wholeScore);
+  const score = Math.round(proteinDensityScore + macroBalanceScore + wholeFoodScore);
+
+  // Determine primary driver (biggest opportunity or strength)
+  let primaryDriver: string;
+  const gaps = [
+    { label: 'Low protein density', loss: 40 - proteinDensityScore },
+    { label: 'High fat ratio', loss: highFat ? 15 : 0 },
+    { label: 'High carbs, low protein', loss: highCarbLowPro ? 20 : 0 },
+    { label: 'Processed ingredients', loss: isProcessed ? 30 : 0 },
+  ].sort((a, b) => b.loss - a.loss);
+
+  if (isWhole && score >= 75) {
+    primaryDriver = 'Whole food — great choice';
+  } else if (gaps[0].loss > 0) {
+    primaryDriver = `Dragged down by ${gaps[0].label.toLowerCase()}`;
+  } else {
+    primaryDriver = 'Well-balanced food';
+  }
+
+  return { score, proteinDensityScore, macroBalanceScore, wholeFoodScore, primaryDriver };
 }
 
 export function qualityLabel(score: number): { label: string; color: string } {
