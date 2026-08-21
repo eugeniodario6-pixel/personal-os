@@ -295,21 +295,38 @@ export default function JarvisPage() {
       const decoder = new TextDecoder();
       let assistantText = '';
 
+      // Buffer for splitting on newlines to catch TOOL: markers
+      let buffer = '';
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-
-          // Detect tool call results (JSON objects in stream)
-          if (chunk.trimStart().startsWith('{') && chunk.includes('"action"')) {
-            try {
-              const tc = JSON.parse(chunk.trim());
-              if (tc.action) { executeAction(tc); continue; }
-            } catch { /* not JSON, append to text */ }
+          if (done) {
+            // Flush remaining buffer
+            if (buffer) {
+              const lines = buffer.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('TOOL:')) {
+                  try { executeAction(JSON.parse(line.slice(5))); } catch { /* ignore */ }
+                } else {
+                  assistantText += line;
+                }
+              }
+            }
+            break;
           }
-
-          assistantText += chunk;
+          buffer += decoder.decode(value, { stream: true });
+          // Process complete lines — keep last partial line in buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+          for (const line of lines) {
+            if (line.startsWith('TOOL:')) {
+              try { executeAction(JSON.parse(line.slice(5))); } catch { /* ignore */ }
+            } else {
+              assistantText += (assistantText && line ? '\n' : '') + line;
+            }
+          }
+          // Update displayed text as it streams
+          setLastJarvisText(assistantText.trim());
         }
       }
 

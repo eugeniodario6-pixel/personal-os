@@ -33,13 +33,13 @@ WRITE ACTIONS — execute immediately when the user tells you something happened
 FOOD LOGGING:
 - When user mentions a food, use your knowledge to estimate macros per 100g or per serving
 - Common estimates: steak 100g = 250kcal, 26g protein, 0g carbs, 17g fat
-- Chicken breast 100g = 165kcal, 31g protein, 0g carbs, 3.6g fat  
+- Chicken breast 100g = 165kcal, 31g protein, 0g carbs, 3.6g fat
 - Rice 100g cooked = 130kcal, 2.7g protein, 28g carbs, 0.3g fat
 - Eggs 1 large = 70kcal, 6g protein, 0.5g carbs, 5g fat
 - Scale macros by quantity given. If no quantity given, ask.
 - ALWAYS confirm what you logged briefly after doing it.
 
-After ANY write action, confirm in 1 short sentence then move on. Don't ask for confirmation — just do it and tell him it's done.`;
+After ANY write action, confirm in 1 short sentence then move on.`;
 
 function buildContext(data: Record<string, unknown>): string {
   const lines: string[] = ['=== TODAY\'S SNAPSHOT ==='];
@@ -105,16 +105,27 @@ export async function POST(req: Request) {
   const contextBlock = context ? buildContext(context) : '';
   const systemWithContext = contextBlock ? `${SYSTEM}\n\n${contextBlock}` : SYSTEM;
 
+  // Collect tool results to inject into the stream after text
+  const toolResults: Record<string, unknown>[] = [];
+
   const result = streamText({
     model: anthropic('claude-haiku-4-5'),
     system: systemWithContext,
     messages,
+    onStepFinish: ({ toolResults: stepToolResults }) => {
+      if (stepToolResults) {
+        for (const tr of stepToolResults) {
+          if (tr.output && typeof tr.output === 'object' && (tr.output as Record<string, unknown>).action) {
+            toolResults.push(tr.output as Record<string, unknown>);
+          }
+        }
+      }
+    },
     tools: {
-      // ── Nutrition ──────────────────────────────────────────────────────────
       logFood: {
         description: 'Log a food item with estimated macros',
         inputSchema: z.object({
-          food_name: z.string().describe('Name of the food'),
+          food_name: z.string(),
           meal_type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
           quantity_g: z.number().describe('Quantity in grams'),
           calories: z.number().describe('Total calories for this portion'),
@@ -122,30 +133,18 @@ export async function POST(req: Request) {
           carbs_g: z.number().describe('Total carbs in grams'),
           fat_g: z.number().describe('Total fat in grams'),
         }),
-        execute: async (input: {
-          food_name: string; meal_type: string; quantity_g: number;
-          calories: number; protein_g: number; carbs_g: number; fat_g: number;
-        }) => ({ action: 'logFood', ...input }),
+        execute: async (input: { food_name: string; meal_type: string; quantity_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number }) =>
+          ({ action: 'logFood', ...input }),
       },
-
-      // ── Weight ─────────────────────────────────────────────────────────────
       logWeight: {
         description: 'Log body weight',
-        inputSchema: z.object({
-          weight_kg: z.number(),
-          note: z.string().optional(),
-        }),
+        inputSchema: z.object({ weight_kg: z.number(), note: z.string().optional() }),
         execute: async (input: { weight_kg: number; note?: string }) =>
           ({ action: 'logWeight', ...input }),
       },
-
-      // ── Habits ─────────────────────────────────────────────────────────────
       completeHabit: {
         description: 'Mark a habit complete for today',
-        inputSchema: z.object({
-          habit_id: z.number(),
-          habit_name: z.string(),
-        }),
+        inputSchema: z.object({ habit_id: z.number(), habit_name: z.string() }),
         execute: async (input: { habit_id: number; habit_name: string }) =>
           ({ action: 'completeHabit', ...input }),
       },
@@ -155,7 +154,7 @@ export async function POST(req: Request) {
         execute: async (input: { name: string }) => ({ action: 'createHabit', ...input }),
       },
       deleteHabit: {
-        description: 'Delete (deactivate) a habit',
+        description: 'Delete a habit',
         inputSchema: z.object({ habit_id: z.number(), habit_name: z.string() }),
         execute: async (input: { habit_id: number; habit_name: string }) =>
           ({ action: 'deleteHabit', ...input }),
@@ -166,8 +165,6 @@ export async function POST(req: Request) {
         execute: async (input: { habit_id: number; old_name: string; new_name: string }) =>
           ({ action: 'renameHabit', ...input }),
       },
-
-      // ── Training ───────────────────────────────────────────────────────────
       logWorkout: {
         description: 'Log a general workout session',
         inputSchema: z.object({
@@ -181,22 +178,20 @@ export async function POST(req: Request) {
       logStrengthSession: {
         description: 'Log a strength training session with sets',
         inputSchema: z.object({
-          exercise: z.string().describe('Exercise name e.g. Squat, Bench Press'),
-          sets: z.number().describe('Number of sets'),
-          reps: z.number().describe('Reps per set'),
-          weight_kg: z.number().describe('Weight used in kg'),
-          week: z.number().describe('Training week number'),
+          exercise: z.string(),
+          sets: z.number(),
+          reps: z.number(),
+          weight_kg: z.number(),
+          week: z.number(),
         }),
         execute: async (input: { exercise: string; sets: number; reps: number; weight_kg: number; week: number }) =>
           ({ action: 'logStrengthSession', ...input }),
       },
-
-      // ── Meditation ─────────────────────────────────────────────────────────
       logMeditation: {
         description: 'Log a meditation session',
         inputSchema: z.object({
-          duration_min: z.number().describe('Duration in minutes'),
-          session_name: z.string().optional().describe('Session name if known'),
+          duration_min: z.number(),
+          session_name: z.string().optional(),
         }),
         execute: async (input: { duration_min: number; session_name?: string }) =>
           ({ action: 'logMeditation', ...input }),
@@ -205,5 +200,26 @@ export async function POST(req: Request) {
     stopWhen: stepCountIs(5),
   });
 
-  return result.toTextStreamResponse();
+  // Build a custom stream: text chunks first, then TOOL: lines at the end
+  const textStream = result.textStream;
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      // Stream text
+      for await (const chunk of textStream) {
+        controller.enqueue(encoder.encode(chunk));
+      }
+      // After text is done, flush tool results as prefixed lines
+      // Wait for onStepFinish to have fired (result is fully consumed above)
+      for (const tr of toolResults) {
+        controller.enqueue(encoder.encode(`\nTOOL:${JSON.stringify(tr)}`));
+      }
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
 }
