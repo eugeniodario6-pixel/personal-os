@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   getHabits, getHabitStreaks, getDailyScores, getWeightHistory,
-  getWorkoutHistory, getMeditationSessions,
-  type DailyScore, type WeightEntry,
+  getWorkoutHistory, getMeditationSessions, getLiftHistory,
+  type DailyScore, type WeightEntry, type LiftHistory,
 } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
@@ -205,20 +205,29 @@ export default function ProgressPage() {
   // Meditation
   const [medDays, setMedDays] = useState<MedDay[]>([]);
 
+  // Strength / lift history
+  const [liftHistory, setLiftHistory] = useState<LiftHistory[]>([]);
+  const [activeLift, setActiveLift] = useState<string>('Back Squat');
+
   const load = useCallback(async () => {
     setLoading(true);
     const days = parseInt(period);
     const dates = isoRange(days);
 
     try {
+      const MAIN_LIFTS = ['Back Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row'];
+
       const [
-        scoresData, habitsData, weightsData, workoutsData,
+        scoresData, habitsData, weightsData, workoutsData, liftData,
       ] = await Promise.all([
         getDailyScores(days),
         getHabits(),
         getWeightHistory(days),
         getWorkoutHistory(days),
+        getLiftHistory(MAIN_LIFTS, Math.ceil(days / 7) + 1),
       ]);
+
+      setLiftHistory(liftData);
 
       // ── Scores / Nutrition
       setScores(scoresData);
@@ -322,6 +331,36 @@ export default function ProgressPage() {
   const medDaysCount = medDays.filter(d => d.sessions > 0).length;
   const medConsistency = Math.round((medDaysCount / days) * 100);
 
+  // ── Derived: Strength ─────────────────────────────────────────────────────
+  const MAIN_LIFTS = ['Back Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row'];
+  const LIFT_LABELS: Record<string, string> = {
+    'Back Squat': 'Squat', 'Bench Press': 'Bench', 'Deadlift': 'Deadlift',
+    'Overhead Press': 'OHP', 'Barbell Row': 'Row',
+  };
+
+  const currentLiftRows = liftHistory.filter(r => r.exercise_name === activeLift);
+  const liftSparkValues = currentLiftRows.map(r => r.best_weight);
+  const currentLiftBest = currentLiftRows.length > 0 ? currentLiftRows[currentLiftRows.length - 1].best_weight : null;
+  const startingLiftWeight = currentLiftRows.length > 0 ? currentLiftRows[0].best_weight : null;
+  const liftImproveKg = currentLiftBest !== null && startingLiftWeight !== null ? Math.round((currentLiftBest - startingLiftWeight) * 10) / 10 : null;
+  const liftImprovePct = liftImproveKg !== null && startingLiftWeight !== null && startingLiftWeight > 0 ? Math.round((liftImproveKg / startingLiftWeight) * 100) : null;
+
+  // Weekly volume bars — group by ISO week
+  const weeklyVolumeMap = new Map<string, number>();
+  for (const row of currentLiftRows) {
+    const d = new Date(row.date + 'T00:00:00');
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay() + 1);
+    const wk = weekStart.toISOString().slice(0, 10);
+    weeklyVolumeMap.set(wk, (weeklyVolumeMap.get(wk) ?? 0) + row.volume);
+  }
+  const weeklyVolumeEntries = [...weeklyVolumeMap.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const volumeBarData = weeklyVolumeEntries.map(([wk, vol]) => ({
+    label: new Date(wk + 'T00:00:00').toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+    value: Math.round(vol),
+  }));
+  const maxVolume = volumeBarData.length > 0 ? Math.max(...volumeBarData.map(d => d.value)) : 1;
+
   return (
     <div style={{ minHeight: '100dvh', background: '#000', paddingTop: '4rem', paddingBottom: '9rem' }}>
 
@@ -401,6 +440,55 @@ export default function ProgressPage() {
               <StatRow label="Total time" value={totalMins >= 60 ? `${Math.round(totalMins / 60)}h ${totalMins % 60}m` : `${totalMins}m`} />
               <StatRow label="Frequency" value={`${Math.round((workDays / days) * 7 * 10) / 10}× / wk`} />
             </div>
+          </Card>
+
+          {/* ── STRENGTH ── */}
+          <Card>
+            <SectionLabel icon="▲" title="Strength" value={currentLiftBest ? `${currentLiftBest}kg` : '—'} sub={activeLift} />
+
+            {/* Lift tabs */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
+              {MAIN_LIFTS.map(lift => (
+                <button key={lift} onClick={() => setActiveLift(lift)} style={{
+                  padding: '4px 10px', borderRadius: 99, border: 'none', fontSize: '0.65rem', fontWeight: activeLift === lift ? 700 : 400,
+                  background: activeLift === lift ? LIME : 'rgba(255,255,255,0.06)',
+                  color: activeLift === lift ? '#000' : TEXT3,
+                  cursor: 'pointer', fontFamily: 'var(--font)', letterSpacing: '-0.01em', transition: 'all 0.15s',
+                }}>
+                  {LIFT_LABELS[lift]}
+                </button>
+              ))}
+            </div>
+
+            {/* Best weight sparkline */}
+            {liftSparkValues.length >= 2 ? (
+              <div style={{ marginBottom: 14 }}>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', color: TEXT3, letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>BEST WEIGHT TREND (kg)</p>
+                <Sparkline values={liftSparkValues} color="#FFB86B" height={52} />
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.75rem', color: TEXT3, margin: '0 0 14px' }}>No {activeLift} data in this period. Log a strength session to see your progress.</p>
+            )}
+
+            {/* Key stats */}
+            <div style={{ marginBottom: 14 }}>
+              <StatRow label="Current best" value={currentLiftBest ? `${currentLiftBest}kg` : '—'} color={LIME} />
+              <StatRow label="Starting weight" value={startingLiftWeight ? `${startingLiftWeight}kg` : '—'} />
+              <StatRow
+                label="Total improvement"
+                value={liftImproveKg !== null ? `${liftImproveKg > 0 ? '+' : ''}${liftImproveKg}kg${liftImprovePct !== null ? ` (${liftImprovePct > 0 ? '+' : ''}${liftImprovePct}%)` : ''}` : '—'}
+                color={liftImproveKg !== null && liftImproveKg > 0 ? LIME : liftImproveKg !== null && liftImproveKg < 0 ? '#FF8B8B' : '#fff'}
+              />
+              <StatRow label="Sessions logged" value={currentLiftRows.length} />
+            </div>
+
+            {/* Weekly volume bar chart */}
+            {volumeBarData.length > 0 && (
+              <div>
+                <p style={{ margin: '0 0 8px', fontSize: '0.55rem', color: TEXT3, letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>WEEKLY VOLUME (kg × reps)</p>
+                <BarChart data={volumeBarData} max={maxVolume} color="#8B8BFF" height={56} period="30" unit="kg" />
+              </div>
+            )}
           </Card>
 
           {/* ── MIND ── */}
