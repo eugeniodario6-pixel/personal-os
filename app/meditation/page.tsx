@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { getMeditationSessions, getMeditationLogs, todayISO, type MeditationSession } from '@/lib/db';
 
 const CATS = ['All', 'Breathing', 'Body Scan', 'Sleep', 'Stress Release', 'Focus'];
+const DURATIONS = ['All', '5 min', '10 min', '20 min+'] as const;
+type DurationFilter = typeof DURATIONS[number];
 
 const CAT_ICONS: Record<string, string> = {
   'Breathing':      '◌',
@@ -20,6 +22,7 @@ export default function MeditationPage() {
   const [sessions, setSessions]   = useState<MeditationSession[]>([]);
   const [loggedIds, setLoggedIds] = useState<Set<number>>(new Set());
   const [cat, setCat]             = useState('All');
+  const [dur, setDur]             = useState<DurationFilter>('All');
   const [suggested, setSuggested] = useState<MeditationSession | null>(null);
   const [loading, setLoading]     = useState(true);
 
@@ -35,7 +38,16 @@ export default function MeditationPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = cat === 'All' ? sessions : sessions.filter(s => s.category.toLowerCase() === cat.toLowerCase());
+  const durationMatch = (s: MeditationSession): boolean => {
+    if (dur === 'All') return true;
+    if (dur === '5 min') return s.duration_min === 5;
+    if (dur === '10 min') return s.duration_min === 10;
+    if (dur === '20 min+') return s.duration_min >= 20;
+    return true;
+  };
+  const filtered = sessions
+    .filter(s => cat === 'All' || s.category.toLowerCase() === cat.toLowerCase())
+    .filter(durationMatch);
   const doneCount = loggedIds.size;
   const totalCount = sessions.length;
 
@@ -82,6 +94,28 @@ export default function MeditationPage() {
           </div>
         </div>
       )}
+
+      {/* ── Duration filter tabs ── */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '0 20px 10px', scrollbarWidth: 'none' }}>
+        {DURATIONS.map(d => (
+          <button
+            key={d}
+            onClick={() => setDur(d)}
+            style={{
+              flex: '0 0 auto', padding: '6px 13px', borderRadius: 9999,
+              background: dur === d ? 'rgba(218,255,1,0.12)' : 'transparent',
+              color: dur === d ? '#DAFF01' : 'rgba(255,255,255,0.32)',
+              border: `1px solid ${dur === d ? 'rgba(218,255,1,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              fontSize: '0.72rem', fontWeight: dur === d ? 600 : 400,
+              cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+              letterSpacing: '-0.01em', fontFamily: 'var(--font)',
+              transition: 'all 0.15s',
+            }}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
 
       {/* ── Category pills ── */}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '0 20px 16px', scrollbarWidth: 'none' }}>

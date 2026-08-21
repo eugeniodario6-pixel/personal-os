@@ -12,6 +12,7 @@ import {
 import { ScoreRing } from '@/components/ScoreRing';
 import { haptic } from '@/lib/haptic';
 import { toast } from '@/components/Toast';
+import { scoreFoodQuality, qualityLabel } from '@/lib/foodQuality';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface MealLogWithFood extends MealLog { food: FoodItem | null; }
@@ -112,12 +113,31 @@ function LogEntry({ log, onDelete }: { log: MealLogWithFood; onDelete: () => voi
   const r = log.quantity / log.food.serving_size;
   const cal = Math.round(log.food.calories * r);
   const prot = Math.round(log.food.protein * r * 10) / 10;
+  const score = scoreFoodQuality(log.food);
+  const { label: qLabel, color: qColor } = qualityLabel(score);
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: '0 0 2px', fontSize: '0.875rem', color: 'var(--text-2)', letterSpacing: '-0.011em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {log.food.name}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-2)', letterSpacing: '-0.011em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {log.food.name}
+          </p>
+          <span style={{
+            flexShrink: 0,
+            fontSize: '0.5rem',
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            fontFamily: 'var(--font-mono)',
+            color: qColor,
+            background: 'rgba(255,255,255,0.05)',
+            border: `1px solid ${qColor}`,
+            borderRadius: 3,
+            padding: '1px 4px',
+            lineHeight: 1.6,
+          }}>
+            {qLabel.toUpperCase()}
+          </span>
+        </div>
         <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
           {log.quantity}{log.food.serving_unit} · {prot}g PRO
         </p>
@@ -317,6 +337,34 @@ function NutritionContent() {
   const remaining = Math.max(target - Math.round(totals.calories), 0);
   const dateStr = new Date().toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
 
+  // Daily food quality score (weighted avg by calories)
+  const logsWithFood = logs.filter(l => l.food);
+  let dailyQualityScore = 0;
+  if (logsWithFood.length > 0) {
+    let totalWeightedScore = 0;
+    let totalCals = 0;
+    for (const l of logsWithFood) {
+      const food = l.food!;
+      const r = l.quantity / food.serving_size;
+      const cal = food.calories * r;
+      totalWeightedScore += scoreFoodQuality(food) * Math.max(cal, 1);
+      totalCals += Math.max(cal, 1);
+    }
+    dailyQualityScore = Math.round(totalWeightedScore / totalCals);
+  }
+  const { color: qualityColor } = qualityLabel(dailyQualityScore);
+
+  // Eating window: first and last logged_at times
+  const logsWithTime = logs.filter(l => l.logged_at);
+  let eatingWindow = '';
+  if (logsWithTime.length > 0) {
+    const times = logsWithTime.map(l => new Date(l.logged_at).getTime()).sort((a, b) => a - b);
+    const fmt = (ts: number) => new Date(ts).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const first = fmt(times[0]);
+    const last = fmt(times[times.length - 1]);
+    eatingWindow = times.length > 1 ? `${first} → ${last}` : first;
+  }
+
   // Score
   const calorieTarget = profile?.calorie_target ?? 2000;
   const proteinTarget = profile?.macro_targets?.protein ?? 150;
@@ -356,6 +404,45 @@ function NutritionContent() {
           </div>
         </div>
       </div>
+
+      {/* ── Quality + Eating window strip ── */}
+      {logsWithFood.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 16,
+          margin: '10px 20px 0',
+          padding: '10px 16px',
+          background: 'var(--surface)',
+          borderRadius: 'var(--r)',
+          boxShadow: 'var(--ring)',
+        }}>
+          {/* Quality score */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+            <span style={{ fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>QUALITY</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: qualityColor, fontFamily: 'var(--font-mono)' }}>
+              {dailyQualityScore}<span style={{ fontSize: '0.55rem', color: 'var(--text-5)', fontWeight: 400 }}>/100</span>
+            </span>
+            <span style={{
+              fontSize: '0.5rem', fontWeight: 600, letterSpacing: '0.06em',
+              fontFamily: 'var(--font-mono)',
+              color: qualityColor,
+              background: 'rgba(255,255,255,0.05)',
+              border: `1px solid ${qualityColor}`,
+              borderRadius: 3,
+              padding: '1px 5px',
+              lineHeight: 1.6,
+            }}>
+              {qualityLabel(dailyQualityScore).label.toUpperCase()}
+            </span>
+          </div>
+          {/* Eating window */}
+          {eatingWindow && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <span style={{ fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>WINDOW</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.01em' }}>{eatingWindow}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Macro chart ── */}
       <MacroChart logs={logs} profile={profile} />

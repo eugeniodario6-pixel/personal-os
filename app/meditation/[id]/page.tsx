@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getMeditationSession, addMeditationLog, todayISO, type MeditationSession } from '@/lib/db';
+import { getMeditationSession, addMeditationLog, logMood, todayISO, type MeditationSession } from '@/lib/db';
 
 // ─── iOS audio unlock ──────────────────────────────────────────────────────────
 let _unlockedAudio: HTMLAudioElement | null = null;
@@ -75,6 +75,13 @@ export default function MeditationPlayerPage() {
   const intervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const cancelledRef  = useRef(false);
+
+  // ── Mood check-in state ───────────────────────────────────────────────────
+  const [moodSelected, setMoodSelected]   = useState<number | null>(null);
+  const [stressSelected, setStressSelected] = useState<number | null>(null);
+  const [moodLogged, setMoodLogged]       = useState(false);
+  const [moodLogging, setMoodLogging]     = useState(false);
+  const [moodSkipped, setMoodSkipped]     = useState(false);
 
   useEffect(() => {
     getMeditationSession(parseInt(id)).then(s => setSession(s ?? null));
@@ -271,14 +278,93 @@ export default function MeditationPlayerPage() {
             Stop Session
           </button>
         )}
-        {phase === 'done' && (
-          <button
-            onClick={() => router.push('/meditation')}
-            style={{ width: '100%', padding: '17px', background: '#fff', color: '#000', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)' }}
-          >
-            Done →
-          </button>
-        )}
+        {phase === 'done' && (() => {
+          const canDone = moodLogged || moodSkipped;
+          const MOODS = ['😔','😕','😐','🙂','😊'];
+          return (
+            <>
+              {/* ── Mood check-in ── */}
+              {!moodLogged && !moodSkipped && (
+                <div style={{ background: '#141616', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>How do you feel?</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    {MOODS.map((emoji, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setMoodSelected(i + 1)}
+                        style={{
+                          fontSize: 28, background: 'none', border: '2px solid',
+                          borderColor: moodSelected === i + 1 ? '#DAFF01' : 'rgba(255,255,255,0.08)',
+                          borderRadius: 12, width: 52, height: 52, cursor: 'pointer',
+                          transition: 'border-color 0.15s, transform 0.1s',
+                          transform: moodSelected === i + 1 ? 'scale(1.15)' : 'scale(1)',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >{emoji}</button>
+                    ))}
+                  </div>
+
+                  {moodSelected !== null && (
+                    <>
+                      <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>Stress level? <span style={{ color: 'rgba(255,255,255,0.18)' }}>(optional)</span></p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        {MOODS.map((emoji, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setStressSelected(stressSelected === i + 1 ? null : i + 1)}
+                            style={{
+                              fontSize: 28, background: 'none', border: '2px solid',
+                              borderColor: stressSelected === i + 1 ? '#DAFF01' : 'rgba(255,255,255,0.08)',
+                              borderRadius: 12, width: 52, height: 52, cursor: 'pointer',
+                              transition: 'border-color 0.15s, transform 0.1s',
+                              transform: stressSelected === i + 1 ? 'scale(1.15)' : 'scale(1)',
+                              WebkitTapHighlightColor: 'transparent',
+                            }}
+                          >{emoji}</button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (moodLogging || moodSelected === null) return;
+                          setMoodLogging(true);
+                          await logMood(moodSelected, stressSelected ?? null, 'post_meditation');
+                          setMoodLogged(true);
+                          setMoodLogging(false);
+                        }}
+                        style={{
+                          padding: '12px', background: '#DAFF01', color: '#000',
+                          border: 'none', borderRadius: 99, fontSize: '0.85rem',
+                          fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em',
+                          WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)',
+                          opacity: moodLogging ? 0.6 : 1,
+                        }}
+                      >{moodLogging ? 'Saving…' : 'Log mood'}</button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => setMoodSkipped(true)}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', cursor: 'pointer', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
+                  >Skip</button>
+                </div>
+              )}
+
+              {moodLogged && (
+                <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(218,255,1,0.85)', letterSpacing: '-0.01em' }}>Logged ✓</p>
+                </div>
+              )}
+
+              <button
+                onClick={() => router.push('/meditation')}
+                disabled={!canDone}
+                style={{ width: '100%', padding: '17px', background: canDone ? '#fff' : 'rgba(255,255,255,0.15)', color: canDone ? '#000' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 700, cursor: canDone ? 'pointer' : 'default', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
+              >
+                Done →
+              </button>
+            </>
+          );
+        })()}
 
         {/* Instructions — ready state only */}
         {phase === 'ready' && session.instructions && (

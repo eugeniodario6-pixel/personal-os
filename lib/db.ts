@@ -112,6 +112,16 @@ export interface MeditationLog {
   logged_at: string;
 }
 
+export interface MoodEntry {
+  id: number;
+  user_id: string;
+  date: string;
+  context: string;
+  mood: number;
+  stress: number | null;
+  logged_at: string;
+}
+
 export interface Insight {
   id: number;
   user_id: string;
@@ -436,6 +446,32 @@ export async function getHabitStreak(habitId: number): Promise<number> {
 
 // Batch version — fetches completions for all habits in ONE query instead of N.
 // Returns a map of habitId → streak count.
+// Batch fetch habit completions for a date range across all habit IDs.
+// Returns a map of "habitId|date" → true for completed records.
+export async function getHabitCompletionsRange(
+  habitIds: number[],
+  fromDate: string,
+  toDate: string
+): Promise<Map<string, boolean>> {
+  if (habitIds.length === 0) return new Map();
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('habit_completion')
+    .select('habit_id, date, completed_at')
+    .eq('user_id', userId)
+    .in('habit_id', habitIds)
+    .gte('date', fromDate)
+    .lte('date', toDate);
+
+  const result = new Map<string, boolean>();
+  for (const row of data ?? []) {
+    if (row.completed_at) {
+      result.set(`${row.habit_id}|${row.date}`, true);
+    }
+  }
+  return result;
+}
+
 export async function getHabitStreaks(habitIds: number[]): Promise<Map<number, number>> {
   if (habitIds.length === 0) return new Map();
   const userId = await getUserId();
@@ -503,6 +539,33 @@ export async function getMeditationLogs(date: string): Promise<MeditationLog[]> 
 export async function addMeditationLog(entry: Omit<MeditationLog, 'id' | 'user_id'>): Promise<void> {
   const userId = await getUserId();
   await supabase.from('meditation_log').insert({ ...entry, user_id: userId });
+}
+
+// ── Mood Log ──────────────────────────────────────────────────────────────
+
+export async function logMood(mood: number, stress: number | null, context: string): Promise<void> {
+  const userId = await getUserId();
+  await supabase.from('mood_log').insert({
+    user_id: userId,
+    mood,
+    stress,
+    context,
+    date: todayISO(),
+    logged_at: new Date().toISOString(),
+  });
+}
+
+export async function getMoodLogs(days: number): Promise<MoodEntry[]> {
+  const userId = await getUserId();
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const { data } = await supabase
+    .from('mood_log')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('date', since.toISOString().slice(0, 10))
+    .order('logged_at', { ascending: false });
+  return data ?? [];
 }
 
 // ── Insights ───────────────────────────────────────────────────────────────
@@ -968,6 +1031,143 @@ export async function getWeightHistory(limit = 52): Promise<WeightEntry[]> {
 
 export async function deleteWeightEntry(id: number): Promise<void> {
   await supabase.from('weight_log').delete().eq('id', id);
+}
+
+// ── Lift History ──────────────────────────────────────────────────────────────
+
+export interface LiftHistory {
+  date: string;
+  exercise_name: string;
+  best_weight: number;
+  best_reps: number;
+  volume: number; // sum of actual_weight * reps across all sets
+}
+
+export async function getLiftHistory(
+  exerciseNames: string[],
+  weeks: number
+): Promise<LiftHistory[]> {
+  const userId = await getUserId();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - weeks * 7);
+  const cutoffISO = cutoff.toISOString().slice(0, 10);
+
+  // Join strength_sets → training_sessions, filter by user + date range + exercise names
+  const { data, error } = await supabase
+    .from('strength_sets')
+    .select('exercise_name, actual_weight, reps, training_sessions!inner(user_id, date)')
+    .eq('training_sessions.user_id', userId)
+    .gte('training_sessions.date', cutoffISO)
+    .in('exercise_name', exerciseNames)
+    .not('actual_weight', 'is', null)
+    .not('reps', 'is', null);
+
+  if (error || !data) return [];
+
+  // Group by date + exercise_name
+  const map = new Map<string, { best_weight: number; best_reps: number; volume: number }>();
+  for (const row of data) {
+    const session = row.training_sessions as unknown as { date: string };
+    const key = `${session.date}||${row.exercise_name}`;
+    const weight = row.actual_weight ?? 0;
+    const reps = row.reps ?? 0;
+    const existing = map.get(key);
+    if (existing) {
+      if (weight > existing.best_weight) {
+        existing.best_weight = weight;
+        existing.best_reps = reps;
+      }
+      existing.volume += weight * reps;
+    } else {
+      map.set(key, { best_weight: weight, best_reps: reps, volume: weight * reps });
+    }
+  }
+
+  const results: LiftHistory[] = [];
+  for (const [key, val] of map.entries()) {
+    const [date, exercise_name] = key.split('||');
+    results.push({ date, exercise_name, ...val });
+  }
+  return results.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// ── PR Tracking ───────────────────────────────────────────────────────────────
+
+export interface ExercisePR {
+  exercise_name: string;
+  actual_weight: number;
+  reps: number;
+  volume: number; // actual_weight × reps
+  logged_at: string;
+}
+
+export interface RecentSet {
+  actual_weight: number | null;
+  reps: number | null;
+  logged_at: string;
+  session_id: number;
+}
+
+/**
+ * Returns the best set (highest actual_weight × reps volume) ever logged
+ * for each exercise name in the given list.
+ */
+export async function getExercisePRs(exerciseNames: string[]): Promise<Map<string, ExercisePR>> {
+  if (exerciseNames.length === 0) return new Map();
+  const userId = await getUserId();
+
+  // Fetch all sets for these exercise names via training_sessions join
+  const { data } = await supabase
+    .from('strength_sets')
+    .select('exercise_name, actual_weight, reps, training_sessions!inner(user_id, completed_at)')
+    .in('exercise_name', exerciseNames)
+    .eq('training_sessions.user_id', userId)
+    .not('actual_weight', 'is', null)
+    .not('reps', 'is', null);
+
+  const result = new Map<string, ExercisePR>();
+  for (const row of data ?? []) {
+    const weight = row.actual_weight as number;
+    const reps = row.reps as number;
+    const volume = weight * reps;
+    const session = row.training_sessions as unknown as { completed_at: string };
+    const logged_at = session?.completed_at ?? '';
+    const existing = result.get(row.exercise_name);
+    if (!existing || volume > existing.volume) {
+      result.set(row.exercise_name, {
+        exercise_name: row.exercise_name,
+        actual_weight: weight,
+        reps,
+        volume,
+        logged_at,
+      });
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns the last `limit` sets for an exercise across all sessions (most recent first).
+ */
+export async function getRecentSetsForExercise(exerciseName: string, limit: number): Promise<RecentSet[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('strength_sets')
+    .select('actual_weight, reps, session_id, training_sessions!inner(user_id, completed_at)')
+    .eq('exercise_name', exerciseName)
+    .eq('training_sessions.user_id', userId)
+    .order('session_id', { ascending: false })
+    .limit(limit);
+
+  return (data ?? []).map(row => {
+    const session = row.training_sessions as unknown as { completed_at: string };
+    return {
+      actual_weight: row.actual_weight,
+      reps: row.reps,
+      session_id: row.session_id,
+      logged_at: session?.completed_at ?? '',
+    };
+  });
 }
 
 export async function clearPurchasedGroceries(weekOf?: string): Promise<void> {
