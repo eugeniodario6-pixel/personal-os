@@ -225,13 +225,17 @@ export default function JarvisPage() {
             logged_at: new Date().toISOString(),
           });
           // Also write to training_sessions (fitness plan page + workoutDone context flag reads this)
-          await createTrainingSession({
-            week: getWeek(),
-            session_type: (toolCall.session_type as 'strength' | 'cardio' | 'boxing' | 'agility') ?? 'strength',
-            date: today,
-            rpe: null,
-            notes: toolCall.name as string,
-          });
+          try {
+            await createTrainingSession({
+              week: getWeek(),
+              session_type: (toolCall.session_type as 'strength' | 'cardio' | 'boxing' | 'agility') ?? 'strength',
+              date: today,
+              rpe: null,
+              notes: toolCall.name as string,
+            });
+          } catch (tsErr) {
+            console.error('createTrainingSession failed:', JSON.stringify(tsErr));
+          }
           break;
         }
 

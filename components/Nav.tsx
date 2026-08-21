@@ -10,8 +10,8 @@ const TABS = [
   { href: '/',           label: 'Today',    icon: '◉' },
   { href: '/nutrition',  label: 'Eat',      icon: '⊕' },
   { href: '/jarvis',     label: 'Jarvis',   icon: '⬡', lime: true },
+  { href: '/fitness',    label: 'Move',     icon: '△' },
   { href: '/progress',   label: 'Progress', icon: '◈' },
-  { href: '/meditation', label: 'Mind',     icon: '◎' },
 ];
 
 const DRAWER = [

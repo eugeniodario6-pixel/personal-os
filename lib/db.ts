@@ -628,7 +628,7 @@ export interface TrainingSession {
   date: string;
   rpe: number | null;
   notes: string | null;
-  completed_at: string;
+  completed_at?: string;
 }
 
 export interface StrengthSet {
@@ -715,11 +715,16 @@ export function calcPrescribedWeight(lift: LiftSetup, week: TrainingWeek): numbe
 
 // Training sessions
 export async function createTrainingSession(
-  session: Omit<TrainingSession, 'id' | 'user_id' | 'completed_at'>
+  session: Omit<TrainingSession, 'id' | 'user_id'>
 ): Promise<number> {
   const userId = await getUserId();
+  const row = {
+    ...session,
+    user_id: userId,
+    completed_at: session.completed_at ?? new Date().toISOString(),
+  };
   const { data, error } = await supabase.from('training_sessions')
-    .insert({ ...session, user_id: userId })
+    .insert(row)
     .select('id').single();
   if (error || !data) throw new Error(error?.message ?? 'Failed to create session');
   return data.id;
