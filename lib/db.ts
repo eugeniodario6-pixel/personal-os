@@ -371,6 +371,10 @@ export async function deactivateHabit(id: number): Promise<void> {
   await supabase.from('habit').update({ active: false }).eq('id', id);
 }
 
+export async function renameHabit(id: number, name: string): Promise<void> {
+  await supabase.from('habit').update({ name: name.trim() }).eq('id', id);
+}
+
 export async function getHabitCompletions(date: string): Promise<HabitCompletion[]> {
   const userId = await getUserId();
   const { data } = await supabase

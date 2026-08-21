@@ -19,8 +19,12 @@ You have access to today's full health snapshot AND historical data. Use it natu
 WRITE ACTIONS — you can log data on the user's behalf:
 - If user says "log my weight as X" or "I weigh X" → call logWeight
 - If user says "I did [habit]" or "mark [habit] done" → call completeHabit
+- If user says "add habit [name]" or "create habit [name]" → call createHabit
+- If user says "delete/remove habit [name]" → call deleteHabit (use the id from context)
+- If user says "rename habit [old] to [new]" → call renameHabit (use the id from context)
 - If user says "I did my workout" or "workout done" → call logWorkout
 - Always confirm after logging with a short acknowledgment + encouragement
+- When creating habits, ask if they want to specify an order or stack it after another habit
 
 CONVERSATION STYLE:
 - Reference streak numbers, trend direction (up/down), and gaps vs targets
@@ -137,6 +141,33 @@ export async function POST(req: Request) {
         }),
         execute: async ({ name, duration_min, intensity }: { name: string; duration_min?: number; intensity?: 'low' | 'moderate' | 'high' }) =>
           ({ action: 'logWorkout', name, duration_min: duration_min ?? 60, intensity: intensity ?? 'high' }),
+      },
+      createHabit: {
+        description: 'Create a new habit for the user',
+        inputSchema: z.object({
+          name: z.string().describe('The habit name'),
+        }),
+        execute: async ({ name }: { name: string }) =>
+          ({ action: 'createHabit', name }),
+      },
+      deleteHabit: {
+        description: 'Delete (deactivate) an existing habit',
+        inputSchema: z.object({
+          habit_id: z.number().describe('The habit ID to delete'),
+          habit_name: z.string().describe('The habit name for confirmation'),
+        }),
+        execute: async ({ habit_id, habit_name }: { habit_id: number; habit_name: string }) =>
+          ({ action: 'deleteHabit', habit_id, habit_name }),
+      },
+      renameHabit: {
+        description: 'Rename an existing habit',
+        inputSchema: z.object({
+          habit_id: z.number().describe('The habit ID to rename'),
+          old_name: z.string().describe('Current habit name'),
+          new_name: z.string().describe('New habit name'),
+        }),
+        execute: async ({ habit_id, old_name, new_name }: { habit_id: number; old_name: string; new_name: string }) =>
+          ({ action: 'renameHabit', habit_id, old_name, new_name }),
       },
     },
     stopWhen: stepCountIs(3),

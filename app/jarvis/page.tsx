@@ -7,7 +7,7 @@ import {
   getTrainingSessions, getCurrentTrainingWeek, getTrainingWeek,
   getWeightHistory, getDailyScore, getDailyScores, getMealLogs,
   getHabitStreaks, getInsights, getLiftSetup, calcPrescribedWeight,
-  toggleHabitCompletion, logWeight, addWorkoutLog, todayISO,
+  toggleHabitCompletion, logWeight, addWorkoutLog, addHabit, deactivateHabit, renameHabit, todayISO,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
 
@@ -158,6 +158,9 @@ function ToolCard({ toolCall, onExecute }: { toolCall: Message['toolCall']; onEx
     completeHabit:'✅ Mark Habit Done',
     logFood:      '🍽 Log Food',
     logWorkout:   '💪 Log Workout',
+    createHabit:  '➕ Create Habit',
+    deleteHabit:  '🗑 Remove Habit',
+    renameHabit:  '✏️ Rename Habit',
   };
   const label = labels[toolCall.action] ?? toolCall.action;
   let detail = '';
@@ -165,6 +168,9 @@ function ToolCard({ toolCall, onExecute }: { toolCall: Message['toolCall']; onEx
   if (toolCall.action === 'completeHabit') detail = toolCall.habit_name as string;
   if (toolCall.action === 'logFood') detail = `${toolCall.food_name} · ${toolCall.meal_type}`;
   if (toolCall.action === 'logWorkout') detail = `${toolCall.name} · ${toolCall.duration_min}min`;
+  if (toolCall.action === 'createHabit') detail = toolCall.name as string;
+  if (toolCall.action === 'deleteHabit') detail = toolCall.habit_name as string;
+  if (toolCall.action === 'renameHabit') detail = `${toolCall.old_name} → ${toolCall.new_name}`;
 
   if (done) return (
     <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(218,255,1,0.06)', border: '1px solid rgba(218,255,1,0.2)', margin: '4px 0', animation: 'j-fadein 0.3s ease', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -407,6 +413,18 @@ export default function JarvisPage() {
         await logWeight(toolCall.weight_kg as number, toolCall.note as string | undefined);
       } else if (toolCall.action === 'completeHabit') {
         await toggleHabitCompletion(toolCall.habit_id as number);
+      } else if (toolCall.action === 'createHabit') {
+        await addHabit({
+          name: toolCall.name as string,
+          active: true,
+          stacked_after_habit_id: null,
+          streak_freeze_available: 0,
+          created_at: new Date().toISOString(),
+        });
+      } else if (toolCall.action === 'deleteHabit') {
+        await deactivateHabit(toolCall.habit_id as number);
+      } else if (toolCall.action === 'renameHabit') {
+        await renameHabit(toolCall.habit_id as number, toolCall.new_name as string);
       } else if (toolCall.action === 'logWorkout') {
         await addWorkoutLog({
           date: todayISO(),
