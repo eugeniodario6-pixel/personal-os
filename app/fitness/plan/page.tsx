@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   getLiftSetup, upsertLiftSetup, getTrainingWeek, getCurrentTrainingWeek,
   getTrainingSessions, createTrainingSession, addStrengthSets, getExercises,
-  calcPrescribedWeight,
+  calcPrescribedWeight, addWorkoutLog,
   type LiftSetup, type TrainingWeek, type TrainingSession, type StrengthSet, type Exercise,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
@@ -274,6 +274,14 @@ export default function PlanPage() {
         });
       });
       if (allSets.length > 0) await addStrengthSets(allSets);
+      // Write to workout_log so dashboard + progress page reflect it
+      await addWorkoutLog({
+        date: new Date().toISOString().split('T')[0],
+        template_id: null, name: 'Strength',
+        duration_min: 60, intensity: 'high',
+        calories_burned: null, source: 'manual',
+        logged_at: new Date().toISOString(),
+      });
       await load(); setActiveSession(null);
     } finally { setSaving(false); }
   };
@@ -300,6 +308,18 @@ export default function PlanPage() {
         date: new Date().toISOString().split('T')[0],
         rpe: parseFloat(f.rpe) || null,
         notes: notes || null,
+      });
+      // Write to workout_log so dashboard + progress page reflect it
+      const sessionLabel: Record<SessionType, string> = {
+        strength: 'Strength', cardio: 'Cardio',
+        boxing: 'Boxing', agility: 'Agility',
+      };
+      await addWorkoutLog({
+        date: new Date().toISOString().split('T')[0],
+        template_id: null, name: sessionLabel[type],
+        duration_min: parseInt(f.duration) || 60,
+        intensity: 'high', calories_burned: null,
+        source: 'manual', logged_at: new Date().toISOString(),
       });
       setSimpleFields({ duration: '', rpe: '', hr: '', notes: '', shadowRounds: '', bagRounds: '', ladder: false, cones: false, pushUps: '', bwSquats: '', lunges: '', plankSec: '', pullUps: '' });
       await load(); setActiveSession(null);
