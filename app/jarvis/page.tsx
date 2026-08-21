@@ -10,7 +10,7 @@ import {
   toggleHabitCompletion, logWeight, addWorkoutLog, addHabit,
   deactivateHabit, renameHabit, addFoodItem, addMealLog,
   addMeditationLog, getMeditationSessions, createTrainingSession,
-  addStrengthSets, todayISO, getCurrentTrainingWeek as getWeek,
+  addStrengthSets, computeDailyScore, todayISO, getCurrentTrainingWeek as getWeek,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
 
@@ -166,7 +166,6 @@ export default function JarvisPage() {
       switch (toolCall.action) {
 
         case 'logFood': {
-          // Create or reuse food item, then log the meal
           const foodId = await addFoodItem({
             external_id: null,
             name: toolCall.food_name as string,
@@ -188,6 +187,8 @@ export default function JarvisPage() {
             logged_at: new Date().toISOString(),
             source: 'manual',
           });
+          // Recompute daily score so nutrition page + dashboard reflect the new food
+          await computeDailyScore(today);
           break;
         }
 
@@ -402,8 +403,16 @@ export default function JarvisPage() {
           const last = [...history].reverse().find(m => m.role === 'assistant');
           if (last) setLastJarvisText(last.content);
         } else {
-          const s = score?.total_score ?? 0;
-          const boot = `Systems online. Score at ${s}. ${s >= 75 ? 'Strong start — what do you need?' : s >= 50 ? 'Room to push. What\'s the move?' : 'We\'ve got work to do. Where do you want to start?'}`;
+          // Use real computed score, fall back to computing it now if missing
+          const realScore = score?.total_score ?? (await computeDailyScore(today))?.total_score ?? 0;
+          const s = realScore;
+          const boot = s >= 75
+            ? `Systems online. Score at ${s}. Strong start — what do you need?`
+            : s >= 50
+            ? `Systems online. Score at ${s}. Room to push today — what's the move?`
+            : s > 0
+            ? `Systems online. Score at ${s}. We've got work to do. Where do you want to start?`
+            : `Systems online. Nothing logged yet today — let's get the day started. What's first?`;
           setMessages([{ role: 'assistant', content: boot }]);
           setLastJarvisText(boot);
         }
