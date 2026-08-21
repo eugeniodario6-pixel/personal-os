@@ -292,43 +292,12 @@ export default function JarvisPage() {
       });
       if (!res.ok) throw new Error('API error');
 
-      const reader  = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantText = '';
-
-      // Buffer for splitting on newlines to catch TOOL: markers
-      let buffer = '';
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            // Flush remaining buffer
-            if (buffer) {
-              const lines = buffer.split('\n');
-              for (const line of lines) {
-                if (line.startsWith('TOOL:')) {
-                  try { executeAction(JSON.parse(line.slice(5))); } catch { /* ignore */ }
-                } else {
-                  assistantText += line;
-                }
-              }
-            }
-            break;
-          }
-          buffer += decoder.decode(value, { stream: true });
-          // Process complete lines — keep last partial line in buffer
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-          for (const line of lines) {
-            if (line.startsWith('TOOL:')) {
-              try { executeAction(JSON.parse(line.slice(5))); } catch { /* ignore */ }
-            } else {
-              assistantText += (assistantText && line ? '\n' : '') + line;
-            }
-          }
-          // Update displayed text as it streams
-          setLastJarvisText(assistantText.trim());
-        }
+      // Parse clean JSON response — text + actions separated server-side
+      const json = await res.json() as { text: string; actions: Record<string, unknown>[] };
+      const assistantText = json.text ?? '';
+      // Fire all tool actions against the DB
+      for (const action of json.actions ?? []) {
+        try { await executeAction(action); } catch (e) { console.error('Tool action failed:', action, e); }
       }
 
       const finalMessages = [...updatedMessages, { role: 'assistant' as const, content: assistantText }];

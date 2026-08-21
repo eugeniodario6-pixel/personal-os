@@ -1,5 +1,5 @@
 import { anthropic } from '@ai-sdk/anthropic';
-import { streamText, stepCountIs } from 'ai';
+import { generateText, stepCountIs } from 'ai';
 import { z } from 'zod';
 
 export const runtime = 'edge';
@@ -30,16 +30,15 @@ WRITE ACTIONS — execute immediately when the user tells you something happened
 - "Delete / remove habit [name]" → call deleteHabit
 - "Rename habit [old] to [new]" → call renameHabit
 
-FOOD LOGGING:
-- When user mentions a food, use your knowledge to estimate macros per 100g or per serving
-- Common estimates: steak 100g = 250kcal, 26g protein, 0g carbs, 17g fat
+FOOD LOGGING — use your knowledge to estimate macros:
+- Steak 100g = 250kcal, 26g protein, 0g carbs, 17g fat
 - Chicken breast 100g = 165kcal, 31g protein, 0g carbs, 3.6g fat
 - Rice 100g cooked = 130kcal, 2.7g protein, 28g carbs, 0.3g fat
 - Eggs 1 large = 70kcal, 6g protein, 0.5g carbs, 5g fat
-- Scale macros by quantity given. If no quantity given, ask.
-- ALWAYS confirm what you logged briefly after doing it.
+- Scale macros by quantity. If no quantity given, ask.
+- Always confirm what you logged in 1 sentence then move on.
 
-After ANY write action, confirm in 1 short sentence then move on.`;
+After ANY write action, confirm briefly in 1 sentence then continue.`;
 
 function buildContext(data: Record<string, unknown>): string {
   const lines: string[] = ['=== TODAY\'S SNAPSHOT ==='];
@@ -69,7 +68,6 @@ function buildContext(data: Record<string, unknown>): string {
   }
   if (data.trainingWeek !== undefined) lines.push(`Training Week: ${data.trainingWeek}/26 | Phase: ${data.trainingPhase ?? 'N/A'} | Sessions: ${data.sessionsDone}/4`);
   if (data.workoutDone !== undefined) lines.push(`Workout today: ${data.workoutDone ? 'Done' : 'Not done'}`);
-  if (data.meditationDone !== undefined) lines.push(`Meditation: ${data.meditationDone ? 'Done' : 'Not done'}`);
   if (data.prescribedLifts && Array.isArray(data.prescribedLifts) && (data.prescribedLifts as unknown[]).length > 0) {
     lines.push(`Prescribed lifts:`);
     for (const l of data.prescribedLifts as Array<{ lift: string; weight: number | null; sets: number; reps: string }>) {
@@ -87,12 +85,6 @@ function buildContext(data: Record<string, unknown>): string {
     const avg = Math.round(history.reduce((s, d) => s + d.total_score, 0) / history.length);
     lines.push(`7-day avg score: ${avg}/100`);
   }
-  if (data.insights && Array.isArray(data.insights) && (data.insights as unknown[]).length > 0) {
-    lines.push(`Insights:`);
-    for (const i of data.insights as Array<{ relationship: string }>) {
-      lines.push(`  • ${i.relationship}`);
-    }
-  }
   return lines.join('\n');
 }
 
@@ -105,33 +97,22 @@ export async function POST(req: Request) {
   const contextBlock = context ? buildContext(context) : '';
   const systemWithContext = contextBlock ? `${SYSTEM}\n\n${contextBlock}` : SYSTEM;
 
-  // Collect tool results to inject into the stream after text
-  const toolResults: Record<string, unknown>[] = [];
-
-  const result = streamText({
+  // Use generateText (non-streaming) — cleaner tool result handling
+  const result = await generateText({
     model: anthropic('claude-haiku-4-5'),
     system: systemWithContext,
     messages,
-    onStepFinish: ({ toolResults: stepToolResults }) => {
-      if (stepToolResults) {
-        for (const tr of stepToolResults) {
-          if (tr.output && typeof tr.output === 'object' && (tr.output as Record<string, unknown>).action) {
-            toolResults.push(tr.output as Record<string, unknown>);
-          }
-        }
-      }
-    },
     tools: {
       logFood: {
         description: 'Log a food item with estimated macros',
         inputSchema: z.object({
           food_name: z.string(),
           meal_type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
-          quantity_g: z.number().describe('Quantity in grams'),
-          calories: z.number().describe('Total calories for this portion'),
-          protein_g: z.number().describe('Total protein in grams'),
-          carbs_g: z.number().describe('Total carbs in grams'),
-          fat_g: z.number().describe('Total fat in grams'),
+          quantity_g: z.number(),
+          calories: z.number(),
+          protein_g: z.number(),
+          carbs_g: z.number(),
+          fat_g: z.number(),
         }),
         execute: async (input: { food_name: string; meal_type: string; quantity_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number }) =>
           ({ action: 'logFood', ...input }),
@@ -200,26 +181,19 @@ export async function POST(req: Request) {
     stopWhen: stepCountIs(5),
   });
 
-  // Build a custom stream: text chunks first, then TOOL: lines at the end
-  const textStream = result.textStream;
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      // Stream text
-      for await (const chunk of textStream) {
-        controller.enqueue(encoder.encode(chunk));
+  // Collect tool results from all steps
+  const toolActions: Record<string, unknown>[] = [];
+  for (const step of result.steps) {
+    for (const tr of step.toolResults ?? []) {
+      const out = tr.output;
+      if (out && typeof out === 'object' && (out as Record<string, unknown>).action) {
+        toolActions.push(out as Record<string, unknown>);
       }
-      // After text is done, flush tool results as prefixed lines
-      // Wait for onStepFinish to have fired (result is fully consumed above)
-      for (const tr of toolResults) {
-        controller.enqueue(encoder.encode(`\nTOOL:${JSON.stringify(tr)}`));
-      }
-      controller.close();
-    },
-  });
+    }
+  }
 
-  return new Response(stream, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  return Response.json({
+    text: result.text,
+    actions: toolActions,
   });
 }
