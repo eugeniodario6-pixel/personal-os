@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getMeditationSession, addMeditationLog, logMood, todayISO, type MeditationSession } from '@/lib/db';
+import { getMeditationSession, addMeditationLog, logMood, getMoodLogs, todayISO, type MeditationSession } from '@/lib/db';
 
 // ─── iOS audio unlock ──────────────────────────────────────────────────────────
 let _unlockedAudio: HTMLAudioElement | null = null;
@@ -76,12 +76,19 @@ export default function MeditationPlayerPage() {
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const cancelledRef  = useRef(false);
 
-  // ── Mood check-in state ───────────────────────────────────────────────────
-  const [moodSelected, setMoodSelected]   = useState<number | null>(null);
+  // ── Pre-session mood state ──────────────────────────────────────────────────
+  const [preMood, setPreMood]               = useState<number | null>(null);
+  const [preMoodLogged, setPreMoodLogged]   = useState(false);
+  const [preMoodLogging, setPreMoodLogging] = useState(false);
+  const [preMoodSkipped, setPreMoodSkipped] = useState(false);
+
+  // ── Post-session mood check-in state ───────────────────────────────────────
+  const [moodSelected, setMoodSelected]     = useState<number | null>(null);
   const [stressSelected, setStressSelected] = useState<number | null>(null);
-  const [moodLogged, setMoodLogged]       = useState(false);
-  const [moodLogging, setMoodLogging]     = useState(false);
-  const [moodSkipped, setMoodSkipped]     = useState(false);
+  const [moodLogged, setMoodLogged]         = useState(false);
+  const [moodLogging, setMoodLogging]       = useState(false);
+  const [moodSkipped, setMoodSkipped]       = useState(false);
+  const [moodDelta, setMoodDelta]           = useState<number | null>(null);
 
   useEffect(() => {
     getMeditationSession(parseInt(id)).then(s => setSession(s ?? null));
@@ -179,6 +186,23 @@ export default function MeditationPlayerPage() {
     router.push('/meditation');
   }, [session, elapsed, router]);
 
+  // ── Log post-session mood and compute delta ────────────────────────────────
+  const handlePostMoodLog = useCallback(async (mood: number, stress: number | null) => {
+    setMoodLogging(true);
+    await logMood(mood, stress, 'post_meditation');
+    // Try to compute delta from today's pre-session mood
+    try {
+      const logs = await getMoodLogs(1);
+      const today = todayISO();
+      const preLogs = logs.filter(l => l.context === 'pre_meditation' && l.date === today);
+      if (preLogs.length > 0) {
+        setMoodDelta(mood - preLogs[0].mood);
+      }
+    } catch { /* ignore */ }
+    setMoodLogged(true);
+    setMoodLogging(false);
+  }, []);
+
   if (!session) {
     return (
       <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -187,6 +211,8 @@ export default function MeditationPlayerPage() {
       </div>
     );
   }
+
+  const MOODS = ['😔','😕','😐','🙂','😊'];
 
   return (
     <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', flexDirection: 'column' }}>
@@ -262,14 +288,73 @@ export default function MeditationPlayerPage() {
 
       {/* ── CTA ── */}
       <div style={{ padding: '0 24px', paddingBottom: 'max(48px, calc(env(safe-area-inset-bottom) + 36px))', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {phase === 'ready' && (
-          <button
-            onClick={start}
-            style={{ width: '100%', padding: '17px', background: '#fff', color: '#000', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)' }}
-          >
-            Start Session
-          </button>
-        )}
+
+        {/* ── READY phase ── */}
+        {phase === 'ready' && (() => {
+          const canStart = preMoodLogged || preMoodSkipped;
+          return (
+            <>
+              {/* Pre-session mood check-in */}
+              {!preMoodLogged && !preMoodSkipped && (
+                <div style={{ background: '#141616', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>How are you feeling?</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    {MOODS.map((emoji, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPreMood(i + 1)}
+                        style={{
+                          fontSize: 28, background: 'none', border: '2px solid',
+                          borderColor: preMood === i + 1 ? '#DAFF01' : 'rgba(255,255,255,0.08)',
+                          borderRadius: 12, width: 52, height: 52, cursor: 'pointer',
+                          transition: 'border-color 0.15s, transform 0.1s',
+                          transform: preMood === i + 1 ? 'scale(1.15)' : 'scale(1)',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >{emoji}</button>
+                    ))}
+                  </div>
+                  {preMood !== null && (
+                    <button
+                      onClick={async () => {
+                        if (preMoodLogging || preMood === null) return;
+                        setPreMoodLogging(true);
+                        await logMood(preMood, null, 'pre_meditation');
+                        setPreMoodLogged(true);
+                        setPreMoodLogging(false);
+                      }}
+                      style={{
+                        padding: '12px', background: '#DAFF01', color: '#000',
+                        border: 'none', borderRadius: 99, fontSize: '0.85rem',
+                        fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em',
+                        WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)',
+                        opacity: preMoodLogging ? 0.6 : 1,
+                      }}
+                    >{preMoodLogging ? 'Saving…' : 'Log mood'}</button>
+                  )}
+                  <button
+                    onClick={() => setPreMoodSkipped(true)}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', cursor: 'pointer', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
+                  >Skip</button>
+                </div>
+              )}
+              {preMoodLogged && (
+                <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(218,255,1,0.7)', letterSpacing: '-0.01em' }}>Mood noted ✓</p>
+                </div>
+              )}
+              <button
+                onClick={start}
+                disabled={!canStart}
+                style={{ width: '100%', padding: '17px', background: canStart ? '#fff' : 'rgba(255,255,255,0.15)', color: canStart ? '#000' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 700, cursor: canStart ? 'pointer' : 'default', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
+              >
+                Start Session
+              </button>
+            </>
+          );
+        })()}
+
+        {/* ── RUNNING phase ── */}
         {phase === 'running' && (
           <button
             onClick={stop}
@@ -278,12 +363,13 @@ export default function MeditationPlayerPage() {
             Stop Session
           </button>
         )}
+
+        {/* ── DONE phase ── */}
         {phase === 'done' && (() => {
           const canDone = moodLogged || moodSkipped;
-          const MOODS = ['😔','😕','😐','🙂','😊'];
           return (
             <>
-              {/* ── Mood check-in ── */}
+              {/* Post-session mood check-in */}
               {!moodLogged && !moodSkipped && (
                 <div style={{ background: '#141616', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>How do you feel?</p>
@@ -326,10 +412,7 @@ export default function MeditationPlayerPage() {
                       <button
                         onClick={async () => {
                           if (moodLogging || moodSelected === null) return;
-                          setMoodLogging(true);
-                          await logMood(moodSelected, stressSelected ?? null, 'post_meditation');
-                          setMoodLogged(true);
-                          setMoodLogging(false);
+                          await handlePostMoodLog(moodSelected, stressSelected ?? null);
                         }}
                         style={{
                           padding: '12px', background: '#DAFF01', color: '#000',
@@ -349,11 +432,34 @@ export default function MeditationPlayerPage() {
                 </div>
               )}
 
-              {moodLogged && (
-                <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(218,255,1,0.85)', letterSpacing: '-0.01em' }}>Logged ✓</p>
-                </div>
-              )}
+              {/* Post-session mood result */}
+              {moodLogged && (() => {
+                const postEmoji = moodSelected !== null ? MOODS[moodSelected - 1] : '';
+                if (moodDelta !== null && moodSelected !== null) {
+                  const preVal   = moodSelected - moodDelta;
+                  const preEmoji = preVal >= 1 && preVal <= 5 ? MOODS[preVal - 1] : '';
+                  const sign     = moodDelta > 0 ? '+' : '';
+                  const deltaColor = moodDelta > 0 ? '#A8FF78' : moodDelta < 0 ? '#FF8B8B' : 'rgba(255,255,255,0.6)';
+                  const msg = moodDelta > 0
+                    ? 'Feeling better after the session 🌱'
+                    : moodDelta < 0
+                    ? 'Rough session — rest well 🫶'
+                    : 'Mood held steady';
+                  return (
+                    <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
+                      <p style={{ margin: 0, fontSize: '0.95rem', color: deltaColor, letterSpacing: '-0.01em', fontWeight: 600 }}>
+                        {preEmoji} → {postEmoji} ({sign}{moodDelta})
+                      </p>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '-0.005em' }}>{msg}</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(218,255,1,0.85)', letterSpacing: '-0.01em' }}>Mood logged {postEmoji} ✓</p>
+                  </div>
+                );
+              })()}
 
               <button
                 onClick={() => router.push('/meditation')}

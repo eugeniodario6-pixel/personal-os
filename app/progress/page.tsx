@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   getHabits, getHabitStreaks, getDailyScores, getWeightHistory,
-  getWorkoutHistory, getMeditationSessions, getLiftHistory,
-  type DailyScore, type WeightEntry, type LiftHistory,
+  getWorkoutHistory, getMeditationSessions, getLiftHistory, getMoodLogs,
+  type DailyScore, type WeightEntry, type LiftHistory, type MoodEntry,
 } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
@@ -205,6 +205,9 @@ export default function ProgressPage() {
   // Meditation
   const [medDays, setMedDays] = useState<MedDay[]>([]);
 
+  // Mood
+  const [moodLogs, setMoodLogs] = useState<MoodEntry[]>([]);
+
   // Strength / lift history
   const [liftHistory, setLiftHistory] = useState<LiftHistory[]>([]);
   const [activeLift, setActiveLift] = useState<string>('Back Squat');
@@ -218,14 +221,17 @@ export default function ProgressPage() {
       const MAIN_LIFTS = ['Back Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row'];
 
       const [
-        scoresData, habitsData, weightsData, workoutsData, liftData,
+        scoresData, habitsData, weightsData, workoutsData, liftData, moodData,
       ] = await Promise.all([
         getDailyScores(days),
         getHabits(),
         getWeightHistory(days),
         getWorkoutHistory(days),
         getLiftHistory(MAIN_LIFTS, Math.ceil(days / 7) + 1),
+        getMoodLogs(days),
       ]);
+
+      setMoodLogs(moodData);
 
       setLiftHistory(liftData);
 
@@ -330,6 +336,57 @@ export default function ProgressPage() {
   const totalMedMins = medDays.reduce((s, d) => s + d.mins, 0);
   const medDaysCount = medDays.filter(d => d.sessions > 0).length;
   const medConsistency = Math.round((medDaysCount / days) * 100);
+
+  // ── Derived: Mood ─────────────────────────────────────────────────────────
+  // Build per-day average mood (post_meditation only, for trend)
+  const moodByDate = new Map<string, { sum: number; count: number }>();
+  const stressByDate = new Map<string, { sum: number; count: number }>();
+  let sessionsImproved = 0;
+  let sessionsPaired = 0;
+
+  // Group logs by date and context for delta computation
+  const moodByDateContext = new Map<string, { pre: number | null; post: number | null }>();
+  for (const m of moodLogs) {
+    const key = m.date;
+    if (!moodByDateContext.has(key)) moodByDateContext.set(key, { pre: null, post: null });
+    const entry = moodByDateContext.get(key)!;
+    if (m.context === 'pre_meditation' && entry.pre === null) entry.pre = m.mood;
+    if (m.context === 'post_meditation' && entry.post === null) entry.post = m.mood;
+  }
+  for (const { pre, post } of moodByDateContext.values()) {
+    if (pre !== null && post !== null) {
+      sessionsPaired++;
+      if (post > pre) sessionsImproved++;
+    }
+  }
+
+  for (const m of moodLogs) {
+    if (m.context === 'post_meditation') {
+      const d = moodByDate.get(m.date) ?? { sum: 0, count: 0 };
+      moodByDate.set(m.date, { sum: d.sum + m.mood, count: d.count + 1 });
+    }
+    if (m.stress != null) {
+      const d = stressByDate.get(m.date) ?? { sum: 0, count: 0 };
+      stressByDate.set(m.date, { sum: d.sum + m.stress, count: d.count + 1 });
+    }
+  }
+
+  const moodSparkValues = dates
+    .map(d => {
+      const e = moodByDate.get(d);
+      return e ? e.sum / e.count : 0;
+    });
+  const hasMoodData = moodSparkValues.some(v => v > 0);
+  const avgMoodAll = moodLogs.filter(m => m.context === 'post_meditation');
+  const avgMood = avgMoodAll.length > 0
+    ? Math.round((avgMoodAll.reduce((s, m) => s + m.mood, 0) / avgMoodAll.length) * 10) / 10
+    : null;
+  const stressLogs = moodLogs.filter(m => m.stress != null);
+  const avgStress = stressLogs.length > 0
+    ? Math.round((stressLogs.reduce((s, m) => s + (m.stress ?? 0), 0) / stressLogs.length) * 10) / 10
+    : null;
+  const improvedPct = sessionsPaired > 0 ? Math.round((sessionsImproved / sessionsPaired) * 100) : null;
+  const MOOD_EMOJI = ['😔','😕','😐','🙂','😊'];
 
   // ── Derived: Strength ─────────────────────────────────────────────────────
   const MAIN_LIFTS = ['Back Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row'];
@@ -500,6 +557,47 @@ export default function ProgressPage() {
               <StatRow label="Total time" value={`${totalMedMins}m`} />
               <StatRow label="Active days" value={`${medDaysCount} / ${days}`} color={medDaysCount >= days * 0.5 ? LIME : '#fff'} />
             </div>
+          </Card>
+
+          {/* ── MOOD ── */}
+          <Card>
+            <SectionLabel
+              icon="◌"
+              title="Mood"
+              value={avgMood !== null ? `${MOOD_EMOJI[Math.round(avgMood) - 1] ?? ''} ${avgMood}` : undefined}
+              sub={avgMood !== null ? 'avg' : undefined}
+            />
+            {!hasMoodData ? (
+              <p style={{ fontSize: '0.78rem', color: TEXT3, margin: 0, lineHeight: 1.6 }}>
+                Complete a meditation session to start tracking mood
+              </p>
+            ) : (
+              <>
+                <div style={{ marginBottom: 8 }}>
+                  <p style={{ margin: '0 0 6px', fontSize: '0.55rem', color: TEXT3, letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>POST-SESSION MOOD TREND</p>
+                  <Sparkline values={moodSparkValues} color="#FF8B8B" height={48} />
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  {avgMood !== null && (
+                    <StatRow
+                      label="Avg post-session mood"
+                      value={`${MOOD_EMOJI[Math.round(avgMood) - 1] ?? ''} ${avgMood} / 5`}
+                      color="#FF8B8B"
+                    />
+                  )}
+                  {avgStress !== null && (
+                    <StatRow label="Avg stress" value={`${avgStress} / 5`} />
+                  )}
+                  {improvedPct !== null && (
+                    <StatRow
+                      label="Sessions where mood improved"
+                      value={`${sessionsImproved} / ${sessionsPaired} (${improvedPct}%)`}
+                      color={improvedPct >= 60 ? LIME : '#fff'}
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </Card>
 
           {/* ── BODY ── */}
