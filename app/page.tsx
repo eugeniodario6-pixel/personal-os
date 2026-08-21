@@ -58,6 +58,63 @@ function getScoreBreakdown(
   ];
 }
 
+function getScoreColour(s: number): string {
+  if (s >= 75) return '#DAFF01';
+  if (s >= 50) return '#ffffff';
+  return 'rgba(255,255,255,0.5)';
+}
+
+function getScoreExplanation(
+  calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean,
+  protein: number, proteinTarget: number, calories: number, calorieTarget: number,
+): string {
+  // Find the biggest gap pillar and produce a plain-English sentence
+  const gaps: { label: string; missing: number; sentence: string }[] = [];
+
+  // Eat gap (max 30 pts)
+  if (calPct <= 0) {
+    gaps.push({ label: 'Eat', missing: 30, sentence: "You haven't logged any food — that's the biggest drag on your score." });
+  } else if (calPct < 70) {
+    const proteinGap = Math.round(proteinTarget - protein);
+    if (proteinGap > 10 && protein < proteinTarget * 0.7) {
+      gaps.push({ label: 'Eat', missing: 20, sentence: `Protein is ${proteinGap}g short — that's holding your score down.` });
+    } else {
+      gaps.push({ label: 'Eat', missing: 20, sentence: `Calories are at ${Math.round(calPct)}% of target — log more to lift your score.` });
+    }
+  }
+
+  // Habits gap (max 40 pts)
+  if (habitPct <= 0) {
+    gaps.push({ label: 'Habits', missing: 40, sentence: "No habits done yet — completing them is worth the most points." });
+  } else if (habitPct < 50) {
+    gaps.push({ label: 'Habits', missing: Math.round(40 * (1 - habitPct / 100)), sentence: `Less than half your habits done — finishing them would add the most points.` });
+  } else if (habitPct < 100) {
+    gaps.push({ label: 'Habits', missing: Math.round(40 * (1 - habitPct / 100)), sentence: `${Math.round(100 - habitPct)}% of habits still to go — knock them out to push your score up.` });
+  }
+
+  // Move gap (max 20 pts)
+  if (!hasWorkout) {
+    gaps.push({ label: 'Move', missing: 20, sentence: "Log a workout to unlock 20 points — even a short session counts." });
+  }
+
+  // Mind gap (max 10 pts)
+  if (!hasMed) {
+    gaps.push({ label: 'Mind', missing: 10, sentence: "Log your meditation to close the loop and hit 10 more points." });
+  }
+
+  if (gaps.length === 0) return "You're on track — all pillars are complete.";
+
+  // Return sentence for the highest-missing-points gap
+  gaps.sort((a, b) => b.missing - a.missing);
+  return gaps[0].sentence;
+}
+
+function getTrainingRecommendation(score: number): string {
+  if (score >= 80) return 'Train hard today';
+  if (score >= 60) return "Moderate session — don't push it";
+  return 'Recovery day — keep it light';
+}
+
 function getDataAwareNudge(
   calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean,
   calorieTarget: number, calories: number, protein: number, proteinTarget: number,
@@ -334,7 +391,7 @@ export default function TodayPage() {
               className="t-hero"
               style={{
                 lineHeight: 0.9,
-                color: '#DAFF01',
+                color: getScoreColour(score),
                 fontFeatureSettings: '"cv01" on, "ss03" on, "zero" on',
               }}
             >
@@ -346,6 +403,14 @@ export default function TodayPage() {
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-5)', letterSpacing: '0.01em', textTransform: 'uppercase' }}>/ 100</span>
             </div>
+            {/* Score explanation */}
+            <p style={{ fontSize: 12, color: 'var(--text-4)', marginTop: 6, marginBottom: 0, lineHeight: 1.4 }}>
+              {getScoreExplanation(calPct, habitPct, workoutsToday > 0, medDone, protein, proteinTarget, calories, calorieTarget)}
+            </p>
+            {/* Training recommendation */}
+            <p style={{ fontSize: 11, fontWeight: 510, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-5)', marginTop: 8, marginBottom: 0 }}>
+              {getTrainingRecommendation(score)}
+            </p>
           </div>
 
           {/* Sparkline */}
@@ -461,6 +526,20 @@ export default function TodayPage() {
                 <div style={{ height: '100%', width: medDone ? '100%' : '0%', background: 'var(--text)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
               </div>
             </BentoCard>
+          </div>
+
+          {/* Pillar breakdown card */}
+          <div className="bento-card-anim">
+            <div style={{ background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: '0 0 12px' }}>Score breakdown</p>
+              {pillars.map(p => (
+                <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 12, fontWeight: 510, letterSpacing: '0.03em', textTransform: 'uppercase', color: 'var(--text-4)', width: 48, flexShrink: 0 }}>{p.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 510, color: p.score === p.maxScore ? '#DAFF01' : 'var(--text)', width: 40, flexShrink: 0 }}>{p.score}<span style={{ fontSize: 10, color: 'var(--text-5)', fontWeight: 400 }}>/{p.maxScore}</span></span>
+                  <span style={{ fontSize: 12, color: 'var(--text-4)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.reason}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Row 4: Habits list (full-width) */}
