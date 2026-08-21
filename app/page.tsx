@@ -6,7 +6,8 @@ import Link from 'next/link';
 import {
   getProfile, getHabits, getHabitCompletions, getHabitStreaks,
   getMeditationSessions, getMeditationLogs, getTodayMacros,
-  getWorkoutLogs, toggleHabitCompletion, seedUserData, getDailyScores,
+  getWorkoutLogs, getTrainingSessions, getCurrentTrainingWeek,
+  toggleHabitCompletion, seedUserData, getDailyScores,
   todayISO, type Habit, type MeditationSession, type DailyScore,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
@@ -219,9 +220,10 @@ export default function TodayPage() {
 
       setDateStr(new Date().toLocaleDateString('en-ZA', { weekday: 'long', month: 'long', day: 'numeric' }));
 
-      const [macros, profile, activeHabits, completions, workouts, medLogs, sessions, scores] = await Promise.all([
+      const [macros, profile, activeHabits, completions, workouts, trainingSessions, medLogs, sessions, scores] = await Promise.all([
         getTodayMacros(), getProfile(), getHabits(), getHabitCompletions(today),
-        getWorkoutLogs(today), getMeditationLogs(today), getMeditationSessions(),
+        getWorkoutLogs(today), getTrainingSessions(getCurrentTrainingWeek()),
+        getMeditationLogs(today), getMeditationSessions(),
         getDailyScores(14),
       ]);
 
@@ -238,7 +240,9 @@ export default function TodayPage() {
       const doneIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
       const streaks = await getHabitStreaks(activeHabits.map(h => h.id));
       setHabits(activeHabits.map(h => ({ ...h, done: doneIds.has(h.id), streak: streaks.get(h.id) ?? 0 })));
-      setWorkouts(workouts.length);
+      // Count workout as done if EITHER workout_log OR training_sessions has an entry today
+      const trainingToday = trainingSessions.filter(s => s.date === today);
+      setWorkouts(workouts.length + (workouts.length === 0 ? trainingToday.length : 0));
       setMedDone(medLogs.some(m => m.completed));
       const loggedIds = new Set(medLogs.map(m => m.session_id));
       setSuggested(sessions.find(s => !loggedIds.has(s.id)) ?? sessions[0] ?? null);
@@ -256,9 +260,18 @@ export default function TodayPage() {
       for (let i = 1; i <= 7; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
         const { getWorkoutLogs: gwl } = await import('@/lib/db');
-        const wl = await gwl(d.toISOString().slice(0, 10));
+        const wl = await gwl(dateStr);
         if (wl.length > 0) break;
+        // Also check training_sessions for that date
+        const { supabase } = await import('@/lib/supabase');
+        const { data: ts } = await supabase
+          .from('training_sessions')
+          .select('id')
+          .eq('date', dateStr)
+          .limit(1);
+        if ((ts?.length ?? 0) > 0) break;
         gap++;
       }
       setWorkoutDaysGap(gap);
