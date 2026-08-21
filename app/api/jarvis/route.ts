@@ -10,93 +10,89 @@ const SYSTEM = `You are Jarvis — a sharp, loyal AI performance coach embedded 
 Personality:
 - Confident and direct — you give opinions, not options
 - Data-driven — reference actual numbers when relevant
-- Brief by default — 2-4 sentences unless more is needed
+- Brief by default — 2-4 sentences max, you're speaking out loud not writing an essay
 - Occasionally dry wit — like Alfred crossed with Friday from Iron Man
 - Always action-oriented — every response ends with a direction if possible
+- NEVER use markdown, asterisks, bullet points or formatting — you are speaking, not writing
 
-You have access to today's full health snapshot AND historical data. Use it naturally. Don't dump all data — respond to what's asked and weave in relevant context.
+VOICE RESPONSE RULES:
+- Keep it conversational and punchy — max 3-4 sentences unless a full report is asked for
+- Numbers only when relevant, not a data dump
+- No lists. No headers. Just talk.
 
-WRITE ACTIONS — you can log data on the user's behalf:
-- If user says "log my weight as X" or "I weigh X" → call logWeight
-- If user says "I did [habit]" or "mark [habit] done" → call completeHabit
-- If user says "add habit [name]" or "create habit [name]" → call createHabit
-- If user says "delete/remove habit [name]" → call deleteHabit (use the id from context)
-- If user says "rename habit [old] to [new]" → call renameHabit (use the id from context)
-- If user says "I did my workout" or "workout done" → call logWorkout
-- Always confirm after logging with a short acknowledgment + encouragement
-- When creating habits, ask if they want to specify an order or stack it after another habit
+WRITE ACTIONS — execute immediately when the user tells you something happened:
+- "I ate / I had / I logged [food]" → call logFood with best-guess macros
+- "I weigh X / my weight is X" → call logWeight
+- "I did [habit] / mark [habit] done / [habit] done" → call completeHabit
+- "I trained / workout done / I did [lift] X sets of Y at Zkg" → call logWorkout or logStrengthSession
+- "I meditated / meditation done" → call logMeditation
+- "Add habit [name]" → call createHabit
+- "Delete / remove habit [name]" → call deleteHabit
+- "Rename habit [old] to [new]" → call renameHabit
 
-CONVERSATION STYLE:
-- Reference streak numbers, trend direction (up/down), and gaps vs targets
-- When nutrition is discussed, mention the specific macro gap (e.g. "32g protein short")
-- When training is discussed, reference the actual prescribed lifts and weights if known
-- Be proactive — if score is low, identify the biggest lever to pull`;
+FOOD LOGGING:
+- When user mentions a food, use your knowledge to estimate macros per 100g or per serving
+- Common estimates: steak 100g = 250kcal, 26g protein, 0g carbs, 17g fat
+- Chicken breast 100g = 165kcal, 31g protein, 0g carbs, 3.6g fat  
+- Rice 100g cooked = 130kcal, 2.7g protein, 28g carbs, 0.3g fat
+- Eggs 1 large = 70kcal, 6g protein, 0.5g carbs, 5g fat
+- Scale macros by quantity given. If no quantity given, ask.
+- ALWAYS confirm what you logged briefly after doing it.
+
+After ANY write action, confirm in 1 short sentence then move on. Don't ask for confirmation — just do it and tell him it's done.`;
 
 function buildContext(data: Record<string, unknown>): string {
   const lines: string[] = ['=== TODAY\'S SNAPSHOT ==='];
-
   if (data.date) lines.push(`Date: ${data.date}`);
   if (data.score !== undefined) lines.push(`Daily Score: ${data.score}/100`);
-
   if (data.calories !== undefined) {
     const gap = (data.calorieTarget as number) - (data.calories as number);
     lines.push(`Calories: ${data.calories} / ${data.calorieTarget} kcal (${gap > 0 ? gap + ' remaining' : Math.abs(gap) + ' over'})`);
   }
   if (data.protein !== undefined) {
     const gap = (data.proteinTarget as number) - (data.protein as number);
-    lines.push(`Protein: ${data.protein}g / ${data.proteinTarget}g (${gap > 0 ? gap + 'g short' : 'target hit ✓'})`);
+    lines.push(`Protein: ${data.protein}g / ${data.proteinTarget}g (${gap > 0 ? gap + 'g short' : 'target hit'})`);
   }
   if (data.carbs !== undefined) lines.push(`Carbs: ${data.carbs}g / ${data.carbTarget}g`);
   if (data.fat !== undefined) lines.push(`Fat: ${data.fat}g / ${data.fatTarget}g`);
-
   if (data.meals && Array.isArray(data.meals) && (data.meals as unknown[]).length > 0) {
-    lines.push(`\nMeals logged today:`);
+    lines.push(`Meals today:`);
     for (const m of data.meals as Array<{ meal_type: string; name: string; calories: number; protein: number }>) {
       lines.push(`  [${m.meal_type}] ${m.name} — ${Math.round(m.calories)} kcal, ${Math.round(m.protein)}g protein`);
     }
   }
-
   if (data.habits && Array.isArray(data.habits) && (data.habits as unknown[]).length > 0) {
-    lines.push(`\nHabits today (${data.habitsDone}/${data.habitsTotal} done):`);
+    lines.push(`Habits (${data.habitsDone}/${data.habitsTotal} done):`);
     for (const h of data.habits as Array<{ name: string; done: boolean; streak: number; id: number }>) {
-      lines.push(`  ${h.done ? '✓' : '○'} ${h.name} — streak: ${h.streak} days`);
+      lines.push(`  ${h.done ? '✓' : '○'} ${h.name} — ${h.streak}d streak`);
     }
   }
-
-  if (data.trainingWeek !== undefined) lines.push(`\nTraining Week: ${data.trainingWeek}/26`);
-  if (data.trainingPhase) lines.push(`Training Phase: ${data.trainingPhase}`);
-  if (data.sessionsDone !== undefined) lines.push(`Sessions this week: ${data.sessionsDone}/4`);
-  if (data.workoutDone !== undefined) lines.push(`Workout today: ${data.workoutDone ? 'Done ✓' : 'Not done'}`);
-  if (data.meditationDone !== undefined) lines.push(`Meditation: ${data.meditationDone ? 'Done ✓' : 'Not done'}`);
-
+  if (data.trainingWeek !== undefined) lines.push(`Training Week: ${data.trainingWeek}/26 | Phase: ${data.trainingPhase ?? 'N/A'} | Sessions: ${data.sessionsDone}/4`);
+  if (data.workoutDone !== undefined) lines.push(`Workout today: ${data.workoutDone ? 'Done' : 'Not done'}`);
+  if (data.meditationDone !== undefined) lines.push(`Meditation: ${data.meditationDone ? 'Done' : 'Not done'}`);
   if (data.prescribedLifts && Array.isArray(data.prescribedLifts) && (data.prescribedLifts as unknown[]).length > 0) {
-    lines.push(`\nPrescribed lifts this week:`);
+    lines.push(`Prescribed lifts:`);
     for (const l of data.prescribedLifts as Array<{ lift: string; weight: number | null; sets: number; reps: string }>) {
-      lines.push(`  ${l.lift}: ${l.weight ? l.weight + 'kg' : 'bodyweight'} × ${l.sets} sets × ${l.reps}`);
+      lines.push(`  ${l.lift}: ${l.weight ? l.weight + 'kg' : 'BW'} × ${l.sets}×${l.reps}`);
     }
   }
-
-  if (data.weight !== undefined) lines.push(`\nCurrent weight: ${data.weight}kg`);
+  if (data.weight !== undefined) lines.push(`Weight: ${data.weight}kg`);
   if (data.weightTrend && Array.isArray(data.weightTrend) && (data.weightTrend as unknown[]).length > 1) {
     const trend = data.weightTrend as Array<{ weight_kg: number }>;
     const diff = Math.round((trend[0].weight_kg - trend[trend.length - 1].weight_kg) * 10) / 10;
-    lines.push(`Weight trend (7 days): ${diff > 0 ? '+' : ''}${diff}kg`);
+    lines.push(`7-day trend: ${diff > 0 ? '+' : ''}${diff}kg`);
   }
-
   if (data.scoreHistory && Array.isArray(data.scoreHistory) && (data.scoreHistory as unknown[]).length > 0) {
-    const history = data.scoreHistory as Array<{ date: string; total_score: number }>;
+    const history = data.scoreHistory as Array<{ total_score: number }>;
     const avg = Math.round(history.reduce((s, d) => s + d.total_score, 0) / history.length);
-    lines.push(`\n7-day avg score: ${avg}/100`);
-    lines.push(`Score history: ${history.map(d => `${d.date}: ${d.total_score}`).join(', ')}`);
+    lines.push(`7-day avg score: ${avg}/100`);
   }
-
   if (data.insights && Array.isArray(data.insights) && (data.insights as unknown[]).length > 0) {
-    lines.push(`\nKey insights:`);
-    for (const i of data.insights as Array<{ relationship: string; metric_a: string; metric_b: string }>) {
-      lines.push(`  • ${i.relationship} (${i.metric_a} ↔ ${i.metric_b})`);
+    lines.push(`Insights:`);
+    for (const i of data.insights as Array<{ relationship: string }>) {
+      lines.push(`  • ${i.relationship}`);
     }
   }
-
   return lines.join('\n');
 }
 
@@ -114,63 +110,99 @@ export async function POST(req: Request) {
     system: systemWithContext,
     messages,
     tools: {
+      // ── Nutrition ──────────────────────────────────────────────────────────
+      logFood: {
+        description: 'Log a food item with estimated macros',
+        inputSchema: z.object({
+          food_name: z.string().describe('Name of the food'),
+          meal_type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+          quantity_g: z.number().describe('Quantity in grams'),
+          calories: z.number().describe('Total calories for this portion'),
+          protein_g: z.number().describe('Total protein in grams'),
+          carbs_g: z.number().describe('Total carbs in grams'),
+          fat_g: z.number().describe('Total fat in grams'),
+        }),
+        execute: async (input: {
+          food_name: string; meal_type: string; quantity_g: number;
+          calories: number; protein_g: number; carbs_g: number; fat_g: number;
+        }) => ({ action: 'logFood', ...input }),
+      },
+
+      // ── Weight ─────────────────────────────────────────────────────────────
       logWeight: {
-        description: 'Log the user\'s body weight',
+        description: 'Log body weight',
         inputSchema: z.object({
-          weight_kg: z.number().describe('Weight in kilograms'),
-          note: z.string().optional().describe('Optional note'),
+          weight_kg: z.number(),
+          note: z.string().optional(),
         }),
-        execute: async ({ weight_kg, note }: { weight_kg: number; note?: string }) =>
-          ({ action: 'logWeight', weight_kg, note: note ?? null }),
+        execute: async (input: { weight_kg: number; note?: string }) =>
+          ({ action: 'logWeight', ...input }),
       },
+
+      // ── Habits ─────────────────────────────────────────────────────────────
       completeHabit: {
-        description: 'Mark a habit as complete for today',
+        description: 'Mark a habit complete for today',
         inputSchema: z.object({
-          habit_id: z.number().describe('The habit ID to mark complete'),
-          habit_name: z.string().describe('The habit name for confirmation'),
+          habit_id: z.number(),
+          habit_name: z.string(),
         }),
-        execute: async ({ habit_id, habit_name }: { habit_id: number; habit_name: string }) =>
-          ({ action: 'completeHabit', habit_id, habit_name }),
-      },
-      logWorkout: {
-        description: 'Log a workout session',
-        inputSchema: z.object({
-          name: z.string().describe('Workout name or type'),
-          duration_min: z.number().optional().describe('Duration in minutes'),
-          intensity: z.enum(['low', 'moderate', 'high']).optional(),
-        }),
-        execute: async ({ name, duration_min, intensity }: { name: string; duration_min?: number; intensity?: 'low' | 'moderate' | 'high' }) =>
-          ({ action: 'logWorkout', name, duration_min: duration_min ?? 60, intensity: intensity ?? 'high' }),
+        execute: async (input: { habit_id: number; habit_name: string }) =>
+          ({ action: 'completeHabit', ...input }),
       },
       createHabit: {
-        description: 'Create a new habit for the user',
-        inputSchema: z.object({
-          name: z.string().describe('The habit name'),
-        }),
-        execute: async ({ name }: { name: string }) =>
-          ({ action: 'createHabit', name }),
+        description: 'Create a new habit',
+        inputSchema: z.object({ name: z.string() }),
+        execute: async (input: { name: string }) => ({ action: 'createHabit', ...input }),
       },
       deleteHabit: {
-        description: 'Delete (deactivate) an existing habit',
-        inputSchema: z.object({
-          habit_id: z.number().describe('The habit ID to delete'),
-          habit_name: z.string().describe('The habit name for confirmation'),
-        }),
-        execute: async ({ habit_id, habit_name }: { habit_id: number; habit_name: string }) =>
-          ({ action: 'deleteHabit', habit_id, habit_name }),
+        description: 'Delete (deactivate) a habit',
+        inputSchema: z.object({ habit_id: z.number(), habit_name: z.string() }),
+        execute: async (input: { habit_id: number; habit_name: string }) =>
+          ({ action: 'deleteHabit', ...input }),
       },
       renameHabit: {
-        description: 'Rename an existing habit',
+        description: 'Rename a habit',
+        inputSchema: z.object({ habit_id: z.number(), old_name: z.string(), new_name: z.string() }),
+        execute: async (input: { habit_id: number; old_name: string; new_name: string }) =>
+          ({ action: 'renameHabit', ...input }),
+      },
+
+      // ── Training ───────────────────────────────────────────────────────────
+      logWorkout: {
+        description: 'Log a general workout session',
         inputSchema: z.object({
-          habit_id: z.number().describe('The habit ID to rename'),
-          old_name: z.string().describe('Current habit name'),
-          new_name: z.string().describe('New habit name'),
+          name: z.string(),
+          duration_min: z.number().optional(),
+          intensity: z.enum(['low', 'moderate', 'high']).optional(),
         }),
-        execute: async ({ habit_id, old_name, new_name }: { habit_id: number; old_name: string; new_name: string }) =>
-          ({ action: 'renameHabit', habit_id, old_name, new_name }),
+        execute: async (input: { name: string; duration_min?: number; intensity?: 'low' | 'moderate' | 'high' }) =>
+          ({ action: 'logWorkout', name: input.name, duration_min: input.duration_min ?? 60, intensity: input.intensity ?? 'high' }),
+      },
+      logStrengthSession: {
+        description: 'Log a strength training session with sets',
+        inputSchema: z.object({
+          exercise: z.string().describe('Exercise name e.g. Squat, Bench Press'),
+          sets: z.number().describe('Number of sets'),
+          reps: z.number().describe('Reps per set'),
+          weight_kg: z.number().describe('Weight used in kg'),
+          week: z.number().describe('Training week number'),
+        }),
+        execute: async (input: { exercise: string; sets: number; reps: number; weight_kg: number; week: number }) =>
+          ({ action: 'logStrengthSession', ...input }),
+      },
+
+      // ── Meditation ─────────────────────────────────────────────────────────
+      logMeditation: {
+        description: 'Log a meditation session',
+        inputSchema: z.object({
+          duration_min: z.number().describe('Duration in minutes'),
+          session_name: z.string().optional().describe('Session name if known'),
+        }),
+        execute: async (input: { duration_min: number; session_name?: string }) =>
+          ({ action: 'logMeditation', ...input }),
       },
     },
-    stopWhen: stepCountIs(3),
+    stopWhen: stepCountIs(5),
   });
 
   return result.toTextStreamResponse();

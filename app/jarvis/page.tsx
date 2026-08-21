@@ -7,20 +7,20 @@ import {
   getTrainingSessions, getCurrentTrainingWeek, getTrainingWeek,
   getWeightHistory, getDailyScore, getDailyScores, getMealLogs,
   getHabitStreaks, getInsights, getLiftSetup, calcPrescribedWeight,
-  toggleHabitCompletion, logWeight, addWorkoutLog, addHabit, deactivateHabit, renameHabit, todayISO,
+  toggleHabitCompletion, logWeight, addWorkoutLog, addHabit,
+  deactivateHabit, renameHabit, addFoodItem, addMealLog,
+  addMeditationLog, getMeditationSessions, createTrainingSession,
+  addStrengthSets, todayISO, getCurrentTrainingWeek as getWeek,
 } from '@/lib/db';
 import { haptic } from '@/lib/haptic';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface Message {
-  id: string;
   role: 'user' | 'assistant';
   content: string;
-  toolCall?: { action: string; [key: string]: unknown };
 }
 
 type VoiceKey = 'daniel' | 'george' | 'brian' | 'eric' | 'adam' | 'browser';
-type Mode = 'chat' | 'conversation';
 
 const VOICE_OPTIONS: { key: VoiceKey; name: string; desc: string }[] = [
   { key: 'daniel',  name: 'Daniel',  desc: 'British · Formal' },
@@ -33,15 +33,13 @@ const VOICE_OPTIONS: { key: VoiceKey; name: string; desc: string }[] = [
 
 const STORAGE_KEY_VOICE   = 'jarvis_voice';
 const STORAGE_KEY_HISTORY = 'jarvis_history';
-const MAX_HISTORY         = 20;
+const MAX_HISTORY         = 30;
 
-// ─── iOS audio unlock ─────────────────────────────────────────────────────────
-// iOS Safari blocks audio.play() unless triggered by a user gesture.
-// We pre-create and unlock an Audio element on first user tap, then reuse it.
+// ─── iOS audio unlock ──────────────────────────────────────────────────────────
 let _unlockedAudio: HTMLAudioElement | null = null;
 
 function unlockAudio() {
-  if (_unlockedAudio) return;
+  if (_unlockedAudio || typeof window === 'undefined') return;
   try {
     _unlockedAudio = new Audio();
     _unlockedAudio.src = 'data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
@@ -50,35 +48,33 @@ function unlockAudio() {
   } catch { /* ignore */ }
 }
 
-// ─── ElevenLabs TTS ────────────────────────────────────────────────────────────
-async function speakElevenLabs(
-  text: string,
-  voice: VoiceKey,
-  onEnd?: () => void,
-): Promise<HTMLAudioElement | null> {
+// ─── TTS ──────────────────────────────────────────────────────────────────────
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+    .replace(/`(.*?)`/g, '$1').replace(/#{1,6}\s/g, '')
+    .replace(/\n+/g, ' ').trim();
+}
+
+async function speakElevenLabs(text: string, voice: VoiceKey, onEnd?: () => void): Promise<void> {
   try {
     const res = await fetch('/api/jarvis/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: stripMarkdown(text), voice }),
     });
-    if (!res.ok) return null;
-    const blob  = await res.blob();
-    const url   = URL.createObjectURL(blob);
-    // Reuse pre-unlocked audio element if available, else create new
+    if (!res.ok) { onEnd?.(); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
     const audio = _unlockedAudio ?? new Audio();
-    audio.src = url;
-    audio.volume = 1;
+    audio.src = url; audio.volume = 1;
     if (onEnd) audio.onended = onEnd;
-    const playPromise = audio.play();
-    if (playPromise) playPromise.catch(() => {
-      // Fallback: create fresh Audio and try again
+    audio.play().catch(() => {
       const a2 = new Audio(url);
       if (onEnd) a2.onended = onEnd;
       a2.play().catch(() => onEnd?.());
     });
-    return audio;
-  } catch { onEnd?.(); return null; }
+  } catch { onEnd?.(); }
 }
 
 function speakBrowser(text: string, onEnd?: () => void): void {
@@ -88,32 +84,16 @@ function speakBrowser(text: string, onEnd?: () => void): void {
   utt.rate = 1.0; utt.pitch = 0.85; utt.volume = 1;
   if (onEnd) utt.onend = onEnd;
   const voices = window.speechSynthesis.getVoices();
-  const preferred =
-    voices.find(v => v.name.includes('Daniel')) ||
-    voices.find(v => v.name.includes('Aaron'))  ||
-    voices.find(v => v.lang === 'en-GB')        ||
-    voices.find(v => v.lang.startsWith('en'));
+  const preferred = voices.find(v => v.name.includes('Daniel')) || voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
   if (preferred) utt.voice = preferred;
-  const doSpeak = () => window.speechSynthesis.speak(utt);
-  voices.length > 0 ? doSpeak() : (window.speechSynthesis.onvoiceschanged = doSpeak);
+  voices.length > 0 ? window.speechSynthesis.speak(utt) : (window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.speak(utt));
 }
 
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/`(.*?)`/g, '$1')
-    .replace(/#{1,6}\s/g, '')
-    .replace(/\n+/g, ' ')
-    .trim();
-}
-
-// ─── Voice input hook ──────────────────────────────────────────────────────────
+// ─── Voice input ───────────────────────────────────────────────────────────────
 function useVoiceInput(onResult: (text: string) => void) {
-  const recRef    = useRef<any>(null);
+  const recRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
-  const supported = typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  const supported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   const start = useCallback(() => {
     if (!supported || listening) return;
@@ -126,178 +106,25 @@ function useVoiceInput(onResult: (text: string) => void) {
     recRef.current = rec; rec.start(); setListening(true);
   }, [listening, supported, onResult]);
 
-  const stop = useCallback(() => {
-    recRef.current?.stop();
-    setListening(false);
-  }, []);
-
-  const toggle = useCallback(() => {
-    listening ? stop() : start();
-  }, [listening, start, stop]);
+  const stop = useCallback(() => { recRef.current?.stop(); setListening(false); }, []);
+  const toggle = useCallback(() => listening ? stop() : start(), [listening, start, stop]);
 
   return { listening, toggle, start, stop, supported };
 }
 
-// ─── Avatar ────────────────────────────────────────────────────────────────────
-function JarvisAvatar({
-  loading, listening, speaking, size = 160,
-}: {
-  loading: boolean; listening: boolean; speaking?: boolean; size?: number;
-}) {
-  const active = loading || listening || speaking;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: size > 160 ? '0' : '40px 0 28px' }}>
-      <div style={{ position: 'relative', width: size, height: size }}>
-        <div style={{ position: 'absolute', inset: -14, borderRadius: '50%', border: '1px solid rgba(218,255,1,0.12)', animation: active ? 'j-ring1 2s ease-in-out infinite' : 'none' }} />
-        <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: '1.5px solid rgba(218,255,1,0.25)', animation: active ? 'j-ring2 2s ease-in-out 0.35s infinite' : 'none' }} />
-        {speaking && <div style={{ position: 'absolute', inset: -22, borderRadius: '50%', border: '1px solid rgba(218,255,1,0.08)', animation: 'j-ring1 3s ease-in-out 0.7s infinite' }} />}
-        <div style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', boxShadow: active ? 'rgba(218,255,1,0.7) 0 0 0 2px, rgba(218,255,1,0.3) 0 0 60px' : 'rgba(218,255,1,0.3) 0 0 0 2px, rgba(218,255,1,0.08) 0 0 30px', transition: 'box-shadow 0.4s', position: 'relative' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/jarvis-avatar.jpg" alt="Jarvis" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: active ? 'brightness(1.15) contrast(1.1)' : 'brightness(0.9) contrast(1.05)', transition: 'filter 0.4s' }} />
-          <div style={{ position: 'absolute', inset: 0, background: active ? 'rgba(218,255,1,0.07)' : 'transparent', transition: 'background 0.4s' }} />
-          {listening && (
-            <div style={{ position: 'absolute', bottom: size > 160 ? 28 : 18, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 3, alignItems: 'center', background: 'rgba(0,0,0,0.6)', borderRadius: 99, padding: '5px 12px' }}>
-              {[2,3,5,7,5,3,2].map((h, i) => (
-                <div key={i} style={{ width: size > 160 ? 4 : 3, height: h * (size > 160 ? 4 : 3), background: '#DAFF01', borderRadius: 2, animation: `j-bar 0.65s ease-in-out ${i * 0.09}s infinite alternate` }} />
-              ))}
-            </div>
-          )}
-          {speaking && !listening && (
-            <div style={{ position: 'absolute', bottom: size > 160 ? 28 : 18, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 3, alignItems: 'center', background: 'rgba(0,0,0,0.6)', borderRadius: 99, padding: '5px 12px' }}>
-              {[1,2,4,6,4,2,1].map((h, i) => (
-                <div key={i} style={{ width: size > 160 ? 4 : 3, height: h * (size > 160 ? 4 : 3), background: 'rgba(218,255,1,0.6)', borderRadius: 2, animation: `j-bar 0.8s ease-in-out ${i * 0.12}s infinite alternate` }} />
-              ))}
-            </div>
-          )}
-        </div>
-        <div style={{ position: 'absolute', bottom: size > 160 ? 8 : 6, right: size > 160 ? 8 : 6, width: size > 160 ? 20 : 16, height: size > 160 ? 20 : 16, borderRadius: '50%', background: '#DAFF01', boxShadow: '0 0 12px #DAFF01', border: `${size > 160 ? 4 : 3}px solid #000`, animation: active ? 'j-pulse 1s ease infinite' : 'none' }} />
-      </div>
-
-      {size <= 160 && (
-        <>
-          <p style={{ margin: '18px 0 5px', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.18em', color: '#fff', fontFamily: 'var(--font-mono)' }}>JARVIS</p>
-          <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: active ? '#DAFF01' : 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', transition: 'color 0.3s' }}>
-            {loading ? 'PROCESSING…' : listening ? 'LISTENING…' : 'ONLINE'}
-          </p>
-        </>
-      )}
-
-      <style>{`
-        @keyframes j-ring1 { 0%,100%{transform:scale(1);opacity:.25} 50%{transform:scale(1.08);opacity:.65} }
-        @keyframes j-ring2 { 0%,100%{transform:scale(1);opacity:.15} 50%{transform:scale(1.13);opacity:.5} }
-        @keyframes j-bar   { from{transform:scaleY(.3)} to{transform:scaleY(1.6)} }
-        @keyframes j-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
-        @keyframes j-dot   { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
-        @keyframes j-fadein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes j-slideup { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-      `}</style>
-    </div>
-  );
-}
-
-function ThinkingDots() {
-  return (
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '4px 0' }}>
-      {[0,1,2].map(i => (
-        <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#DAFF01', animation: `j-dot 1.2s ease-in-out ${i * 0.2}s infinite` }} />
-      ))}
-    </div>
-  );
-}
-
-// ─── Tool confirm card ─────────────────────────────────────────────────────────
-function ToolCard({ toolCall, onExecute }: { toolCall: Message['toolCall']; onExecute: (tc: Message['toolCall']) => void }) {
-  const [done, setDone] = useState(false);
-  if (!toolCall) return null;
-  const labels: Record<string, string> = {
-    logWeight:    '⚖️ Log Weight',
-    completeHabit:'✅ Mark Habit Done',
-    logFood:      '🍽 Log Food',
-    logWorkout:   '💪 Log Workout',
-    createHabit:  '➕ Create Habit',
-    deleteHabit:  '🗑 Remove Habit',
-    renameHabit:  '✏️ Rename Habit',
-  };
-  const label = labels[toolCall.action] ?? toolCall.action;
-  let detail = '';
-  if (toolCall.action === 'logWeight')    detail = `${toolCall.weight_kg}kg`;
-  if (toolCall.action === 'completeHabit') detail = toolCall.habit_name as string;
-  if (toolCall.action === 'logFood')      detail = `${toolCall.food_name} · ${toolCall.meal_type}`;
-  if (toolCall.action === 'logWorkout')   detail = `${toolCall.name} · ${toolCall.duration_min}min`;
-  if (toolCall.action === 'createHabit')  detail = toolCall.name as string;
-  if (toolCall.action === 'deleteHabit')  detail = toolCall.habit_name as string;
-  if (toolCall.action === 'renameHabit')  detail = `${toolCall.old_name} → ${toolCall.new_name}`;
-
-  if (done) return (
-    <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(218,255,1,0.06)', border: '1px solid rgba(218,255,1,0.2)', margin: '4px 0', animation: 'j-fadein 0.3s ease', display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ color: '#DAFF01', fontSize: '0.75rem' }}>✓ {label} — {detail}</span>
-    </div>
-  );
-  return (
-    <div style={{ padding: '10px 14px', borderRadius: 12, background: '#0D0D0D', border: '1px solid rgba(255,255,255,0.08)', margin: '4px 0', animation: 'j-fadein 0.3s ease' }}>
-      <p style={{ margin: '0 0 8px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>ACTION PENDING</p>
-      <p style={{ margin: '0 0 10px', fontSize: '0.85rem', color: '#fff' }}>{label}: <span style={{ color: '#DAFF01' }}>{detail}</span></p>
-      <button onClick={() => { setDone(true); onExecute(toolCall); }} style={{ background: '#DAFF01', border: 'none', borderRadius: 8, padding: '7px 16px', color: '#000', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}>Confirm</button>
-    </div>
-  );
-}
-
-// ─── Chat bubble ───────────────────────────────────────────────────────────────
-function Bubble({ msg, ttsEnabled, voice, onExecute }: {
-  msg: Message; ttsEnabled: boolean; voice: VoiceKey; onExecute: (tc: Message['toolCall']) => void;
-}) {
-  const isUser = msg.role === 'user';
-  const [speaking, setSpeaking] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const handleTap = async () => {
-    if (isUser || !ttsEnabled || !msg.content) return;
-    if (speaking) { audioRef.current?.pause(); window.speechSynthesis?.cancel(); setSpeaking(false); return; }
-    setSpeaking(true);
-    if (voice === 'browser') {
-      speakBrowser(msg.content, () => setSpeaking(false));
-    } else {
-      const audio = await speakElevenLabs(msg.content, voice, () => setSpeaking(false));
-      if (audio) audioRef.current = audio; else setSpeaking(false);
-    }
-  };
-
-  return (
-    <div style={{ animation: 'j-fadein 0.25s ease' }}>
-      <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', marginBottom: msg.toolCall ? 4 : 12 }}>
-        <div onClick={handleTap} style={{ maxWidth: '80%', padding: '12px 16px', borderRadius: isUser ? '20px 20px 4px 20px' : '20px 20px 20px 4px', background: isUser ? '#DAFF01' : speaking ? '#1a1a1a' : '#141414', boxShadow: isUser ? 'none' : speaking ? 'rgba(218,255,1,0.4) 0 0 0 1px inset' : 'rgba(255,255,255,0.06) 0 0 0 1px inset', color: isUser ? '#000' : '#fff', fontSize: '0.9rem', lineHeight: 1.55, letterSpacing: '-0.011em', whiteSpace: 'pre-wrap', cursor: isUser ? 'default' : 'pointer', transition: 'box-shadow 0.2s', WebkitTapHighlightColor: 'transparent' }}>
-          {msg.content}
-          {!isUser && msg.content && (
-            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-              {speaking ? (
-                <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                  {[1,2,3,2,1].map((h, i) => <div key={i} style={{ width: 2, height: h * 3, background: '#DAFF01', borderRadius: 1, animation: `j-bar 0.6s ease-in-out ${i * 0.1}s infinite alternate` }} />)}
-                </div>
-              ) : (
-                <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>TAP TO SPEAK</span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-      {msg.toolCall && <ToolCard toolCall={msg.toolCall} onExecute={onExecute} />}
-    </div>
-  );
-}
-
-// ─── Voice picker modal ─────────────────────────────────────────────────────────
+// ─── Voice picker sheet ────────────────────────────────────────────────────────
 function VoicePicker({ voice, onSelect, onClose }: { voice: VoiceKey; onSelect: (v: VoiceKey) => void; onClose: () => void }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#0D0D0D', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '28px 20px 48px', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}>
-        <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)' }}>SELECT VOICE</p>
-        <p style={{ margin: '0 0 20px', fontSize: '1rem', fontWeight: 600, color: '#fff' }}>Jarvis Voice</p>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0D0D0D', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '28px 20px 52px', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}>
+        <p style={{ margin: '0 0 4px', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-mono)' }}>JARVIS VOICE</p>
+        <p style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>Select Voice</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {VOICE_OPTIONS.map(v => (
             <button key={v.key} onClick={() => { onSelect(v.key); onClose(); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 14, background: voice === v.key ? 'rgba(218,255,1,0.08)' : '#141414', border: `1px solid ${voice === v.key ? 'rgba(218,255,1,0.35)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
               <div style={{ textAlign: 'left' }}>
                 <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: voice === v.key ? '#DAFF01' : '#fff', fontFamily: 'var(--font)' }}>{v.name}</p>
-                <p style={{ margin: 0, fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>{v.desc}</p>
+                <p style={{ margin: 0, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>{v.desc}</p>
               </div>
               {voice === v.key && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#DAFF01', boxShadow: '0 0 8px #DAFF01' }} />}
             </button>
@@ -308,118 +135,219 @@ function VoicePicker({ voice, onSelect, onClose }: { voice: VoiceKey; onSelect: 
   );
 }
 
-// ─── Conversation Mode overlay ─────────────────────────────────────────────────
-function ConversationMode({
-  loading, speaking, listening, lastJarvisMsg,
-  onToggleMic, onExit, micSupported,
-}: {
-  loading: boolean;
-  speaking: boolean;
-  listening: boolean;
-  lastJarvisMsg: string;
-  onToggleMic: () => void;
-  onExit: () => void;
-  micSupported: boolean;
-}) {
-  const state = loading ? 'THINKING…' : speaking ? 'SPEAKING…' : listening ? 'LISTENING…' : 'TAP TO SPEAK';
-  const stateColor = loading ? 'rgba(218,255,1,0.5)' : speaking ? '#DAFF01' : listening ? '#DAFF01' : 'rgba(255,255,255,0.3)';
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 32px', animation: 'j-fadein 0.35s ease' }}>
-
-      {/* Big avatar */}
-      <JarvisAvatar loading={loading} listening={listening} speaking={speaking} size={220} />
-
-      {/* Name + state */}
-      <p style={{ margin: '28px 0 6px', fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.2em', color: '#fff', fontFamily: 'var(--font-mono)' }}>JARVIS</p>
-      <p style={{ margin: '0 0 32px', fontSize: '0.6rem', letterSpacing: '0.12em', color: stateColor, fontFamily: 'var(--font-mono)', transition: 'color 0.3s', minHeight: 14 }}>{state}</p>
-
-      {/* Last Jarvis utterance — subtle transcript */}
-      {lastJarvisMsg && !listening && (
-        <p style={{ margin: '0 0 40px', fontSize: '0.9rem', lineHeight: 1.6, color: 'rgba(255,255,255,0.45)', textAlign: 'center', maxWidth: 320, letterSpacing: '-0.01em', animation: 'j-slideup 0.4s ease' }}>
-          {stripMarkdown(lastJarvisMsg).slice(0, 180)}{lastJarvisMsg.length > 180 ? '…' : ''}
-        </p>
-      )}
-
-      {/* Mic button — big */}
-      {micSupported && (
-        <button
-          onClick={() => { unlockAudio(); onToggleMic(); }}
-          disabled={loading || speaking}
-          style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: listening ? '#DAFF01' : '#141414',
-            border: listening ? 'none' : '1.5px solid rgba(255,255,255,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: loading || speaking ? 'default' : 'pointer',
-            fontSize: 30,
-            boxShadow: listening ? '0 0 40px rgba(218,255,1,0.6)' : 'none',
-            transition: 'all 0.2s',
-            WebkitTapHighlightColor: 'transparent',
-            color: listening ? '#000' : 'rgba(255,255,255,0.5)',
-            opacity: loading || speaking ? 0.3 : 1,
-          }}
-        >
-          🎙
-        </button>
-      )}
-
-      {/* Exit pill */}
-      <button
-        onClick={onExit}
-        style={{ marginTop: 36, background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 99, padding: '9px 22px', color: 'rgba(255,255,255,0.3)', fontSize: '0.6rem', letterSpacing: '0.1em', fontFamily: 'var(--font-mono)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
-      >
-        EXIT CONVERSATION
-      </button>
-    </div>
-  );
-}
-
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function JarvisPage() {
   const router = useRouter();
   const [messages, setMessages]     = useState<Message[]>([]);
-  const [input, setInput]           = useState('');
   const [loading, setLoading]       = useState(false);
-  const [context, setContext]       = useState<Record<string, unknown> | null>(null);
-  const [ttsEnabled, setTtsEnabled] = useState(true);
-  const [voice, setVoice]           = useState<VoiceKey>('daniel');
-  const [mode, setMode]             = useState<Mode>('chat');
   const [speaking, setSpeaking]     = useState(false);
+  const [context, setContext]       = useState<Record<string, unknown> | null>(null);
+  const [voice, setVoice]           = useState<VoiceKey>('daniel');
   const [showVoicePicker, setShowVoicePicker] = useState(false);
-  const bottomRef      = useRef<HTMLDivElement>(null);
-  const inputRef       = useRef<HTMLInputElement>(null);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-  // In conversation mode, auto-listen after Jarvis finishes
-  const autoListenRef  = useRef(false);
+  const [lastJarvisText, setLastJarvisText]   = useState('');
+  const autoListenRef = useRef(false);
+  const messagesRef   = useRef<Message[]>([]);
+  const contextRef    = useRef<Record<string, unknown> | null>(null);
 
-  // ── Speak helper (shared) ────────────────────────────────────────────────────
-  const speakText = useCallback(async (text: string, onEnd?: () => void) => {
-    const v = (localStorage.getItem(STORAGE_KEY_VOICE) as VoiceKey) ?? 'daniel';
-    setSpeaking(true);
-    const done = () => { setSpeaking(false); onEnd?.(); };
-    if (v === 'browser') {
-      speakBrowser(text, done);
-    } else {
-      const audio = await speakElevenLabs(text, v, done);
-      if (audio) currentAudioRef.current = audio; else done();
-    }
-  }, []);
+  // Keep refs in sync for use inside callbacks
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { contextRef.current = context; }, [context]);
 
-  // Load saved voice pref
+  // Load voice pref
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY_VOICE) as VoiceKey | null;
     if (saved) setVoice(saved);
   }, []);
 
-  // Load context + history + boot
+  // ── Execute tool actions immediately (no confirm) ─────────────────────────────
+  const executeAction = useCallback(async (toolCall: Record<string, unknown>) => {
+    const today = todayISO();
+    try {
+      switch (toolCall.action) {
+
+        case 'logFood': {
+          // Create or reuse food item, then log the meal
+          const foodId = await addFoodItem({
+            external_id: null,
+            name: toolCall.food_name as string,
+            brand: null,
+            barcode: null,
+            serving_unit: 'g',
+            serving_size: toolCall.quantity_g as number,
+            calories: toolCall.calories as number,
+            protein: toolCall.protein_g as number,
+            carbs: toolCall.carbs_g as number,
+            fat: toolCall.fat_g as number,
+            is_favorite: false,
+          });
+          await addMealLog({
+            date: today,
+            meal_type: toolCall.meal_type as 'breakfast' | 'lunch' | 'dinner' | 'snack',
+            food_item_id: foodId,
+            quantity: toolCall.quantity_g as number,
+            logged_at: new Date().toISOString(),
+            source: 'manual',
+          });
+          break;
+        }
+
+        case 'logWeight':
+          await logWeight(toolCall.weight_kg as number, toolCall.note as string | undefined);
+          break;
+
+        case 'completeHabit':
+          await toggleHabitCompletion(toolCall.habit_id as number);
+          break;
+
+        case 'createHabit':
+          await addHabit({ name: toolCall.name as string, active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() });
+          break;
+
+        case 'deleteHabit':
+          await deactivateHabit(toolCall.habit_id as number);
+          break;
+
+        case 'renameHabit':
+          await renameHabit(toolCall.habit_id as number, toolCall.new_name as string);
+          break;
+
+        case 'logWorkout':
+          await addWorkoutLog({ date: today, template_id: null, name: toolCall.name as string, duration_min: toolCall.duration_min as number, intensity: (toolCall.intensity as 'low' | 'moderate' | 'high') ?? 'high', calories_burned: null, source: 'manual', logged_at: new Date().toISOString() });
+          break;
+
+        case 'logStrengthSession': {
+          const week = getWeek();
+          const sessionId = await createTrainingSession({
+            week,
+            session_type: 'strength',
+            date: today,
+            rpe: null,
+            notes: `${toolCall.exercise} — ${toolCall.sets}×${toolCall.reps} @ ${toolCall.weight_kg}kg`,
+          });
+          const sets = Array.from({ length: toolCall.sets as number }, (_, i) => ({
+            session_id: sessionId,
+            exercise_id: (toolCall.exercise as string).toLowerCase().replace(/\s+/g, '_'),
+            exercise_name: toolCall.exercise as string,
+            set_number: i + 1,
+            prescribed_weight: toolCall.weight_kg as number,
+            actual_weight: toolCall.weight_kg as number,
+            reps: toolCall.reps as number,
+            rpe: null as number | null,
+            notes: null as string | null,
+          }));
+          await addStrengthSets(sets);
+          break;
+        }
+
+        case 'logMeditation': {
+          const sessions = await getMeditationSessions();
+          const session = sessions[0]; // default first session
+          if (session) {
+            await addMeditationLog({ session_id: session.id, date: today, completed: true, duration_actual_min: toolCall.duration_min as number, logged_at: new Date().toISOString() });
+          }
+          break;
+        }
+      }
+    } catch (e) {
+      console.error('Tool action failed:', toolCall.action, e);
+    }
+  }, []);
+
+  // ── Speak ─────────────────────────────────────────────────────────────────────
+  const currentVoiceRef = useRef<VoiceKey>('daniel');
+  useEffect(() => { currentVoiceRef.current = voice; }, [voice]);
+
+  const speakText = useCallback((text: string, onEnd?: () => void) => {
+    setSpeaking(true);
+    const v = currentVoiceRef.current;
+    const done = () => { setSpeaking(false); onEnd?.(); };
+    if (v === 'browser') speakBrowser(text, done);
+    else speakElevenLabs(text, v, done);
+  }, []);
+
+  // ── Send message ──────────────────────────────────────────────────────────────
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || loading) return;
+    haptic('light');
+
+    // Stop current audio
+    if (_unlockedAudio) { _unlockedAudio.pause(); _unlockedAudio.currentTime = 0; }
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
+
+    const userMsg: Message = { role: 'user', content: text.trim() };
+    const updatedMessages = [...messagesRef.current, userMsg];
+    setMessages(updatedMessages);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/jarvis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
+          context: contextRef.current,
+        }),
+      });
+      if (!res.ok) throw new Error('API error');
+
+      const reader  = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantText = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+
+          // Detect tool call results (JSON objects in stream)
+          if (chunk.trimStart().startsWith('{') && chunk.includes('"action"')) {
+            try {
+              const tc = JSON.parse(chunk.trim());
+              if (tc.action) { executeAction(tc); continue; }
+            } catch { /* not JSON, append to text */ }
+          }
+
+          assistantText += chunk;
+        }
+      }
+
+      const finalMessages = [...updatedMessages, { role: 'assistant' as const, content: assistantText }];
+      setMessages(finalMessages);
+      setLastJarvisText(assistantText);
+
+      // Persist
+      localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(finalMessages.slice(-MAX_HISTORY)));
+
+      // Speak — auto-listen after done in conversation mode
+      if (assistantText) {
+        speakText(assistantText, () => {
+          if (autoListenRef.current) setTimeout(() => voiceInput.start(), 500);
+        });
+      }
+
+    } catch {
+      const errMsg = 'Connection issue. Try again.';
+      setMessages(prev => [...prev, { role: 'assistant', content: errMsg }]);
+      setLastJarvisText(errMsg);
+      speakText(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, speakText, executeAction]);
+
+  const voiceInput = useVoiceInput(sendMessage);
+
+  // ── Load context ──────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
-        const saved   = localStorage.getItem(STORAGE_KEY_HISTORY);
+        const saved = localStorage.getItem(STORAGE_KEY_HISTORY);
         const history: Message[] = saved ? JSON.parse(saved) : [];
-        const today   = todayISO();
-        const week    = getCurrentTrainingWeek();
+        const today = todayISO();
+        const week  = getCurrentTrainingWeek();
         const [
           profile, habits, completions, macros, sessions, plan,
           weights, score, scoreHistory, mealLogs, insights, liftSetup,
@@ -431,10 +359,7 @@ export default function JarvisPage() {
         const doneIds      = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
         const activeHabits = habits.filter(h => h.active);
         const streaks      = await getHabitStreaks(activeHabits.map(h => h.id));
-        const prescribedLifts = plan ? liftSetup.map(l => ({
-          lift: l.lift, weight: calcPrescribedWeight(l, plan), sets: 4,
-          reps: plan.phase === 'Base' ? '5' : '3–5',
-        })) : [];
+        const prescribedLifts = plan ? liftSetup.map(l => ({ lift: l.lift, weight: calcPrescribedWeight(l, plan), sets: 4, reps: plan.phase === 'Base' ? '5' : '3–5' })) : [];
         const ctx = {
           date: new Date().toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }),
           score: score?.total_score ?? 0,
@@ -454,243 +379,143 @@ export default function JarvisPage() {
           scoreHistory, insights,
         };
         setContext(ctx);
+
         if (history.length > 0) {
           setMessages(history);
+          const last = [...history].reverse().find(m => m.role === 'assistant');
+          if (last) setLastJarvisText(last.content);
         } else {
           const s = score?.total_score ?? 0;
-          const bootMsg = `Systems online. Score sitting at ${s} — ${s >= 75 ? 'solid start, let\'s keep the momentum' : s >= 50 ? 'room to push today' : 'we\'ve got work to do'}. What do you need?`;
-          const initMsg: Message = { id: 'init', role: 'assistant', content: bootMsg };
-          setMessages([initMsg]);
-          const voicePref = (localStorage.getItem(STORAGE_KEY_VOICE) as VoiceKey) ?? 'daniel';
-          if (ttsEnabled) setTimeout(() => {
-            if (voicePref === 'browser') speakBrowser(bootMsg);
-            else speakElevenLabs(bootMsg, voicePref);
-          }, 600);
+          const boot = `Systems online. Score at ${s}. ${s >= 75 ? 'Strong start — what do you need?' : s >= 50 ? 'Room to push. What\'s the move?' : 'We\'ve got work to do. Where do you want to start?'}`;
+          setMessages([{ role: 'assistant', content: boot }]);
+          setLastJarvisText(boot);
         }
       } catch {
-        setMessages([{ id: 'init', role: 'assistant', content: 'Jarvis online. What do you need?' }]);
+        const boot = 'Jarvis online. What do you need?';
+        setMessages([{ role: 'assistant', content: boot }]);
+        setLastJarvisText(boot);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
-
-  useEffect(() => {
-    if (messages.length > 1) {
-      localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(messages.slice(-MAX_HISTORY)));
-    }
-  }, [messages]);
-
-  // ── Execute tool actions ──────────────────────────────────────────────────────
-  const executeToolAction = useCallback(async (toolCall: Message['toolCall']) => {
-    if (!toolCall || !context) return;
-    try {
-      if      (toolCall.action === 'logWeight')     await logWeight(toolCall.weight_kg as number, toolCall.note as string | undefined);
-      else if (toolCall.action === 'completeHabit') await toggleHabitCompletion(toolCall.habit_id as number);
-      else if (toolCall.action === 'createHabit')   await addHabit({ name: toolCall.name as string, active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() });
-      else if (toolCall.action === 'deleteHabit')   await deactivateHabit(toolCall.habit_id as number);
-      else if (toolCall.action === 'renameHabit')   await renameHabit(toolCall.habit_id as number, toolCall.new_name as string);
-      else if (toolCall.action === 'logWorkout')    await addWorkoutLog({ date: todayISO(), template_id: null, name: toolCall.name as string, duration_min: toolCall.duration_min as number, intensity: (toolCall.intensity as 'low' | 'moderate' | 'high') ?? 'high', calories_burned: null, source: 'manual', logged_at: new Date().toISOString() });
-    } catch (e) { console.error('Tool action failed:', e); }
-  }, [context]);
-
-  // ── Send message ─────────────────────────────────────────────────────────────
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loading) return;
-    haptic('light');
-    currentAudioRef.current?.pause();
-    window.speechSynthesis?.cancel();
-    setSpeaking(false);
-
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text.trim() };
-    const next = [...messages, userMsg];
-    setMessages(next);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/jarvis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next.map(m => ({ role: m.role, content: m.content })), context }),
-      });
-      if (!res.ok) throw new Error('API error');
-
-      const reader  = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantText = '';
-      let toolCallData: Message['toolCall'] | undefined;
-      const aid = Date.now() + '-a';
-      setMessages(prev => [...prev, { id: aid, role: 'assistant', content: '' }]);
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          if (chunk.includes('"action":')) {
-            try { const tc = JSON.parse(chunk); if (tc.action) { toolCallData = tc; continue; } } catch { /* not JSON */ }
-          }
-          assistantText += chunk;
-          setMessages(prev => prev.map(m => m.id === aid ? { ...m, content: assistantText } : m));
-        }
-      }
-      setMessages(prev => prev.map(m => m.id === aid ? { ...m, content: assistantText, toolCall: toolCallData } : m));
-
-      // Speak — in conversation mode, auto-listen after done
-      if (ttsEnabled && assistantText) {
-        const onSpeakEnd = autoListenRef.current ? () => {
-          // small delay then trigger mic
-          setTimeout(() => { if (autoListenRef.current) voiceControls.start(); }, 600);
-        } : undefined;
-        await speakText(assistantText, onSpeakEnd);
-      }
-    } catch {
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'Connection issue. Try again.' }]);
-    } finally {
-      setLoading(false);
-      if (mode === 'chat') inputRef.current?.focus();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, context, loading, ttsEnabled, mode, speakText]);
-
-  const voiceControls = useVoiceInput(sendMessage);
-  const { listening, toggle: toggleMic, start: startMic, supported: micSupported } = voiceControls;
-
   const handleVoiceSelect = (v: VoiceKey) => {
-    setVoice(v);
-    localStorage.setItem(STORAGE_KEY_VOICE, v);
+    setVoice(v); localStorage.setItem(STORAGE_KEY_VOICE, v);
   };
 
-  // ── Mode switch ───────────────────────────────────────────────────────────────
-  const enterConversation = () => {
-    unlockAudio(); // must be inside user gesture
-    setMode('conversation');
-    autoListenRef.current = true;
+  const handleMicTap = () => {
+    unlockAudio();
     haptic('medium');
-    // Brief delay then auto-start mic
-    setTimeout(() => startMic(), 400);
+    if (!autoListenRef.current) autoListenRef.current = true;
+    voiceInput.toggle();
   };
 
-  const exitConversation = () => {
+  // Stop all audio/mic on back
+  const handleBack = () => {
     autoListenRef.current = false;
-    voiceControls.stop();
-    currentAudioRef.current?.pause();
+    voiceInput.stop();
+    if (_unlockedAudio) { _unlockedAudio.pause(); }
     window.speechSynthesis?.cancel();
-    setSpeaking(false);
-    setMode('chat');
+    router.back();
   };
 
-  const lastJarvisMsg = [...messages].reverse().find(m => m.role === 'assistant')?.content ?? '';
+  const state = loading ? 'THINKING…' : speaking ? 'SPEAKING…' : voiceInput.listening ? 'LISTENING…' : 'TAP TO SPEAK';
+  const stateColor = loading || speaking || voiceInput.listening ? '#DAFF01' : 'rgba(255,255,255,0.28)';
+  const avatarActive = loading || speaking || voiceInput.listening;
 
-  const PROMPTS = [
-    'What should I focus on today?',
-    "How's my nutrition looking?",
-    'Am I on track this week?',
-    "What's my training plan today?",
-    'Give me a full status report.',
-    'What habit is falling behind?',
-  ];
-
-  const clearHistory = () => { localStorage.removeItem(STORAGE_KEY_HISTORY); window.location.reload(); };
-
-  // ── Conversation mode overlay ─────────────────────────────────────────────────
-  if (mode === 'conversation') {
-    return (
-      <ConversationMode
-        loading={loading}
-        speaking={speaking}
-        listening={listening}
-        lastJarvisMsg={lastJarvisMsg}
-        onToggleMic={toggleMic}
-        onExit={exitConversation}
-        micSupported={micSupported}
-      />
-    );
-  }
-
-  // ── Chat mode ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '0', overflow: 'hidden' }}>
 
-      {/* Header */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4 }}>←</button>
-          <div style={{ position: 'relative' }}>
-            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#0A0A0A', boxShadow: 'rgba(218,255,1,0.35) 0 0 0 1px inset', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#DAFF01' }}>⬡</div>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: loading ? 'rgba(218,255,1,0.5)' : '#DAFF01', boxShadow: '0 0 6px #DAFF01', border: '2px solid #000', animation: loading ? 'j-pulse 1s ease infinite' : 'none' }} />
+      {/* ── Top bar ── */}
+      <div style={{ width: '100%', padding: '52px 24px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <button onClick={handleBack} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 22, padding: 8, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>←</button>
+        <button onClick={() => { unlockAudio(); setShowVoicePicker(true); }} style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 99, padding: '7px 14px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontFamily: 'var(--font-mono)', WebkitTapHighlightColor: 'transparent' }}>
+          {VOICE_OPTIONS.find(v => v.key === voice)?.name?.toUpperCase() ?? 'VOICE'}
+        </button>
+      </div>
+
+      {/* ── Avatar ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, justifyContent: 'center', width: '100%', padding: '0 32px' }}>
+        <div style={{ position: 'relative', width: 220, height: 220, marginBottom: 32 }}>
+          {/* Pulse rings */}
+          <div style={{ position: 'absolute', inset: -18, borderRadius: '50%', border: '1px solid rgba(218,255,1,0.10)', animation: avatarActive ? 'j-ring1 2s ease-in-out infinite' : 'none' }} />
+          <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: '1.5px solid rgba(218,255,1,0.20)', animation: avatarActive ? 'j-ring2 2s ease-in-out 0.35s infinite' : 'none' }} />
+          {speaking && <div style={{ position: 'absolute', inset: -28, borderRadius: '50%', border: '1px solid rgba(218,255,1,0.06)', animation: 'j-ring1 3s ease-in-out 0.7s infinite' }} />}
+
+          {/* Avatar circle */}
+          <div style={{ width: 220, height: 220, borderRadius: '50%', overflow: 'hidden', boxShadow: avatarActive ? 'rgba(218,255,1,0.65) 0 0 0 2px, rgba(218,255,1,0.25) 0 0 80px' : 'rgba(218,255,1,0.25) 0 0 0 2px, rgba(218,255,1,0.06) 0 0 40px', transition: 'box-shadow 0.5s', position: 'relative' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/jarvis-avatar.jpg" alt="Jarvis" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: avatarActive ? 'brightness(1.15) contrast(1.1)' : 'brightness(0.85) contrast(1.05)', transition: 'filter 0.5s' }} />
+            <div style={{ position: 'absolute', inset: 0, background: avatarActive ? 'rgba(218,255,1,0.06)' : 'transparent', transition: 'background 0.5s' }} />
+
+            {/* Waveform when listening */}
+            {voiceInput.listening && (
+              <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(0,0,0,0.55)', borderRadius: 99, padding: '6px 14px' }}>
+                {[2,3,6,9,6,3,2].map((h, i) => (
+                  <div key={i} style={{ width: 4, height: h * 4, background: '#DAFF01', borderRadius: 2, animation: `j-bar 0.65s ease-in-out ${i * 0.09}s infinite alternate` }} />
+                ))}
+              </div>
+            )}
+            {/* Waveform when speaking */}
+            {speaking && !voiceInput.listening && (
+              <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(0,0,0,0.55)', borderRadius: 99, padding: '6px 14px' }}>
+                {[1,2,4,7,4,2,1].map((h, i) => (
+                  <div key={i} style={{ width: 4, height: h * 4, background: 'rgba(218,255,1,0.55)', borderRadius: 2, animation: `j-bar 0.85s ease-in-out ${i * 0.12}s infinite alternate` }} />
+                ))}
+              </div>
+            )}
           </div>
-          <div>
-            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, letterSpacing: '-0.011em', color: '#fff' }}>JARVIS</p>
-            <p style={{ margin: 0, fontSize: '0.5rem', letterSpacing: '0.08em', color: loading ? '#DAFF01' : 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)', transition: 'color 0.3s' }}>
-              {loading ? 'THINKING…' : listening ? 'LISTENING…' : 'ONLINE'}
-            </p>
-          </div>
+
+          {/* Status dot */}
+          <div style={{ position: 'absolute', bottom: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: '#DAFF01', boxShadow: '0 0 14px #DAFF01', border: '4px solid #000', animation: avatarActive ? 'j-pulse 1s ease infinite' : 'none' }} />
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* Conversation mode toggle */}
-          <button onClick={enterConversation} style={{ background: 'rgba(218,255,1,0.06)', border: '1px solid rgba(218,255,1,0.2)', borderRadius: 99, padding: '6px 12px', fontSize: '0.55rem', letterSpacing: '0.06em', color: '#DAFF01', cursor: 'pointer', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 10 }}>◎</span> CONVO
-          </button>
-          {/* Voice picker */}
-          <button onClick={() => setShowVoicePicker(true)} style={{ background: '#0A0A0A', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 99, padding: '6px 12px', fontSize: '0.55rem', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.45)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
-            {VOICE_OPTIONS.find(v => v.key === voice)?.name?.toUpperCase() ?? 'VOICE'}
-          </button>
-          {/* TTS toggle */}
-          <button onClick={() => setTtsEnabled(v => !v)} style={{ background: ttsEnabled ? 'rgba(218,255,1,0.08)' : '#0A0A0A', border: `1px solid ${ttsEnabled ? 'rgba(218,255,1,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 99, padding: '6px 12px', fontSize: '0.55rem', letterSpacing: '0.06em', color: ttsEnabled ? '#DAFF01' : 'rgba(255,255,255,0.3)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 510, transition: 'all 0.2s' }}>
-            {ttsEnabled ? '◉' : '○'}
-          </button>
-        </div>
+        {/* Name + state */}
+        <p style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.2em', color: '#fff', fontFamily: 'var(--font-mono)' }}>JARVIS</p>
+        <p style={{ margin: '0 0 28px', fontSize: '0.58rem', letterSpacing: '0.12em', color: stateColor, fontFamily: 'var(--font-mono)', transition: 'color 0.3s', minHeight: 14 }}>{state}</p>
+
+        {/* Last Jarvis utterance */}
+        {lastJarvisText && !voiceInput.listening && !loading && (
+          <p style={{ margin: '0', fontSize: '0.95rem', lineHeight: 1.65, color: 'rgba(255,255,255,0.42)', textAlign: 'center', maxWidth: 320, letterSpacing: '-0.01em', animation: 'j-slideup 0.4s ease' }}>
+            {stripMarkdown(lastJarvisText).slice(0, 200)}{lastJarvisText.length > 200 ? '…' : ''}
+          </p>
+        )}
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '80px 20px 260px', display: 'flex', flexDirection: 'column' }}>
-        <JarvisAvatar loading={loading} listening={listening} speaking={speaking} />
-
-        {messages.map(msg => (
-          <Bubble key={msg.id} msg={msg} ttsEnabled={ttsEnabled} voice={voice} onExecute={executeToolAction} />
-        ))}
-
-        {loading && messages[messages.length - 1]?.role === 'user' && (
-          <div style={{ display: 'flex', marginBottom: 12 }}>
-            <div style={{ padding: '12px 16px', borderRadius: '20px 20px 20px 4px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0 0 0 1px inset' }}>
-              <ThinkingDots />
-            </div>
-          </div>
+      {/* ── Mic + clear ── */}
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 'max(48px, calc(env(safe-area-inset-bottom) + 36px))', gap: 20, flexShrink: 0 }}>
+        {voiceInput.supported && (
+          <button
+            onClick={handleMicTap}
+            disabled={loading || speaking}
+            style={{
+              width: 84, height: 84, borderRadius: '50%',
+              background: voiceInput.listening ? '#DAFF01' : '#111',
+              border: voiceInput.listening ? 'none' : '1.5px solid rgba(255,255,255,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: loading || speaking ? 'default' : 'pointer',
+              fontSize: 32,
+              boxShadow: voiceInput.listening ? '0 0 48px rgba(218,255,1,0.55)' : 'none',
+              transition: 'all 0.2s',
+              WebkitTapHighlightColor: 'transparent',
+              color: voiceInput.listening ? '#000' : 'rgba(255,255,255,0.45)',
+              opacity: loading || speaking ? 0.25 : 1,
+            }}
+          >🎙</button>
         )}
-
-        {messages.length === 1 && !loading && (
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <p style={{ fontSize: '0.5rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>SUGGESTED</p>
-            {PROMPTS.map(p => (
-              <button key={p} onClick={() => sendMessage(p)} style={{ background: '#0A0A0A', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--r)', padding: '12px 16px', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', letterSpacing: '-0.011em', cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font)', WebkitTapHighlightColor: 'transparent' }}>{p}</button>
-            ))}
-          </div>
-        )}
-
-        {messages.length > 4 && (
-          <div style={{ textAlign: 'center', marginTop: 20 }}>
-            <button onClick={clearHistory} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', fontSize: '0.65rem', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)', cursor: 'pointer' }}>CLEAR HISTORY</button>
-          </div>
-        )}
-        <div ref={bottomRef} />
+        <button
+          onClick={() => { localStorage.removeItem(STORAGE_KEY_HISTORY); window.location.reload(); }}
+          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.15)', fontSize: '0.55rem', letterSpacing: '0.08em', fontFamily: 'var(--font-mono)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+        >CLEAR HISTORY</button>
       </div>
 
-      {/* Input bar */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 400, background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 16px', paddingBottom: 'max(96px, calc(env(safe-area-inset-bottom) + 84px))' }}>
-        <form onSubmit={e => { e.preventDefault(); sendMessage(input); }} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {micSupported && (
-            <button type="button" onClick={() => { unlockAudio(); haptic('light'); toggleMic(); }} style={{ flexShrink: 0, width: 46, height: 46, borderRadius: '50%', background: listening ? '#DAFF01' : '#141414', border: listening ? 'none' : '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 19, boxShadow: listening ? '0 0 24px rgba(218,255,1,0.5)' : 'none', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent', color: listening ? '#000' : 'rgba(255,255,255,0.45)' }}>🎙</button>
-          )}
-          <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder={listening ? 'Listening…' : 'Ask Jarvis…'} disabled={loading || listening} style={{ flex: 1, background: '#141414', border: `1px solid ${listening ? 'rgba(218,255,1,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 22, padding: '12px 18px', color: '#fff', fontSize: '0.9rem', fontFamily: 'var(--font)', outline: 'none', letterSpacing: '-0.011em', transition: 'border 0.2s' }} />
-          <button type="submit" disabled={!input.trim() || loading} style={{ flexShrink: 0, width: 46, height: 46, borderRadius: '50%', background: input.trim() && !loading ? '#DAFF01' : '#141414', border: 'none', cursor: input.trim() && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, transition: 'all 0.15s', color: input.trim() && !loading ? '#000' : 'rgba(255,255,255,0.2)', WebkitTapHighlightColor: 'transparent' }}>↑</button>
-        </form>
-      </div>
+      <style>{`
+        @keyframes j-ring1  { 0%,100%{transform:scale(1);opacity:.2} 50%{transform:scale(1.07);opacity:.6} }
+        @keyframes j-ring2  { 0%,100%{transform:scale(1);opacity:.12} 50%{transform:scale(1.12);opacity:.45} }
+        @keyframes j-bar    { from{transform:scaleY(.25)} to{transform:scaleY(1.7)} }
+        @keyframes j-pulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.25;transform:scale(.65)} }
+        @keyframes j-slideup { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes j-fadein  { from{opacity:0} to{opacity:1} }
+      `}</style>
 
       {showVoicePicker && <VoicePicker voice={voice} onSelect={handleVoiceSelect} onClose={() => setShowVoicePicker(false)} />}
     </div>
