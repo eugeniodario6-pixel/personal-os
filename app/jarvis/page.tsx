@@ -241,25 +241,51 @@ export default function JarvisPage() {
 
         case 'logStrengthSession': {
           const week = getWeek();
+          const lifts = (toolCall.lifts as Array<{ exercise: string; sets: number; reps: number; weight_kg: number }>) ?? [];
+          // Build notes summary from lifts
+          const liftSummary = lifts.length > 0
+            ? lifts.map(l => `${l.exercise} ${l.sets}×${l.reps} @ ${l.weight_kg}kg`).join(', ')
+            : (toolCall.session_notes as string | undefined) ?? 'Strength session';
           const sessionId = await createTrainingSession({
             week,
             session_type: 'strength',
             date: today,
-            rpe: null,
-            notes: `${toolCall.exercise} — ${toolCall.sets}×${toolCall.reps} @ ${toolCall.weight_kg}kg`,
+            rpe: (toolCall.rpe as number | undefined) ?? null,
+            notes: liftSummary,
           });
-          const sets = Array.from({ length: toolCall.sets as number }, (_, i) => ({
-            session_id: sessionId,
-            exercise_id: (toolCall.exercise as string).toLowerCase().replace(/\s+/g, '_'),
-            exercise_name: toolCall.exercise as string,
-            set_number: i + 1,
-            prescribed_weight: toolCall.weight_kg as number,
-            actual_weight: toolCall.weight_kg as number,
-            reps: toolCall.reps as number,
-            rpe: null as number | null,
-            notes: null as string | null,
-          }));
-          await addStrengthSets(sets);
+          // Log individual sets for each lift
+          if (lifts.length > 0) {
+            const allSets: Array<{
+              session_id: number; exercise_id: string; exercise_name: string;
+              set_number: number; prescribed_weight: number | null;
+              actual_weight: number | null; reps: number | null;
+              rpe: number | null; notes: string | null;
+            }> = [];
+            for (const lift of lifts) {
+              for (let i = 0; i < lift.sets; i++) {
+                allSets.push({
+                  session_id: sessionId,
+                  exercise_id: lift.exercise.toLowerCase().replace(/\s+/g, '_'),
+                  exercise_name: lift.exercise,
+                  set_number: i + 1,
+                  prescribed_weight: null,
+                  actual_weight: lift.weight_kg,
+                  reps: lift.reps,
+                  rpe: null,
+                  notes: null,
+                });
+              }
+            }
+            await addStrengthSets(allSets);
+          }
+          // Also write to workout_log so dashboard + progress page see it
+          await addWorkoutLog({
+            date: today, template_id: null,
+            name: lifts.length > 0 ? 'Strength' : ((toolCall.session_notes as string) ?? 'Strength'),
+            duration_min: (toolCall.duration_min as number | undefined) ?? 60,
+            intensity: 'high', calories_burned: null,
+            source: 'manual', logged_at: new Date().toISOString(),
+          });
           break;
         }
 

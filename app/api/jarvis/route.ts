@@ -158,15 +158,19 @@ export async function POST(req: Request) {
           ({ action: 'logWorkout', name: input.name, session_type: input.session_type, duration_min: input.duration_min ?? 60, intensity: input.intensity ?? 'high' }),
       },
       logStrengthSession: {
-        description: 'Log a strength training session with specific sets/reps/weight',
+        description: 'Log a strength session with one or more exercises. Use when user mentions specific lifts, sets, reps or weights — or just says workout/strength done. Lifts array can be empty if no specifics given.',
         inputSchema: z.object({
-          exercise: z.string(),
-          sets: z.number(),
-          reps: z.number(),
-          weight_kg: z.number(),
-          week: z.number(),
+          rpe: z.number().optional().describe('Overall session RPE 1-10'),
+          session_notes: z.string().optional(),
+          duration_min: z.number().optional(),
+          lifts: z.array(z.object({
+            exercise: z.string().describe('e.g. Squat, Bench Press, Deadlift, Overhead Press, Barbell Row'),
+            sets: z.number(),
+            reps: z.number(),
+            weight_kg: z.number(),
+          })).describe('Exercises done this session — empty array if user gave no specifics'),
         }),
-        execute: async (input: { exercise: string; sets: number; reps: number; weight_kg: number; week: number }) =>
+        execute: async (input: { rpe?: number; session_notes?: string; duration_min?: number; lifts: Array<{ exercise: string; sets: number; reps: number; weight_kg: number }> }) =>
           ({ action: 'logStrengthSession', ...input }),
       },
       logMeditation: {
