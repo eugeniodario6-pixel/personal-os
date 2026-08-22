@@ -26,10 +26,12 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Use Face ID to quickly and securely unlock Personal OS.</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>To help the user better understand their health metrics </string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Personal OS reads your health data — workouts, heart rate, sleep, and body metrics — to give you a complete picture of your performance.</string>
+	<string>Personal OS reads your health data to show steps, heart rate, sleep, weight and workouts on your dashboard.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Personal OS writes workout and nutrition data to Apple Health to keep all your health apps in sync.</string>
+	<string>Personal OS can write weight and workout data to Apple Health.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Personal OS uses motion data to track your daily activity and movement patterns.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -82,9 +84,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Personal OS reads your health data to show steps, heart rate, sleep, weight and workouts on your dashboard.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Personal OS can write weight and workout data to Apple Health.</string>
 </dict>
 </plist>

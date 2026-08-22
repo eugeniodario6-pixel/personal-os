@@ -35,11 +35,16 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // ── Request permissions ───────────────────────────────────────────────────
     @objc override public func requestPermissions(_ call: CAPPluginCall) {
+        print("[HealthKitPlugin] requestPermissions called")
+        print("[HealthKitPlugin] isHealthDataAvailable: \(HKHealthStore.isHealthDataAvailable())")
         guard HKHealthStore.isHealthDataAvailable() else {
+            print("[HealthKitPlugin] HealthKit NOT available on this device")
             call.reject("HealthKit not available on this device")
             return
         }
+        print("[HealthKitPlugin] Requesting authorization for \(readTypes.count) types")
         store.requestAuthorization(toShare: nil, read: readTypes) { success, error in
+            print("[HealthKitPlugin] Authorization result — success: \(success), error: \(String(describing: error))")
             if let error = error {
                 call.reject(error.localizedDescription)
             } else {
