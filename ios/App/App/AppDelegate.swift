@@ -42,7 +42,7 @@ public class HealthKitPlugin: CAPPlugin {
         return types
     }
 
-    @objc func requestPermissions(_ call: CAPPluginCall) {
+    @objc public override func requestPermissions(_ call: CAPPluginCall) {
         print("[HealthKitPlugin] requestPermissions called")
         guard HKHealthStore.isHealthDataAvailable() else {
             print("[HealthKitPlugin] HealthKit NOT available")
