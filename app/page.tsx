@@ -345,22 +345,15 @@ export default function TodayPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // ── HealthKit: request permissions on first open, then fetch data ─────────
+  // ── HealthKit: listen for native data pushed from AppDelegate ───────────────
   useEffect(() => {
-    const initHealthKit = async () => {
-      try {
-        // Always request — let HealthKit decide if it's already been granted
-        const granted = await requestHealthKitPermissions();
-        localStorage.setItem('hk_asked', '1');
-        console.log('[HealthKit] Permission granted:', granted);
-        const data = await getHealthData();
-        console.log('[HealthKit] Data:', JSON.stringify(data));
-        if (data.available) setHealthData(data);
-      } catch (e) {
-        console.warn('[HealthKit] Error:', e);
-      }
+    const handler = (e: Event) => {
+      const data = (e as CustomEvent).detail;
+      console.log('[HealthKit] Received from native:', JSON.stringify(data));
+      if (data?.available) setHealthData(data);
     };
-    initHealthKit();
+    window.addEventListener('healthkit-data', handler);
+    return () => window.removeEventListener('healthkit-data', handler);
   }, []);
 
   const toggle = async (id: number) => {

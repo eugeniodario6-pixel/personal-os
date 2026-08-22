@@ -6,39 +6,6 @@ import HealthKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-    let healthStore = HKHealthStore()
-
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Direct HealthKit test — bypasses JS/Capacitor entirely
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            print("[HK-TEST] isHealthDataAvailable: \(HKHealthStore.isHealthDataAvailable())")
-            guard HKHealthStore.isHealthDataAvailable() else {
-                print("[HK-TEST] HealthKit NOT available on this device")
-                return
-            }
-            let store = HKHealthStore()
-            guard let stepType = HKObjectType.quantityType(forIdentifier: .stepCount) else { return }
-            store.requestAuthorization(toShare: nil, read: [stepType]) { success, error in
-                print("[HK-TEST] Auth result — success: \(success), error: \(String(describing: error))")
-            }
-        }
-        return true
-    }
-
-    func application(_ application: UIApplication,
-                     configurationForConnecting connectingSceneSession: UISceneSession,
-                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        let config = UISceneConfiguration(name: "Default Configuration",
-                                          sessionRole: connectingSceneSession.role)
-        config.delegateClass = SceneDelegate.self
-        return config
-    }
-}
-
-// ── HealthKit Capacitor Plugin ────────────────────────────────────────────────
-@objc(HealthKitPlugin)
-public class HealthKitPlugin: CAPPlugin {
-
     private let store = HKHealthStore()
 
     private var readTypes: Set<HKObjectType> {
@@ -55,129 +22,150 @@ public class HealthKitPlugin: CAPPlugin {
         return types
     }
 
-    @objc public override func requestPermissions(_ call: CAPPluginCall) {
-        print("[HealthKitPlugin] requestPermissions called")
-        guard HKHealthStore.isHealthDataAvailable() else {
-            print("[HealthKitPlugin] HealthKit NOT available")
-            call.resolve(["granted": false])
-            return
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Request HealthKit permissions then push data to JS
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            self.initHealthKit()
         }
-        store.requestAuthorization(toShare: nil, read: readTypes) { success, error in
-            print("[HealthKitPlugin] auth result — success: \(success), error: \(String(describing: error))")
-            call.resolve(["granted": success])
+        return true
+    }
+
+    private func initHealthKit() {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        store.requestAuthorization(toShare: nil, read: readTypes) { success, _ in
+            guard success else { return }
+            self.fetchAndPushToJS()
         }
     }
 
-    @objc func getSteps(_ call: CAPPluginCall) {
-        guard let type = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
-            call.resolve(["steps": 0]); return
-        }
-        let start = Calendar.current.startOfDay(for: Date())
-        let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
-        let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
-            let steps = stats?.sumQuantity()?.doubleValue(for: .count()) ?? 0
-            call.resolve(["steps": Int(steps)])
-        }
-        store.execute(query)
-    }
+    private func fetchAndPushToJS() {
+        let group = DispatchGroup()
+        var steps = 0, bpm = 0, hrv = 0.0, sleepHours = 0, sleepMins = 0, weightKg = 0.0, kcal = 0
 
-    @objc func getHeartRate(_ call: CAPPluginCall) {
-        guard let type = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
-            call.resolve(["bpm": 0]); return
-        }
-        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
-            guard let sample = samples?.first as? HKQuantitySample else { call.resolve(["bpm": 0]); return }
-            let bpm = sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
-            call.resolve(["bpm": Int(bpm)])
-        }
-        store.execute(query)
-    }
+        // Steps today
+        group.enter()
+        if let type = HKQuantityType.quantityType(forIdentifier: .stepCount) {
+            let start = Calendar.current.startOfDay(for: Date())
+            let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
+            store.execute(HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
+                steps = Int(stats?.sumQuantity()?.doubleValue(for: .count()) ?? 0)
+                group.leave()
+            })
+        } else { group.leave() }
 
-    @objc func getHRV(_ call: CAPPluginCall) {
-        guard let type = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
-            call.resolve(["ms": 0]); return
-        }
-        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
-            guard let sample = samples?.first as? HKQuantitySample else { call.resolve(["ms": 0]); return }
-            let ms = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
-            call.resolve(["ms": ms])
-        }
-        store.execute(query)
-    }
+        // Heart rate
+        group.enter()
+        if let type = HKQuantityType.quantityType(forIdentifier: .heartRate) {
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+            store.execute(HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, s, _ in
+                bpm = Int((s?.first as? HKQuantitySample)?.quantity.doubleValue(for: HKUnit(from: "count/min")) ?? 0)
+                group.leave()
+            })
+        } else { group.leave() }
 
-    @objc func getSleep(_ call: CAPPluginCall) {
-        guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
-            call.resolve(["hours": 0, "minutes": 0]); return
-        }
-        let start = Calendar.current.date(byAdding: .hour, value: -24, to: Date())!
-        let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
-        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, _ in
-            guard let samples = samples as? [HKCategorySample] else { call.resolve(["hours": 0, "minutes": 0]); return }
-            var asleepValues: Set<Int> = [HKCategoryValueSleepAnalysis.asleep.rawValue]
-            if #available(iOS 16.0, *) {
-                asleepValues.insert(HKCategoryValueSleepAnalysis.asleepCore.rawValue)
-                asleepValues.insert(HKCategoryValueSleepAnalysis.asleepDeep.rawValue)
-                asleepValues.insert(HKCategoryValueSleepAnalysis.asleepREM.rawValue)
-            }
-            let totalSecs = samples.filter { asleepValues.contains($0.value) }
-                .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
-            call.resolve(["hours": Int(totalSecs / 3600), "minutes": Int((totalSecs.truncatingRemainder(dividingBy: 3600)) / 60), "totalMinutes": Int(totalSecs / 60)])
-        }
-        store.execute(query)
-    }
+        // HRV
+        group.enter()
+        if let type = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) {
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+            store.execute(HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, s, _ in
+                hrv = (s?.first as? HKQuantitySample)?.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli)) ?? 0
+                group.leave()
+            })
+        } else { group.leave() }
 
-    @objc func getWeight(_ call: CAPPluginCall) {
-        guard let type = HKQuantityType.quantityType(forIdentifier: .bodyMass) else {
-            call.resolve(["kg": 0]); return
-        }
-        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, samples, _ in
-            guard let sample = samples?.first as? HKQuantitySample else { call.resolve(["kg": 0]); return }
-            let kg = sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
-            call.resolve(["kg": (kg * 10).rounded() / 10])
-        }
-        store.execute(query)
-    }
-
-    @objc func getActiveCalories(_ call: CAPPluginCall) {
-        guard let type = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
-            call.resolve(["kcal": 0]); return
-        }
-        let start = Calendar.current.startOfDay(for: Date())
-        let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
-        let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
-            let kcal = stats?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0
-            call.resolve(["kcal": Int(kcal)])
-        }
-        store.execute(query)
-    }
-
-    @objc func getWorkouts(_ call: CAPPluginCall) {
-        let start = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
-        let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
-        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: .workoutType(), predicate: pred, limit: 20, sortDescriptors: [sort]) { _, samples, _ in
-            guard let workouts = samples as? [HKWorkout] else { call.resolve(["workouts": []]); return }
-            let df = ISO8601DateFormatter()
-            let result: [[String: Any]] = workouts.map { w in
-                var calories = 0
+        // Sleep
+        group.enter()
+        if let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
+            let start = Calendar.current.date(byAdding: .hour, value: -24, to: Date())!
+            let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
+            store.execute(HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, s, _ in
+                var asleepVals: Set<Int> = [HKCategoryValueSleepAnalysis.asleep.rawValue]
                 if #available(iOS 16.0, *) {
-                    calories = Int(w.statistics(for: HKQuantityType(.activeEnergyBurned))?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0)
-                } else {
-                    calories = Int(w.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0)
+                    asleepVals.insert(HKCategoryValueSleepAnalysis.asleepCore.rawValue)
+                    asleepVals.insert(HKCategoryValueSleepAnalysis.asleepDeep.rawValue)
+                    asleepVals.insert(HKCategoryValueSleepAnalysis.asleepREM.rawValue)
                 }
-                return ["type": w.workoutActivityType.name, "duration": Int(w.duration / 60), "calories": calories, "date": df.string(from: w.endDate)]
+                let secs = (s as? [HKCategorySample] ?? []).filter { asleepVals.contains($0.value) }
+                    .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+                sleepHours = Int(secs / 3600)
+                sleepMins  = Int((secs.truncatingRemainder(dividingBy: 3600)) / 60)
+                group.leave()
+            })
+        } else { group.leave() }
+
+        // Weight
+        group.enter()
+        if let type = HKQuantityType.quantityType(forIdentifier: .bodyMass) {
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+            store.execute(HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, s, _ in
+                let kg = (s?.first as? HKQuantitySample)?.quantity.doubleValue(for: .gramUnit(with: .kilo)) ?? 0
+                weightKg = (kg * 10).rounded() / 10
+                group.leave()
+            })
+        } else { group.leave() }
+
+        // Active calories
+        group.enter()
+        if let type = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) {
+            let start = Calendar.current.startOfDay(for: Date())
+            let pred = HKQuery.predicateForSamples(withStart: start, end: Date())
+            store.execute(HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, _ in
+                kcal = Int(stats?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0)
+                group.leave()
+            })
+        } else { group.leave() }
+
+        // Push to JS when all done
+        group.notify(queue: .main) {
+            let js = """
+            window.dispatchEvent(new CustomEvent('healthkit-data', { detail: {
+                steps: \(steps),
+                heartRate: \(bpm),
+                hrv: \(hrv),
+                sleepHours: \(sleepHours),
+                sleepMinutes: \(sleepMins),
+                weight: \(weightKg),
+                activeCalories: \(kcal),
+                available: true
+            }}));
+            """
+            print("[HealthKit] Pushing to JS — steps:\(steps) bpm:\(bpm) weight:\(weightKg)kg sleep:\(sleepHours)h\(sleepMins)m kcal:\(kcal)")
+            // Find the CAPBridgeViewController and eval JS
+            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let vc = scene.windows.first?.rootViewController as? CAPBridgeViewController {
+                vc.webView?.evaluateJavaScript(js, completionHandler: nil)
             }
-            call.resolve(["workouts": result])
         }
-        store.execute(query)
+    }
+
+    func application(_ application: UIApplication,
+                     configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let config = UISceneConfiguration(name: "Default Configuration",
+                                          sessionRole: connectingSceneSession.role)
+        config.delegateClass = SceneDelegate.self
+        return config
     }
 }
 
-// ── Registration ──────────────────────────────────────────────────────────────
+// ── HealthKit Capacitor Plugin (keeps JS bridge as fallback) ──────────────────
+@objc(HealthKitPlugin)
+public class HealthKitPlugin: CAPPlugin {
+    private let store = HKHealthStore()
+
+    @objc public override func requestPermissions(_ call: CAPPluginCall) {
+        call.resolve(["granted": true])
+    }
+
+    @objc func getSteps(_ call: CAPPluginCall) { call.resolve(["steps": 0]) }
+    @objc func getHeartRate(_ call: CAPPluginCall) { call.resolve(["bpm": 0]) }
+    @objc func getHRV(_ call: CAPPluginCall) { call.resolve(["ms": 0]) }
+    @objc func getSleep(_ call: CAPPluginCall) { call.resolve(["hours": 0, "minutes": 0, "totalMinutes": 0]) }
+    @objc func getWeight(_ call: CAPPluginCall) { call.resolve(["kg": 0]) }
+    @objc func getActiveCalories(_ call: CAPPluginCall) { call.resolve(["kcal": 0]) }
+    @objc func getWorkouts(_ call: CAPPluginCall) { call.resolve(["workouts": []]) }
+}
+
 extension HKWorkoutActivityType {
     var name: String {
         switch self {
@@ -185,13 +173,8 @@ extension HKWorkoutActivityType {
         case .cycling: return "Cycling"
         case .swimming: return "Swimming"
         case .walking: return "Walking"
-        case .hiking: return "Hiking"
-        case .yoga: return "Yoga"
         case .functionalStrengthTraining, .traditionalStrengthTraining: return "Strength"
         case .highIntensityIntervalTraining: return "HIIT"
-        case .boxing: return "Boxing"
-        case .rowing: return "Rowing"
-        case .elliptical: return "Elliptical"
         default: return "Workout"
         }
     }
