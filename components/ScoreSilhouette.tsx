@@ -13,7 +13,12 @@ export default function ScoreSilhouette({ score, height = 148 }: Props) {
   const clipId = `sf-clip-${Math.random().toString(36).slice(2, 7)}`;
 
   // viewBox is 100×220
-  const fillY = 220 - (pct / 100) * 220;
+  // Body fills from y=194 (feet) up to y=2 (head) — 192px range
+  // At pct=0: fill starts at bottom (y=194), at pct=100: fills entire body (y=2)
+  const bodyBottom = 196;
+  const bodyTop = 2;
+  const bodyHeight = bodyBottom - bodyTop;
+  const fillY = bodyBottom - (pct / 100) * bodyHeight;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
@@ -67,16 +72,7 @@ export default function ScoreSilhouette({ score, height = 148 }: Props) {
         )}
       </svg>
 
-      <span style={{
-        fontSize: 10,
-        fontWeight: 600,
-        letterSpacing: '0.05em',
-        color: pct >= 50 ? '#1F58F2' : 'rgba(255,255,255,0.25)',
-        fontFamily: 'var(--font-mono, monospace)',
-        transition: 'color 0.5s',
-      }}>
-        {pct}
-      </span>
+      {/* Score label removed — shown as hero number */}
     </div>
   );
 }

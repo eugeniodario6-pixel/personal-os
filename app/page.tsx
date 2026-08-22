@@ -165,14 +165,14 @@ function Segment({ label, val, path, delta }: { label: string; val: number; path
       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}
     >
       <div className="progress" style={{ marginBottom: 5, height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden' }}>
-        <div className="progress-fill" style={{ height: '100%', width: `${val}%`, background: 'var(--text)', borderRadius: 9999 }} />
+        <div className="progress-fill" style={{ height: '100%', width: `${val}%`, background: active ? '#1f58f2' : 'rgba(216,234,255,0.08)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <p style={{ fontSize: 10, fontWeight: 510, letterSpacing: '0.01em', textTransform: 'uppercase', color: active ? 'var(--text-3)' : 'var(--text-5)', margin: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5 }}>
+        <p style={{ fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 400, letterSpacing: '0.12em', textTransform: 'uppercase', color: active ? 'rgba(216,234,255,0.55)' : 'rgba(216,234,255,0.20)', margin: 0 }}>
           {label}
         </p>
         {delta !== undefined && delta !== 0 && (
-          <span style={{ fontSize: 9, color: delta > 0 ? 'var(--text-3)' : 'var(--text-5)', fontWeight: 510 }}>
+          <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: delta > 0 ? '#1f58f2' : '#ff4105' }}>
             {delta > 0 ? '+' : ''}{delta}
           </span>
         )}
@@ -412,7 +412,7 @@ export default function TodayPage() {
         .bento-card-anim:nth-child(6) { animation-delay: 300ms; }
       `}</style>
 
-      <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4.5rem', paddingBottom: '100px' }}>
+      <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4.5rem', paddingBottom: '130px' }}>
 
         {/* ── Hero section ── */}
         <div style={{ padding: '0 20px 20px' }}>
@@ -512,7 +512,7 @@ export default function TodayPage() {
           {/* Row 2: Nudge card (full-width) */}
           {(nudge || allDone) && (
             <div className="bento-card-anim">
-              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 18 }}>
+              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', borderLeft: allDone ? '2px solid #1f58f2' : '2px solid #ff4105', padding: 18 }}>
                 {allDone ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
