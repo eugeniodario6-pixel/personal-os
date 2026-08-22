@@ -514,25 +514,26 @@ export default function JarvisPage() {
 
       {/* ── Mic + clear ── */}
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 'max(48px, calc(env(safe-area-inset-bottom) + 36px))', gap: 20, flexShrink: 0 }}>
-        {voiceInput.supported && (
-          <button
+        <button
             onClick={handleMicTap}
             disabled={loading || speaking}
             style={{
-              width: 84, height: 84, borderRadius: '50%',
+              width: 96, height: 96, borderRadius: '50%',
               background: voiceInput.listening ? '#DAFF01' : '#111',
-              border: voiceInput.listening ? 'none' : '1.5px solid rgba(255,255,255,0.1)',
+              border: voiceInput.listening ? 'none' : '1.5px solid rgba(255,255,255,0.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: loading || speaking ? 'default' : 'pointer',
-              fontSize: 32,
-              boxShadow: voiceInput.listening ? '0 0 48px rgba(218,255,1,0.55)' : 'none',
+              fontSize: 36,
+              boxShadow: voiceInput.listening
+                ? '0 0 48px rgba(218,255,1,0.55), 0 0 0 12px rgba(218,255,1,0.08)'
+                : '0 0 0 12px rgba(255,255,255,0.02)',
               transition: 'all 0.2s',
               WebkitTapHighlightColor: 'transparent',
-              color: voiceInput.listening ? '#000' : 'rgba(255,255,255,0.45)',
+              color: voiceInput.listening ? '#000' : 'rgba(255,255,255,0.55)',
               opacity: loading || speaking ? 0.25 : 1,
+              transform: voiceInput.listening ? 'scale(1.08)' : 'scale(1)',
             }}
           >🎙</button>
-        )}
         <button
           onClick={() => { localStorage.removeItem(STORAGE_KEY_HISTORY); window.location.reload(); }}
           style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.15)', fontSize: '0.55rem', letterSpacing: '0.08em', fontFamily: 'var(--font-mono)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
