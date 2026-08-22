@@ -62,10 +62,8 @@ function getScoreBreakdown(
   ];
 }
 
-function getScoreColour(s: number): string {
-  if (s >= 75) return '#1F58F2';
-  if (s >= 50) return '#ffffff';
-  return 'rgba(255,255,255,0.5)';
+function getScoreColour(_s: number): string {
+  return '#1F58F2'; // Always electric cobalt
 }
 
 function getScoreExplanation(
