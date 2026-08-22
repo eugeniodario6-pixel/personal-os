@@ -349,13 +349,17 @@ export default function TodayPage() {
   useEffect(() => {
     const handler = (e: Event) => {
       const data = (e as CustomEvent).detail;
-      console.log('[HealthKit] Received from native:', JSON.stringify(data));
+      console.log('[HealthKit] Received from native event:', JSON.stringify(data));
       if (data?.available) setHealthData(data);
     };
     window.addEventListener('healthkit-data', handler);
 
-    // Signal to native that JS is ready — triggers a re-push if data already fetched
-    window.dispatchEvent(new CustomEvent('healthkit-js-ready'));
+    // Check if data already arrived before this component mounted
+    const cached = (window as any).__healthKitData;
+    if (cached?.available) {
+      console.log('[HealthKit] Using cached data from window.__healthKitData');
+      setHealthData(cached);
+    }
 
     return () => window.removeEventListener('healthkit-data', handler);
   }, []);

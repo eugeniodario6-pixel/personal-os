@@ -121,16 +121,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Push to JS when all done
         group.notify(queue: .main) {
             let js = """
-            window.dispatchEvent(new CustomEvent('healthkit-data', { detail: {
-                steps: \(steps),
-                heartRate: \(bpm),
-                hrv: \(hrv),
-                sleepHours: \(sleepHours),
-                sleepMinutes: \(sleepMins),
-                weight: \(weightKg),
-                activeCalories: \(kcal),
-                available: true
-            }}));
+            (function() {
+                var data = {
+                    steps: \(steps),
+                    heartRate: \(bpm),
+                    hrv: \(hrv),
+                    sleepHours: \(sleepHours),
+                    sleepMinutes: \(sleepMins),
+                    weight: \(weightKg),
+                    activeCalories: \(kcal),
+                    available: true
+                };
+                window.__healthKitData = data;
+                window.dispatchEvent(new CustomEvent('healthkit-data', { detail: data }));
+            })();
             """
             print("[HealthKit] Pushing to JS — steps:\(steps) bpm:\(bpm) weight:\(weightKg)kg sleep:\(sleepHours)h\(sleepMins)m kcal:\(kcal)")
             self.cachedHealthJS = js
