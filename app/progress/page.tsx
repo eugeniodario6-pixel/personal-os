@@ -204,7 +204,13 @@ function HealthCard() {
     return () => { window.removeEventListener('healthkit-data', handler); clearInterval(poll); };
   }, []);
 
-  if (!hk?.available) return null;
+  if (!hk) return (
+    <Card>
+      <SectionLabel icon="♥" title="Apple Health" />
+      <p style={{ fontSize: '0.75rem', color: TEXT3, margin: 0 }}>Reading from Apple Health…</p>
+    </Card>
+  );
+  if (!hk.available) return null;
   return (
     <Card>
       <SectionLabel icon="♥" title="Apple Health" />

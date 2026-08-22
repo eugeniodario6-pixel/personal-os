@@ -423,8 +423,8 @@ export default function TodayPage() {
           </p>
 
           {/* Score hero */}
-          <div style={{ animation: scorePulsed ? 'score-pulse 0.5s ease' : undefined, marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-            <div style={{ flex: 1 }}>
+          <div style={{ animation: scorePulsed ? 'score-pulse 0.5s ease' : undefined, marginBottom: 16, position: 'relative' }}>
+            <div style={{ paddingRight: 80 }}>
             <div
               className="t-hero"
               style={{
@@ -451,7 +451,9 @@ export default function TodayPage() {
             </p>
             </div>
             {/* Silhouette fill indicator */}
-            <ScoreSilhouette score={score} height={160} />
+            <div style={{ position: 'absolute', top: 0, right: 0 }}>
+              <ScoreSilhouette score={score} height={148} />
+            </div>
           </div>
 
           {/* Sparkline */}

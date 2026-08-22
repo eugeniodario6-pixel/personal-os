@@ -1,42 +1,39 @@
 'use client';
 
 // ScoreSilhouette.tsx
-// Human silhouette that fills from feet up with #1F58F2 as score increases.
-// 0 = empty (dark outline), 100 = fully filled lime.
+// Human silhouette fills from feet up with #1F58F2 as score increases.
 
 interface Props {
   score: number; // 0–100
   height?: number;
 }
 
-export default function ScoreSilhouette({ score, height = 160 }: Props) {
+export default function ScoreSilhouette({ score, height = 148 }: Props) {
   const pct = Math.max(0, Math.min(100, score));
-  const fillId = 'sf-fill';
-  const clipId = 'sf-clip';
+  const clipId = `sf-clip-${Math.random().toString(36).slice(2, 7)}`;
+
+  // viewBox is 100×220
+  const fillY = 220 - (pct / 100) * 220;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, userSelect: 'none' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
       <svg
-        width={height * 0.55}
+        width={height * 0.5}
         height={height}
-        viewBox="0 0 110 200"
-        style={{ overflow: 'visible' }}
+        viewBox="0 0 100 220"
+        style={{ overflow: 'visible', display: 'block' }}
       >
         <defs>
-          {/* Rising fill rect — fills from bottom (y increases downward) */}
           <clipPath id={clipId}>
             <rect
               x="0"
-              y={200 - (pct / 100) * 200}
-              width="110"
-              height={(pct / 100) * 200}
-              style={{ transition: 'y 1s cubic-bezier(0.4,0,0.2,1), height 1s cubic-bezier(0.4,0,0.2,1)' }}
+              y={fillY}
+              width="100"
+              height={220 - fillY}
             />
           </clipPath>
-
-          {/* Glow filter */}
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
+          <filter id="cobalt-glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -44,97 +41,91 @@ export default function ScoreSilhouette({ score, height = 160 }: Props) {
           </filter>
         </defs>
 
-        {/* Dark base silhouette (always visible) */}
-        <path
-          d={SILHOUETTE}
-          fill="rgba(255,255,255,0.08)"
-          stroke="rgba(255,255,255,0.12)"
-          strokeWidth="0.5"
-        />
+        {/* Dim base */}
+        <path d={BODY} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
 
-        {/* Lime filled silhouette clipped by rising rect */}
+        {/* Filled portion */}
         <g clipPath={`url(#${clipId})`}>
           <path
-            d={SILHOUETTE}
+            d={BODY}
             fill="#1F58F2"
-            filter={pct > 10 ? `url(#glow)` : undefined}
-            style={{ transition: 'opacity 0.5s' }}
+            filter={pct > 5 ? 'url(#cobalt-glow)' : undefined}
+            style={{ transition: 'filter 0.5s' }}
           />
         </g>
 
-        {/* Fill level waterline — subtle */}
-        {pct > 2 && pct < 98 && (
+        {/* Waterline */}
+        {pct > 3 && pct < 97 && (
           <line
-            x1="0" y1={200 - (pct / 100) * 200}
-            x2="110" y2={200 - (pct / 100) * 200}
+            x1="10" y1={fillY}
+            x2="90" y2={fillY}
             stroke="#1F58F2"
-            strokeWidth="0.5"
-            strokeOpacity="0.4"
+            strokeWidth="0.8"
+            strokeOpacity="0.5"
+            strokeDasharray="2 2"
           />
         )}
       </svg>
 
-      {/* Score label below silhouette */}
       <span style={{
-        fontSize: 11,
-        fontWeight: 510,
-        letterSpacing: '0.06em',
-        color: pct >= 75 ? '#1F58F2' : 'rgba(255,255,255,0.3)',
-        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: '0.05em',
+        color: pct >= 50 ? '#1F58F2' : 'rgba(255,255,255,0.25)',
+        fontFamily: 'var(--font-mono, monospace)',
         transition: 'color 0.5s',
       }}>
-        {pct}/100
+        {pct}
       </span>
     </div>
   );
 }
 
-// Human silhouette path — fits in 110×200 viewBox
-// Standing figure, arms slightly out, viewed from front
-const SILHOUETTE = `
-M55,2
-C49,2 44,7 44,14
-C44,21 49,26 55,26
-C61,26 66,21 66,14
-C66,7 61,2 55,2 Z
+// Clean human silhouette — head, torso, arms, legs — fits 100×220 viewBox
+const BODY = `
+  M50,2
+  C43,2 37,8 37,16
+  C37,24 43,30 50,30
+  C57,30 63,24 63,16
+  C63,8 57,2 50,2 Z
 
-M38,30
-C32,31 27,35 26,42
-L22,68
-C21,72 24,75 27,75
-L30,75
-L28,110
-L24,170
-C24,173 26,175 29,175
-L36,175
-C39,175 41,173 41,170
-L44,130
-L55,128
-L66,130
-L69,170
-C69,173 71,175 74,175
-L81,175
-C84,175 86,173 86,170
-L82,110
-L80,75
-L83,75
-C86,75 89,72 88,68
-L84,42
-C83,35 78,31 72,30
-L65,28
-C62,33 59,36 55,36
-C51,36 48,33 45,28
-Z
+  M33,34
+  C24,36 18,43 17,52
+  L12,82
+  C11,87 14,90 18,89
+  L20,89
+  L18,130
+  L14,188
+  C14,192 17,194 20,194
+  L30,194
+  C33,194 36,192 36,188
+  L40,148
+  L50,146
+  L60,148
+  L64,188
+  C64,192 67,194 70,194
+  L80,194
+  C83,194 86,192 86,188
+  L82,130
+  L80,89
+  L82,89
+  C86,90 89,87 88,82
+  L83,52
+  C82,43 76,36 67,34
+  L61,32
+  C58,37 54,40 50,40
+  C46,40 42,37 39,32
+  Z
 
-M26,42
-L10,55
-C7,57 7,61 10,63
-L20,68
-L22,68
+  M17,52
+  L4,66
+  C1,69 2,74 5,76
+  L17,82
+  L20,89
 
-M84,42
-L100,55
-C103,57 103,61 100,63
-L90,68
-L88,68
-`;
+  M83,52
+  L96,66
+  C99,69 98,74 95,76
+  L83,82
+  L80,89
+`.trim();
