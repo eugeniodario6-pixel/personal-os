@@ -360,17 +360,23 @@ export default function TodayPage() {
     const cached = (window as any).__healthKitData;
     if (cached?.available) setHealthData(cached);
 
-    // Direct pull via plugin — most reliable approach
-    const fetchHK = async () => {
-      try {
-        await requestHealthKitPermissions();
-        const data = await getHealthData();
-        if (data.available) setHealthData(data);
-      } catch { /* not on iOS */ }
-    };
-    fetchHK();
+    // Poll window.__healthKitData every 2s for up to 12s (Swift pushes after 5s)
+    let attempts = 0;
+    const poll = setInterval(() => {
+      attempts++;
+      const d = (window as any).__healthKitData;
+      if (d?.available) {
+        console.log('[HealthKit] Poll found data, attempt', attempts);
+        setHealthData(d);
+        clearInterval(poll);
+      }
+      if (attempts >= 6) clearInterval(poll);
+    }, 2000);
 
-    return () => window.removeEventListener('healthkit-data', handler);
+    return () => {
+      window.removeEventListener('healthkit-data', handler);
+      clearInterval(poll);
+    };
   }, []);
 
   const toggle = async (id: number) => {

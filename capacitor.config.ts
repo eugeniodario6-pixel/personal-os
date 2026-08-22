@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
   appName: 'Personal OS',
   webDir: 'out', // Next.js static export
   server: {
-    // During development — loads live from Vercel, no rebuild needed
     url: 'https://personal-os-xi-gilt.vercel.app',
     cleartext: false,
   },
