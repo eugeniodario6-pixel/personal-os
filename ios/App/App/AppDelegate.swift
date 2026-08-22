@@ -9,6 +9,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     let healthStore = HKHealthStore()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Direct HealthKit test — bypasses JS/Capacitor entirely
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            print("[HK-TEST] isHealthDataAvailable: \(HKHealthStore.isHealthDataAvailable())")
+            guard HKHealthStore.isHealthDataAvailable() else {
+                print("[HK-TEST] HealthKit NOT available on this device")
+                return
+            }
+            let store = HKHealthStore()
+            guard let stepType = HKObjectType.quantityType(forIdentifier: .stepCount) else { return }
+            store.requestAuthorization(toShare: nil, read: [stepType]) { success, error in
+                print("[HK-TEST] Auth result — success: \(success), error: \(String(describing: error))")
+            }
+        }
         return true
     }
 
