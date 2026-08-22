@@ -63,7 +63,7 @@ function getScoreBreakdown(
 }
 
 function getScoreColour(s: number): string {
-  if (s >= 75) return '#DAFF01';
+  if (s >= 75) return '#1F58F2';
   if (s >= 50) return '#ffffff';
   return 'rgba(255,255,255,0.5)';
 }
@@ -576,7 +576,7 @@ export default function TodayPage() {
               {pillars.map(p => (
                 <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--border)' }}>
                   <span style={{ fontSize: 12, fontWeight: 510, letterSpacing: '0.03em', textTransform: 'uppercase', color: 'var(--text-4)', width: 48, flexShrink: 0 }}>{p.name}</span>
-                  <span style={{ fontSize: 13, fontWeight: 510, color: p.score === p.maxScore ? '#DAFF01' : 'var(--text)', width: 40, flexShrink: 0 }}>{p.score}<span style={{ fontSize: 10, color: 'var(--text-5)', fontWeight: 400 }}>/{p.maxScore}</span></span>
+                  <span style={{ fontSize: 13, fontWeight: 510, color: p.score === p.maxScore ? '#1F58F2' : 'var(--text)', width: 40, flexShrink: 0 }}>{p.score}<span style={{ fontSize: 10, color: 'var(--text-5)', fontWeight: 400 }}>/{p.maxScore}</span></span>
                   <span style={{ fontSize: 12, color: 'var(--text-4)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.reason}</span>
                 </div>
               ))}

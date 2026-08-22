@@ -102,7 +102,7 @@ export default function Nav() {
                 height: 56,
                 borderRadius: 9999,
                 background: active
-                  ? (isJarvis ? '#DAFF01' : '#DAFF01')
+                  ? (isJarvis ? '#1F58F2' : '#1F58F2')
                   : isJarvis ? 'transparent' : 'transparent',
                 boxShadow: !active && isJarvis
                   ? 'rgba(218,255,1,0.5) 0px 0px 0px 1.5px inset, rgba(218,255,1,0.15) 0px 0px 12px'
@@ -115,10 +115,10 @@ export default function Nav() {
             >
               <span style={{
                 fontSize: isJarvis ? 22 : 20,
-                color: active ? '#000000' : isJarvis ? '#DAFF01' : 'rgba(255,255,255,0.30)',
+                color: active ? '#000000' : isJarvis ? '#1F58F2' : 'rgba(255,255,255,0.30)',
                 transition: 'color 0.2s',
                 lineHeight: 1,
-                filter: !active && isJarvis ? 'drop-shadow(0 0 6px #DAFF01)' : 'none',
+                filter: !active && isJarvis ? 'drop-shadow(0 0 6px #1F58F2)' : 'none',
               }}>
                 {tab.icon}
               </span>

@@ -192,7 +192,7 @@ export default function JarvisOrb({ loading, listening, speaking, size = 260 }: 
 
     const R = 0.72; // normalised radius
     let noiseTarget = 0.3, pulseTarget = 0, listenTarget = 0;
-    let colorTarget = [218/255, 255/255, 1/255]; // lime #DAFF01
+    let colorTarget = [218/255, 255/255, 1/255]; // lime #1F58F2
 
     function tick(ts: number) {
       const t = ts * 0.001;

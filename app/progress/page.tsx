@@ -33,7 +33,7 @@ function shortLabel(iso: string, period: Period): string {
   return '';
 }
 
-const LIME   = '#DAFF01';
+const LIME   = '#1F58F2';
 const DIM    = 'rgba(255,255,255,0.06)';
 const TEXT3  = 'rgba(255,255,255,0.28)';
 const TEXT2  = 'rgba(255,255,255,0.55)';

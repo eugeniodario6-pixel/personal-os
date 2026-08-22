@@ -58,9 +58,9 @@ class FaceIDLock {
             // Unlock button — yellow accent
             let btn = UIButton(type: .system)
             btn.setTitle("Scan Face ID", for: .normal)
-            btn.setTitleColor(.black, for: .normal)
+            btn.setTitleColor(.white, for: .normal)
             btn.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
-            btn.backgroundColor = UIColor(red: 218/255, green: 255/255, blue: 1/255, alpha: 1) // #DAFF01
+            btn.backgroundColor = UIColor(red: 31/255, green: 88/255, blue: 242/255, alpha: 1) // #1F58F2
             btn.layer.cornerRadius = 16
             btn.contentEdgeInsets = UIEdgeInsets(top: 14, left: 32, bottom: 14, right: 32)
             btn.translatesAutoresizingMaskIntoConstraints = false

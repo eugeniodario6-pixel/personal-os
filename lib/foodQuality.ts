@@ -71,7 +71,7 @@ export function scoreFoodQuality(food: {
 }
 
 export function qualityLabel(score: number): { label: string; color: string } {
-  if (score >= 75) return { label: 'Whole',     color: '#DAFF01' };
+  if (score >= 75) return { label: 'Whole',     color: '#1F58F2' };
   if (score >= 50) return { label: 'Good',      color: 'rgba(255,255,255,0.7)' };
   if (score >= 25) return { label: 'Mixed',     color: 'rgba(255,165,0,0.8)' };
   return               { label: 'Processed', color: 'rgba(255,80,80,0.8)' };

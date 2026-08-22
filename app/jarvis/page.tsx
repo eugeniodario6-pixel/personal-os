@@ -135,10 +135,10 @@ function VoicePicker({ voice, onSelect, onClose }: { voice: VoiceKey; onSelect: 
           {VOICE_OPTIONS.map(v => (
             <button key={v.key} onClick={() => { onSelect(v.key); onClose(); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 14, background: voice === v.key ? 'rgba(218,255,1,0.08)' : '#141414', border: `1px solid ${voice === v.key ? 'rgba(218,255,1,0.35)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
               <div style={{ textAlign: 'left' }}>
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 510, color: voice === v.key ? '#DAFF01' : '#fff', fontFamily: 'var(--font)' }}>{v.name}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 510, color: voice === v.key ? '#1F58F2' : '#fff', fontFamily: 'var(--font)' }}>{v.name}</p>
                 <p style={{ margin: 0, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>{v.desc}</p>
               </div>
-              {voice === v.key && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#DAFF01', boxShadow: '0 0 8px #DAFF01' }} />}
+              {voice === v.key && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1F58F2', boxShadow: '0 0 8px #1F58F2' }} />}
             </button>
           ))}
         </div>
@@ -480,7 +480,7 @@ export default function JarvisPage() {
   };
 
   const state = loading ? 'THINKING…' : speaking ? 'SPEAKING…' : voiceInput.listening ? 'LISTENING…' : 'TAP TO SPEAK';
-  const stateColor = loading || speaking || voiceInput.listening ? '#DAFF01' : 'rgba(255,255,255,0.28)';
+  const stateColor = loading || speaking || voiceInput.listening ? '#1F58F2' : 'rgba(255,255,255,0.28)';
   const avatarActive = loading || speaking || voiceInput.listening;
 
   return (
@@ -519,7 +519,7 @@ export default function JarvisPage() {
             disabled={loading || speaking}
             style={{
               width: 96, height: 96, borderRadius: '50%',
-              background: voiceInput.listening ? '#DAFF01' : '#111',
+              background: voiceInput.listening ? '#1F58F2' : '#111',
               border: voiceInput.listening ? 'none' : '1.5px solid rgba(255,255,255,0.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: loading || speaking ? 'default' : 'pointer',

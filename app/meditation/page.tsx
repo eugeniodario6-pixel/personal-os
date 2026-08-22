@@ -106,7 +106,7 @@ export default function MeditationPage() {
             style={{
               flex: '0 0 auto', padding: '6px 13px', borderRadius: 9999,
               background: dur === d ? 'rgba(218,255,1,0.12)' : 'transparent',
-              color: dur === d ? '#DAFF01' : 'rgba(255,255,255,0.32)',
+              color: dur === d ? '#1F58F2' : 'rgba(255,255,255,0.32)',
               border: `1px solid ${dur === d ? 'rgba(218,255,1,0.3)' : 'rgba(255,255,255,0.08)'}`,
               fontSize: '0.72rem', fontWeight: dur === d ? 600 : 400,
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',

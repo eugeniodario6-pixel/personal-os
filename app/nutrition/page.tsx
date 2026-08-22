@@ -122,7 +122,7 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 // ─── Quality breakdown panel ──────────────────────────────────────────────────
 function QualityBreakdown({ breakdown }: { breakdown: FoodQualityBreakdown }) {
   const { proteinDensityScore, macroBalanceScore, wholeFoodScore, primaryDriver } = breakdown;
-  const accentColor = '#DAFF01';
+  const accentColor = '#1F58F2';
   const dimColor = 'rgba(255,255,255,0.35)';
 
   const rows = [

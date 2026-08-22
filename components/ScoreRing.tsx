@@ -49,7 +49,7 @@ export function ScoreRing({
           <circle
             cx={size / 2} cy={size / 2} r={r}
             fill="none"
-            stroke={pct >= 80 ? '#DAFF01' : pct >= 55 ? 'rgba(218,255,1,0.65)' : 'rgba(218,255,1,0.35)'}
+            stroke={pct >= 80 ? '#1F58F2' : pct >= 55 ? 'rgba(218,255,1,0.65)' : 'rgba(218,255,1,0.35)'}
             strokeWidth={3}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circ}`}

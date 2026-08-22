@@ -55,7 +55,7 @@ function ProgressRing({ progress, size = 240 }: { progress: number; size?: numbe
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={3} />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke="#DAFF01" strokeWidth={3}
+        stroke="#1F58F2" strokeWidth={3}
         strokeDasharray={circ} strokeDashoffset={offset}
         strokeLinecap="round"
         style={{ transition: 'stroke-dashoffset 1s linear' }}
@@ -257,7 +257,7 @@ export default function MeditationPlayerPage() {
                 {speaking && (
                   <div style={{ display: 'flex', gap: 3, alignItems: 'center', marginTop: 10 }}>
                     {[1,2,3,2,1].map((h, i) => (
-                      <div key={i} style={{ width: 3, height: h * 4, background: '#DAFF01', borderRadius: 2, animation: `jbar 0.7s ease-in-out ${i * 0.1}s infinite alternate` }} />
+                      <div key={i} style={{ width: 3, height: h * 4, background: '#1F58F2', borderRadius: 2, animation: `jbar 0.7s ease-in-out ${i * 0.1}s infinite alternate` }} />
                     ))}
                   </div>
                 )}
@@ -305,7 +305,7 @@ export default function MeditationPlayerPage() {
                         onClick={() => setPreMood(i + 1)}
                         style={{
                           fontSize: 28, background: 'none', border: '2px solid',
-                          borderColor: preMood === i + 1 ? '#DAFF01' : 'rgba(255,255,255,0.08)',
+                          borderColor: preMood === i + 1 ? '#1F58F2' : 'rgba(255,255,255,0.08)',
                           borderRadius: 12, width: 52, height: 52, cursor: 'pointer',
                           transition: 'border-color 0.15s, transform 0.1s',
                           transform: preMood === i + 1 ? 'scale(1.15)' : 'scale(1)',
@@ -324,7 +324,7 @@ export default function MeditationPlayerPage() {
                         setPreMoodLogging(false);
                       }}
                       style={{
-                        padding: '12px', background: '#DAFF01', color: '#000',
+                        padding: '12px', background: '#1F58F2', color: '#000',
                         border: 'none', borderRadius: 99, fontSize: '0.85rem',
                         fontWeight: 510, cursor: 'pointer', letterSpacing: '-0.011em',
                         WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)',
@@ -380,7 +380,7 @@ export default function MeditationPlayerPage() {
                         onClick={() => setMoodSelected(i + 1)}
                         style={{
                           fontSize: 28, background: 'none', border: '2px solid',
-                          borderColor: moodSelected === i + 1 ? '#DAFF01' : 'rgba(255,255,255,0.08)',
+                          borderColor: moodSelected === i + 1 ? '#1F58F2' : 'rgba(255,255,255,0.08)',
                           borderRadius: 12, width: 52, height: 52, cursor: 'pointer',
                           transition: 'border-color 0.15s, transform 0.1s',
                           transform: moodSelected === i + 1 ? 'scale(1.15)' : 'scale(1)',
@@ -400,7 +400,7 @@ export default function MeditationPlayerPage() {
                             onClick={() => setStressSelected(stressSelected === i + 1 ? null : i + 1)}
                             style={{
                               fontSize: 28, background: 'none', border: '2px solid',
-                              borderColor: stressSelected === i + 1 ? '#DAFF01' : 'rgba(255,255,255,0.08)',
+                              borderColor: stressSelected === i + 1 ? '#1F58F2' : 'rgba(255,255,255,0.08)',
                               borderRadius: 12, width: 52, height: 52, cursor: 'pointer',
                               transition: 'border-color 0.15s, transform 0.1s',
                               transform: stressSelected === i + 1 ? 'scale(1.15)' : 'scale(1)',
@@ -415,7 +415,7 @@ export default function MeditationPlayerPage() {
                           await handlePostMoodLog(moodSelected, stressSelected ?? null);
                         }}
                         style={{
-                          padding: '12px', background: '#DAFF01', color: '#000',
+                          padding: '12px', background: '#1F58F2', color: '#000',
                           border: 'none', borderRadius: 99, fontSize: '0.85rem',
                           fontWeight: 510, cursor: 'pointer', letterSpacing: '-0.011em',
                           WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)',

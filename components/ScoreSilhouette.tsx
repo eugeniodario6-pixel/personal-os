@@ -1,7 +1,7 @@
 'use client';
 
 // ScoreSilhouette.tsx
-// Human silhouette that fills from feet up with #DAFF01 as score increases.
+// Human silhouette that fills from feet up with #1F58F2 as score increases.
 // 0 = empty (dark outline), 100 = fully filled lime.
 
 interface Props {
@@ -56,7 +56,7 @@ export default function ScoreSilhouette({ score, height = 160 }: Props) {
         <g clipPath={`url(#${clipId})`}>
           <path
             d={SILHOUETTE}
-            fill="#DAFF01"
+            fill="#1F58F2"
             filter={pct > 10 ? `url(#glow)` : undefined}
             style={{ transition: 'opacity 0.5s' }}
           />
@@ -67,7 +67,7 @@ export default function ScoreSilhouette({ score, height = 160 }: Props) {
           <line
             x1="0" y1={200 - (pct / 100) * 200}
             x2="110" y2={200 - (pct / 100) * 200}
-            stroke="#DAFF01"
+            stroke="#1F58F2"
             strokeWidth="0.5"
             strokeOpacity="0.4"
           />
@@ -79,7 +79,7 @@ export default function ScoreSilhouette({ score, height = 160 }: Props) {
         fontSize: 11,
         fontWeight: 510,
         letterSpacing: '0.06em',
-        color: pct >= 75 ? '#DAFF01' : 'rgba(255,255,255,0.3)',
+        color: pct >= 75 ? '#1F58F2' : 'rgba(255,255,255,0.3)',
         fontFamily: 'var(--font-mono)',
         transition: 'color 0.5s',
       }}>
