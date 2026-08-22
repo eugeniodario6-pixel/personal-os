@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getProfile, upsertProfile } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptic';
+import { useTheme } from '@/components/ThemeProvider';
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -41,6 +42,7 @@ export default function SettingsPage() {
   const [nonNumeric, setNonNumeric]       = useState(false);
   const [saved, setSaved]                 = useState(false);
   const [loading, setLoading]             = useState(true);
+  const { theme, toggle: toggleTheme }    = useTheme();
 
   const load = useCallback(async () => {
     const prof = await getProfile();
@@ -155,31 +157,56 @@ export default function SettingsPage() {
 
       {/* ── Display ── */}
       <Section title="Display">
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 2px' }}>Non-numeric mode</p>
-              <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', margin: 0 }}>Hides calorie and weight numbers app-wide</p>
-            </div>
-            {/* Pill toggle: off = var(--surface-3), on = var(--text) */}
-            <button
-              onClick={() => { haptic('light'); setNonNumeric(!nonNumeric); }}
-              style={{
-                width: 44, height: 24, borderRadius: 9999, flexShrink: 0,
-                background: nonNumeric ? 'var(--text)' : 'var(--surface-3)',
-                border: 'none', cursor: 'pointer', position: 'relative',
-                transition: 'background 0.2s',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              <span style={{
-                position: 'absolute', top: 3, left: nonNumeric ? 23 : 3,
-                width: 18, height: 18, borderRadius: '50%',
-                background: nonNumeric ? 'var(--invert)' : 'var(--text-3)',
-                transition: 'left 0.2s, background 0.2s',
-              }} />
-            </button>
+        {/* Dark / Light mode toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 2px' }}>
+              {theme === 'dark' ? '🌙 Dark mode' : '☀️ Light mode'}
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', margin: 0 }}>Follows system by default</p>
           </div>
+          <button
+            onClick={() => { haptic('light'); toggleTheme(); }}
+            style={{
+              width: 44, height: 24, borderRadius: 9999, flexShrink: 0,
+              background: theme === 'dark' ? 'var(--text)' : 'var(--surface-3)',
+              border: 'none', cursor: 'pointer', position: 'relative',
+              transition: 'background 0.2s',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3, left: theme === 'dark' ? 23 : 3,
+              width: 18, height: 18, borderRadius: '50%',
+              background: theme === 'dark' ? 'var(--invert)' : 'var(--text-3)',
+              transition: 'left 0.2s, background 0.2s',
+            }} />
+          </button>
+        </div>
+
+        {/* Non-numeric mode toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 2px' }}>Non-numeric mode</p>
+            <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', margin: 0 }}>Hides calorie and weight numbers app-wide</p>
+          </div>
+          <button
+            onClick={() => { haptic('light'); setNonNumeric(!nonNumeric); }}
+            style={{
+              width: 44, height: 24, borderRadius: 9999, flexShrink: 0,
+              background: nonNumeric ? 'var(--text)' : 'var(--surface-3)',
+              border: 'none', cursor: 'pointer', position: 'relative',
+              transition: 'background 0.2s',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3, left: nonNumeric ? 23 : 3,
+              width: 18, height: 18, borderRadius: '50%',
+              background: nonNumeric ? 'var(--invert)' : 'var(--text-3)',
+              transition: 'left 0.2s, background 0.2s',
+            }} />
+          </button>
         </div>
       </Section>
 
