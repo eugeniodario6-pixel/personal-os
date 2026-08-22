@@ -1,44 +1,43 @@
 'use client';
 
 // ScoreSilhouette.tsx
-// Human silhouette fills from feet up with #1F58F2 as score increases.
+// Vitruvian Man — fills from feet up with #1F58F2 as score increases
+// Geometric circle + square framing, arms extended
 
 interface Props {
   score: number; // 0–100
   height?: number;
 }
 
-export default function ScoreSilhouette({ score, height = 148 }: Props) {
+export default function ScoreSilhouette({ score, height = 160 }: Props) {
   const pct = Math.max(0, Math.min(100, score));
-  const clipId = `sf-clip-${Math.random().toString(36).slice(2, 7)}`;
+  const uid = Math.random().toString(36).slice(2, 7);
+  const clipId = `vit-clip-${uid}`;
+  const glowId = `vit-glow-${uid}`;
 
-  // viewBox is 100×220
-  // Body fills from y=194 (feet) up to y=2 (head) — 192px range
-  // At pct=0: fill starts at bottom (y=194), at pct=100: fills entire body (y=2)
-  const bodyBottom = 196;
-  const bodyTop = 2;
-  const bodyHeight = bodyBottom - bodyTop;
-  const fillY = bodyBottom - (pct / 100) * bodyHeight;
+  // Body spans from y=8 (top of head) to y=192 (feet)
+  const bodyTop = 8;
+  const bodyBot = 192;
+  const bodyH   = bodyBot - bodyTop;
+  const fillY   = bodyBot - (pct / 100) * bodyH;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+    <div style={{ flexShrink: 0 }}>
       <svg
-        width={height * 0.5}
+        width={height * 0.72}
         height={height}
-        viewBox="0 0 100 220"
-        style={{ overflow: 'visible', display: 'block' }}
+        viewBox="0 0 144 200"
+        style={{ display: 'block', overflow: 'visible' }}
       >
         <defs>
+          {/* Rising fill clip */}
           <clipPath id={clipId}>
-            <rect
-              x="0"
-              y={fillY}
-              width="100"
-              height={220 - fillY}
-            />
+            <rect x="0" y={fillY} width="144" height={bodyBot - fillY} />
           </clipPath>
-          <filter id="cobalt-glow">
-            <feGaussianBlur stdDeviation="2.5" result="blur" />
+
+          {/* Cobalt glow */}
+          <filter id={glowId} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -46,82 +45,111 @@ export default function ScoreSilhouette({ score, height = 148 }: Props) {
           </filter>
         </defs>
 
-        {/* Dim base */}
-        <path d={BODY} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+        {/* ── Geometric framing — circle + square ── */}
+        {/* Outer circle */}
+        <circle
+          cx="72" cy="96" r="68"
+          fill="none"
+          stroke="rgba(216,234,255,0.07)"
+          strokeWidth="0.5"
+        />
+        {/* Inner square */}
+        <rect
+          x="20" y="44" width="104" height="104"
+          fill="none"
+          stroke="rgba(216,234,255,0.07)"
+          strokeWidth="0.5"
+        />
 
-        {/* Filled portion */}
+        {/* ── Dim base figure ── */}
+        <path d={VITRUVIAN} fill="rgba(216,234,255,0.07)" stroke="rgba(216,234,255,0.10)" strokeWidth="0.4" />
+
+        {/* ── Cobalt filled figure (clipped to rising rect) ── */}
         <g clipPath={`url(#${clipId})`}>
           <path
-            d={BODY}
+            d={VITRUVIAN}
             fill="#1F58F2"
-            filter={pct > 5 ? 'url(#cobalt-glow)' : undefined}
-            style={{ transition: 'filter 0.5s' }}
+            filter={pct > 5 ? `url(#${glowId})` : undefined}
           />
         </g>
 
-        {/* Waterline */}
-        {pct > 3 && pct < 97 && (
+        {/* ── Waterline ── */}
+        {pct > 2 && pct < 98 && (
           <line
-            x1="10" y1={fillY}
-            x2="90" y2={fillY}
+            x1="20" y1={fillY}
+            x2="124" y2={fillY}
             stroke="#1F58F2"
-            strokeWidth="0.8"
+            strokeWidth="0.6"
             strokeOpacity="0.5"
-            strokeDasharray="2 2"
+            strokeDasharray="3 3"
           />
         )}
-      </svg>
 
-      {/* Score label removed — shown as hero number */}
+        {/* ── Framing dots at circle/square intersections ── */}
+        {[
+          [72, 28], [72, 164],  // top/bottom of circle
+          [20, 96], [124, 96],  // left/right of square
+        ].map(([cx, cy], i) => (
+          <circle
+            key={i}
+            cx={cx} cy={cy} r="1.5"
+            fill={pct > (i * 25) ? '#1F58F2' : 'rgba(216,234,255,0.15)'}
+          />
+        ))}
+      </svg>
     </div>
   );
 }
 
-// Clean human silhouette — head, torso, arms, legs — fits 100×220 viewBox
-const BODY = `
-  M50,2
-  C43,2 37,8 37,16
-  C37,24 43,30 50,30
-  C57,30 63,24 63,16
-  C63,8 57,2 50,2 Z
+// Vitruvian man path — 144×200 viewBox
+// Head centered at (72,20), arms extended wide, legs in A-stance
+// Classic da Vinci proportions
+const VITRUVIAN = `
+  M72,8
+  C67,8 63,12 63,18
+  C63,24 67,28 72,28
+  C77,28 81,24 81,18
+  C81,12 77,8 72,8 Z
 
-  M33,34
-  C24,36 18,43 17,52
-  L12,82
-  C11,87 14,90 18,89
-  L20,89
-  L18,130
-  L14,188
-  C14,192 17,194 20,194
-  L30,194
-  C33,194 36,192 36,188
-  L40,148
-  L50,146
-  L60,148
-  L64,188
-  C64,192 67,194 70,194
-  L80,194
-  C83,194 86,192 86,188
-  L82,130
-  L80,89
-  L82,89
-  C86,90 89,87 88,82
-  L83,52
-  C82,43 76,36 67,34
-  L61,32
-  C58,37 54,40 50,40
-  C46,40 42,37 39,32
+  M40,32
+  C34,33 30,38 29,44
+  L4,80
+  C3,84 5,87 8,86
+  L28,78
+  L32,96
+  L8,130
+  C6,133 8,136 11,136
+  L36,128
+  L44,160
+  L48,192
+  C48,194 50,196 52,196
+  L62,196
+  C64,196 66,194 66,192
+  L68,148
+  L72,146
+  L76,148
+  L78,192
+  C78,194 80,196 82,196
+  L92,196
+  C94,196 96,194 96,192
+  L100,160
+  L108,128
+  L133,136
+  C136,136 138,133 136,130
+  L112,96
+  L116,78
+  L136,86
+  C139,87 141,84 140,80
+  L115,44
+  C114,38 110,33 104,32
+  L92,30
+  C88,36 81,40 72,40
+  C63,40 56,36 52,30
   Z
 
-  M17,52
-  L4,66
-  C1,69 2,74 5,76
-  L17,82
-  L20,89
+  M29,44
+  L4,80
 
-  M83,52
-  L96,66
-  C99,69 98,74 95,76
-  L83,82
-  L80,89
+  M115,44
+  L140,80
 `.trim();
