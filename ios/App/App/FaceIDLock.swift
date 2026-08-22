@@ -1,6 +1,15 @@
 import LocalAuthentication
 import UIKit
 
+private extension UILabel {
+    func letterSpacing(_ spacing: CGFloat) {
+        guard let text = text else { return }
+        let attrs = NSMutableAttributedString(string: text)
+        attrs.addAttribute(.kern, value: spacing, range: NSRange(location: 0, length: text.count))
+        attributedText = attrs
+    }
+}
+
 /// Call `FaceIDLock.authenticate()` on app launch / foreground.
 /// Blocks the UI with a blur overlay until the user authenticates.
 class FaceIDLock {
@@ -16,48 +25,60 @@ class FaceIDLock {
 
         DispatchQueue.main.async {
             // Blur overlay
-            let blur = UIBlurEffect(style: .systemUltraThinMaterialDark)
+            let blur = UIBlurEffect(style: .systemMaterialDark)
             let blurView = UIVisualEffectView(effect: blur)
             blurView.frame = window.bounds
             blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             blurView.tag = 9999
 
-            // Lock icon
+            // Batman logo
             let icon = UILabel()
             icon.text = "🦇"
-            icon.font = .systemFont(ofSize: 52)
+            icon.font = .systemFont(ofSize: 64)
             icon.translatesAutoresizingMaskIntoConstraints = false
             blurView.contentView.addSubview(icon)
 
-            // App name
+            // Title
             let label = UILabel()
-            label.text = "Personal OS"
-            label.font = .systemFont(ofSize: 17, weight: .semibold)
-            label.textColor = .white
+            label.text = "PERSONAL OS"
+            label.font = .systemFont(ofSize: 13, weight: .bold)
+            label.textColor = UIColor.white.withAlphaComponent(0.5)
+            label.letterSpacing(1.8)
             label.translatesAutoresizingMaskIntoConstraints = false
             blurView.contentView.addSubview(label)
 
-            // Unlock button
+            // Subtitle
+            let sub = UILabel()
+            sub.text = "Identify yourself."
+            sub.font = .systemFont(ofSize: 28, weight: .semibold)
+            sub.textColor = .white
+            sub.translatesAutoresizingMaskIntoConstraints = false
+            blurView.contentView.addSubview(sub)
+
+            // Unlock button — yellow accent
             let btn = UIButton(type: .system)
-            btn.setTitle("Unlock with Face ID", for: .normal)
-            btn.setTitleColor(.white, for: .normal)
-            btn.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
-            btn.backgroundColor = UIColor.white.withAlphaComponent(0.15)
-            btn.layer.cornerRadius = 14
-            btn.contentEdgeInsets = UIEdgeInsets(top: 12, left: 24, bottom: 12, right: 24)
+            btn.setTitle("Scan Face ID", for: .normal)
+            btn.setTitleColor(.black, for: .normal)
+            btn.titleLabel?.font = .systemFont(ofSize: 15, weight: .bold)
+            btn.backgroundColor = UIColor(red: 218/255, green: 255/255, blue: 1/255, alpha: 1) // #DAFF01
+            btn.layer.cornerRadius = 16
+            btn.contentEdgeInsets = UIEdgeInsets(top: 14, left: 32, bottom: 14, right: 32)
             btn.translatesAutoresizingMaskIntoConstraints = false
             btn.addTarget(self, action: #selector(self.authenticate), for: .touchUpInside)
             blurView.contentView.addSubview(btn)
 
             NSLayoutConstraint.activate([
                 icon.centerXAnchor.constraint(equalTo: blurView.contentView.centerXAnchor),
-                icon.centerYAnchor.constraint(equalTo: blurView.contentView.centerYAnchor, constant: -60),
+                icon.centerYAnchor.constraint(equalTo: blurView.contentView.centerYAnchor, constant: -80),
 
                 label.centerXAnchor.constraint(equalTo: blurView.contentView.centerXAnchor),
-                label.topAnchor.constraint(equalTo: icon.bottomAnchor, constant: 12),
+                label.topAnchor.constraint(equalTo: icon.bottomAnchor, constant: 16),
+
+                sub.centerXAnchor.constraint(equalTo: blurView.contentView.centerXAnchor),
+                sub.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 8),
 
                 btn.centerXAnchor.constraint(equalTo: blurView.contentView.centerXAnchor),
-                btn.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 32),
+                btn.topAnchor.constraint(equalTo: sub.bottomAnchor, constant: 36),
             ])
 
             window.addSubview(blurView)

@@ -186,6 +186,70 @@ function StatRow({ label, value, color }: { label: string; value: string | numbe
   );
 }
 
+// ─── Apple Health card ────────────────────────────────────────────────────────
+function HealthCard() {
+  const [hk, setHk] = useState<any>(null);
+  useEffect(() => {
+    const handler = (e: Event) => setHk((e as CustomEvent).detail);
+    window.addEventListener('healthkit-data', handler);
+    const cached = (window as any).__healthKitData;
+    if (cached?.available) setHk(cached);
+    let attempts = 0;
+    const poll = setInterval(() => {
+      attempts++;
+      const d = (window as any).__healthKitData;
+      if (d?.available) { setHk(d); clearInterval(poll); }
+      if (attempts >= 6) clearInterval(poll);
+    }, 2000);
+    return () => { window.removeEventListener('healthkit-data', handler); clearInterval(poll); };
+  }, []);
+
+  if (!hk?.available) return null;
+  return (
+    <Card>
+      <SectionLabel icon="♥" title="Apple Health" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+        {hk.steps > 0 && (
+          <div>
+            <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: '#fff', margin: 0, lineHeight: 1 }}>{hk.steps.toLocaleString()}</p>
+            <p style={{ fontSize: '0.6rem', color: TEXT3, margin: '4px 0 0', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>STEPS</p>
+          </div>
+        )}
+        {hk.heartRate > 0 && (
+          <div>
+            <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: '#FF8B8B', margin: 0, lineHeight: 1 }}>{hk.heartRate}</p>
+            <p style={{ fontSize: '0.6rem', color: TEXT3, margin: '4px 0 0', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>BPM</p>
+          </div>
+        )}
+        {hk.hrv > 0 && (
+          <div>
+            <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: '#8B8BFF', margin: 0, lineHeight: 1 }}>{Math.round(hk.hrv)}</p>
+            <p style={{ fontSize: '0.6rem', color: TEXT3, margin: '4px 0 0', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>HRV ms</p>
+          </div>
+        )}
+        {hk.sleepHours > 0 && (
+          <div>
+            <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: '#FFB86B', margin: 0, lineHeight: 1 }}>{hk.sleepHours}h{hk.sleepMinutes > 0 ? `${hk.sleepMinutes}m` : ''}</p>
+            <p style={{ fontSize: '0.6rem', color: TEXT3, margin: '4px 0 0', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>SLEEP</p>
+          </div>
+        )}
+        {hk.activeCalories > 0 && (
+          <div>
+            <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: LIME, margin: 0, lineHeight: 1 }}>{hk.activeCalories}</p>
+            <p style={{ fontSize: '0.6rem', color: TEXT3, margin: '4px 0 0', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>KCAL</p>
+          </div>
+        )}
+        {hk.weight > 0 && (
+          <div>
+            <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: '#fff', margin: 0, lineHeight: 1 }}>{hk.weight}</p>
+            <p style={{ fontSize: '0.6rem', color: TEXT3, margin: '4px 0 0', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>KG</p>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function ProgressPage() {
   const [period, setPeriod] = useState<Period>('7');
@@ -447,6 +511,9 @@ export default function ProgressPage() {
         </div>
       ) : (
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* ── APPLE HEALTH ── */}
+          <HealthCard />
 
           {/* ── EATING ── */}
           <Card>
