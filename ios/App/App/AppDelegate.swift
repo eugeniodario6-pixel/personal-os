@@ -10,6 +10,86 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
     private let store = HKHealthStore()
 
+    // ── Speech properties (used by SceneDelegate message handlers) ──
+    var speechAudioEngine = AVAudioEngine()
+    var speechRequest: SFSpeechAudioBufferRecognitionRequest?
+    var speechTask: SFSpeechRecognitionTask?
+    var speechIsListening = false
+
+    func startSpeechFromJS() {
+        guard !speechIsListening else { return }
+        SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            guard status == .authorized else {
+                self?.pushSpeechResult(transcript: "", error: "Not authorized")
+                return
+            }
+            DispatchQueue.main.async { self?.doStartSpeech() }
+        }
+    }
+
+    func doStartSpeech() {
+        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        guard recognizer?.isAvailable == true else {
+            pushSpeechResult(transcript: "", error: "Unavailable"); return
+        }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            speechRequest = SFSpeechAudioBufferRecognitionRequest()
+            guard let req = speechRequest else { return }
+            req.shouldReportPartialResults = false
+            let node = speechAudioEngine.inputNode
+            let fmt  = node.outputFormat(forBus: 0)
+            node.installTap(onBus: 0, bufferSize: 1024, format: fmt) { [weak self] buf, _ in
+                self?.speechRequest?.append(buf)
+            }
+            speechAudioEngine.prepare()
+            try speechAudioEngine.start()
+            speechIsListening = true
+            print("[Speech] Listening...")
+            evalJS("window.dispatchEvent(new CustomEvent('speech-listening',{detail:{listening:true}}));")
+            speechTask = recognizer?.recognitionTask(with: req) { [weak self] result, error in
+                guard let self else { return }
+                if let result = result, result.isFinal {
+                    let text = result.bestTranscription.formattedString
+                    print("[Speech] Got: \(text)")
+                    self.stopSpeech()
+                    self.pushSpeechResult(transcript: text, error: nil)
+                } else if let error = error {
+                    print("[Speech] Error: \(error)")
+                    self.stopSpeech()
+                    self.pushSpeechResult(transcript: "", error: error.localizedDescription)
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
+                self?.speechRequest?.endAudio()
+            }
+        } catch {
+            pushSpeechResult(transcript: "", error: error.localizedDescription)
+        }
+    }
+
+    func stopSpeech() {
+        speechRequest?.endAudio()
+        speechAudioEngine.stop()
+        if speechAudioEngine.inputNode.numberOfInputs > 0 {
+            speechAudioEngine.inputNode.removeTap(onBus: 0)
+        }
+        speechTask?.cancel()
+        speechRequest = nil
+        speechTask = nil
+        speechIsListening = false
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        evalJS("window.dispatchEvent(new CustomEvent('speech-listening',{detail:{listening:false}}));")
+    }
+
+    private func pushSpeechResult(transcript: String, error: String?) {
+        let escaped = transcript.replacingOccurrences(of: "'", with: "\\'")
+        let errStr  = error != nil ? "'\(error!)'" : "null"
+        evalJS("window.dispatchEvent(new CustomEvent('speech-result',{detail:{transcript:'\(escaped)',error:\(errStr)}}));")
+    }
+
     private var readTypes: Set<HKObjectType> {
         var types = Set<HKObjectType>()
         let ids: [HKQuantityTypeIdentifier] = [
@@ -187,105 +267,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
-// ── Speech Capacitor Plugin ─────────────────────────────────────────────────────
+// ── Speech stub (plugin bridge unused — WKScriptMessageHandler used instead) ─────────
 @objc(SpeechPlugin)
 public class SpeechPlugin: CAPPlugin {
-
-    private var audioEngine = AVAudioEngine()
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private var isListening = false
-
-    @objc public override func requestPermissions(_ call: CAPPluginCall) {
-        SFSpeechRecognizer.requestAuthorization { status in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                call.resolve(["speech": status == .authorized, "microphone": granted])
-            }
-        }
-    }
-
-    // Called from JS via evaluateJavaScript to start listening
-    func startSpeechFromJS() {
-        guard !isListening else { return }
-        SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            guard status == .authorized else {
-                print("[Speech] Not authorized")
-                self?.pushSpeechResult(transcript: "", error: "Not authorized")
-                return
-            }
-            self?.doStartSpeech()
-        }
-    }
-
-    private func doStartSpeech() {
-        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-        guard recognizer?.isAvailable == true else {
-            pushSpeechResult(transcript: "", error: "Recognizer unavailable")
-            return
-        }
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-            recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-            guard let req = recognitionRequest else { return }
-            req.shouldReportPartialResults = false
-            let inputNode = audioEngine.inputNode
-            let fmt = inputNode.outputFormat(forBus: 0)
-            inputNode.installTap(onBus: 0, bufferSize: 1024, format: fmt) { [weak self] buf, _ in
-                self?.recognitionRequest?.append(buf)
-            }
-            audioEngine.prepare()
-            try audioEngine.start()
-            isListening = true
-            print("[Speech] Listening...")
-            // Push listening state to JS
-            evalJS("window.dispatchEvent(new CustomEvent('speech-listening', { detail: { listening: true } }));")
-            recognitionTask = recognizer?.recognitionTask(with: req) { [weak self] result, error in
-                guard let self else { return }
-                if let result = result, result.isFinal {
-                    let text = result.bestTranscription.formattedString
-                    print("[Speech] Transcript: \(text)")
-                    self.stopSpeech()
-                    self.pushSpeechResult(transcript: text, error: nil)
-                } else if let error = error {
-                    print("[Speech] Error: \(error)")
-                    self.stopSpeech()
-                    self.pushSpeechResult(transcript: "", error: error.localizedDescription)
-                }
-            }
-            // Auto-stop after 8s
-            DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
-                self?.recognitionRequest?.endAudio()
-            }
-        } catch {
-            print("[Speech] Engine error: \(error)")
-            pushSpeechResult(transcript: "", error: error.localizedDescription)
-        }
-    }
-
-    func stopSpeech() {
-        recognitionRequest?.endAudio()
-        audioEngine.stop()
-        if audioEngine.inputNode.numberOfInputs > 0 {
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
-        recognitionTask?.cancel()
-        recognitionRequest = nil
-        recognitionTask = nil
-        isListening = false
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        evalJS("window.dispatchEvent(new CustomEvent('speech-listening', { detail: { listening: false } }));")
-    }
-
-    private func pushSpeechResult(transcript: String, error: String?) {
-        let escaped = transcript.replacingOccurrences(of: "'", with: "\\'")
-        let errStr = error.map { "'\($0)'" } ?? "null"
-        evalJS("window.dispatchEvent(new CustomEvent('speech-result', { detail: { transcript: '\(escaped)', error: \(errStr) } }));")
-    }
-
-    @objc func start(_ call: CAPPluginCall) { call.reject("Use native bridge") }
-    @objc func stop(_ call: CAPPluginCall) { stopSpeech(); call.resolve() }
+    @objc public override func requestPermissions(_ call: CAPPluginCall) { call.resolve(["granted": true]) }
+    @objc func start(_ call: CAPPluginCall) { call.resolve(["transcript": ""]) }
+    @objc func stop(_ call: CAPPluginCall) { call.resolve() }
 }
 
 // ── HealthKit Capacitor Plugin (keeps JS bridge as fallback) ──────────────────
