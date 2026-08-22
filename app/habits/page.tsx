@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useCallback } from 'react';
 import { getHabits, addHabit, deactivateHabit, getHabitCompletions, toggleHabitCompletion, getHabitStreaks, getHabitCompletionsRange, todayISO, type Habit } from '@/lib/db';
 import { ScoreRing } from '@/components/ScoreRing';
