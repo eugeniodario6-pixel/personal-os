@@ -10,10 +10,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         window = UIWindow(windowScene: windowScene)
         let bridgeVC = CAPBridgeViewController()
-        // Allow WebView to access microphone for Veronica voice input
-        bridgeVC.webView?.configuration.allowsAirPlayForMediaPlayback = true
-        if #available(iOS 15.0, *) {
-            bridgeVC.webView?.configuration.upgradeKnownHostsToHTTPS = false
+        // Register message handlers so JS can trigger native speech
+        let appDelegate = UIApplication.shared.delegate as? AppDelegate
+        if let wv = bridgeVC.webView {
+            wv.configuration.userContentController.add(
+                SpeechMessageHandler(appDelegate: appDelegate), name: "startSpeech"
+            )
+            wv.configuration.userContentController.add(
+                StopSpeechMessageHandler(appDelegate: appDelegate), name: "stopSpeech"
+            )
         }
         window?.rootViewController = bridgeVC
         window?.makeKeyAndVisible()
@@ -31,6 +36,29 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         FaceIDLock.shared.reset()
     }
 
+}
+
+// ── Speech message handlers ───────────────────────────────────────────────────
+import WebKit
+
+class SpeechMessageHandler: NSObject, WKScriptMessageHandler {
+    weak var appDelegate: AppDelegate?
+    init(appDelegate: AppDelegate?) { self.appDelegate = appDelegate }
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        print("[Speech] startSpeech message received from JS")
+        appDelegate?.startSpeechFromJS()
+    }
+}
+
+class StopSpeechMessageHandler: NSObject, WKScriptMessageHandler {
+    weak var appDelegate: AppDelegate?
+    init(appDelegate: AppDelegate?) { self.appDelegate = appDelegate }
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        appDelegate?.stopSpeech()
+    }
+}
+
+extension SceneDelegate {
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
     }

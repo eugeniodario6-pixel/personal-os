@@ -1,22 +1,6 @@
 // lib/speech.ts
-// Native speech recognition via iOS SFSpeechRecognizer
-// Falls back to webkitSpeechRecognition in browser
-
-import { registerPlugin } from '@capacitor/core';
-
-interface SpeechPlugin {
-  requestPermissions(): Promise<{ speech: boolean; microphone: boolean }>;
-  start(): Promise<{ transcript: string }>;
-  stop(): Promise<void>;
-}
-
-const SpeechNative = registerPlugin<SpeechPlugin>('Speech', {
-  web: {
-    requestPermissions: async () => ({ speech: false, microphone: false }),
-    start: async () => ({ transcript: '' }),
-    stop: async () => {},
-  },
-});
+// Native speech recognition — uses CustomEvent bridge (same as HealthKit)
+// Swift fires speech-result event, JS listens
 
 function isNative(): boolean {
   return typeof (window as any)?.Capacitor?.isNativePlatform === 'function'
@@ -28,19 +12,36 @@ export interface SpeechResult {
   error?: string;
 }
 
-export async function startSpeechRecognition(): Promise<SpeechResult> {
+export function startSpeechRecognition(): Promise<SpeechResult> {
   if (isNative()) {
-    try {
-      // Request permissions first
-      const perms = await SpeechNative.requestPermissions();
-      if (!perms.speech || !perms.microphone) {
-        return { transcript: '', error: 'Permission denied' };
+    return new Promise((resolve) => {
+      // Tell Swift to start listening via a global function
+      const timeout = setTimeout(() => {
+        cleanup();
+        resolve({ transcript: '', error: 'Timeout' });
+      }, 10000);
+
+      function onResult(e: Event) {
+        cleanup();
+        const detail = (e as CustomEvent).detail;
+        resolve({ transcript: detail.transcript ?? '', error: detail.error });
       }
-      const result = await SpeechNative.start();
-      return { transcript: result.transcript };
-    } catch (e: any) {
-      return { transcript: '', error: e?.message ?? 'Speech recognition failed' };
-    }
+
+      function cleanup() {
+        clearTimeout(timeout);
+        window.removeEventListener('speech-result', onResult);
+      }
+
+      window.addEventListener('speech-result', onResult, { once: true });
+
+      // Trigger native speech via webkit message handler
+      try {
+        (window as any).webkit?.messageHandlers?.startSpeech?.postMessage({});
+      } catch {
+        // Fallback: set a global flag Swift polls
+        (window as any).__startSpeech = true;
+      }
+    });
   }
 
   // Browser fallback — webkitSpeechRecognition
@@ -53,13 +54,14 @@ export async function startSpeechRecognition(): Promise<SpeechResult> {
     rec.lang = 'en-US';
     rec.onresult = (e: any) => resolve({ transcript: e.results[0][0].transcript });
     rec.onerror = (e: any) => resolve({ transcript: '', error: e.error });
-    rec.onend = () => resolve({ transcript: '', error: 'No result' });
+    rec.onend   = () => {};
     rec.start();
   });
 }
 
-export async function stopSpeechRecognition(): Promise<void> {
-  if (isNative()) {
-    await SpeechNative.stop();
-  }
+export function stopSpeechRecognition(): Promise<void> {
+  try {
+    (window as any).webkit?.messageHandlers?.stopSpeech?.postMessage({});
+  } catch {}
+  return Promise.resolve();
 }

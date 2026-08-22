@@ -204,23 +204,31 @@ public class SpeechPlugin: CAPPlugin {
         }
     }
 
-    @objc func start(_ call: CAPPluginCall) {
-        guard !isListening else { call.reject("Already listening"); return }
+    // Called from JS via evaluateJavaScript to start listening
+    func startSpeechFromJS() {
+        guard !isListening else { return }
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            guard status == .authorized else { call.reject("Not authorized"); return }
-            self?.doStart(call: call)
+            guard status == .authorized else {
+                print("[Speech] Not authorized")
+                self?.pushSpeechResult(transcript: "", error: "Not authorized")
+                return
+            }
+            self?.doStartSpeech()
         }
     }
 
-    private func doStart(call: CAPPluginCall) {
+    private func doStartSpeech() {
         let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-        guard recognizer?.isAvailable == true else { call.reject("Recognizer unavailable"); return }
+        guard recognizer?.isAvailable == true else {
+            pushSpeechResult(transcript: "", error: "Recognizer unavailable")
+            return
+        }
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.record, mode: .measurement, options: .duckOthers)
             try session.setActive(true, options: .notifyOthersOnDeactivation)
             recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-            guard let req = recognitionRequest else { call.reject("Request failed"); return }
+            guard let req = recognitionRequest else { return }
             req.shouldReportPartialResults = false
             let inputNode = audioEngine.inputNode
             let fmt = inputNode.outputFormat(forBus: 0)
@@ -230,18 +238,20 @@ public class SpeechPlugin: CAPPlugin {
             audioEngine.prepare()
             try audioEngine.start()
             isListening = true
-            print("[SpeechPlugin] Listening...")
+            print("[Speech] Listening...")
+            // Push listening state to JS
+            evalJS("window.dispatchEvent(new CustomEvent('speech-listening', { detail: { listening: true } }));")
             recognitionTask = recognizer?.recognitionTask(with: req) { [weak self] result, error in
                 guard let self else { return }
                 if let result = result, result.isFinal {
                     let text = result.bestTranscription.formattedString
-                    print("[SpeechPlugin] Transcript: \(text)")
-                    self.doStop()
-                    call.resolve(["transcript": text])
+                    print("[Speech] Transcript: \(text)")
+                    self.stopSpeech()
+                    self.pushSpeechResult(transcript: text, error: nil)
                 } else if let error = error {
-                    print("[SpeechPlugin] Error: \(error)")
-                    self.doStop()
-                    call.reject(error.localizedDescription)
+                    print("[Speech] Error: \(error)")
+                    self.stopSpeech()
+                    self.pushSpeechResult(transcript: "", error: error.localizedDescription)
                 }
             }
             // Auto-stop after 8s
@@ -249,22 +259,33 @@ public class SpeechPlugin: CAPPlugin {
                 self?.recognitionRequest?.endAudio()
             }
         } catch {
-            call.reject(error.localizedDescription)
+            print("[Speech] Engine error: \(error)")
+            pushSpeechResult(transcript: "", error: error.localizedDescription)
         }
     }
 
-    @objc func stop(_ call: CAPPluginCall) { doStop(); call.resolve() }
-
-    private func doStop() {
+    func stopSpeech() {
         recognitionRequest?.endAudio()
         audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if audioEngine.inputNode.numberOfInputs > 0 {
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
         recognitionTask?.cancel()
         recognitionRequest = nil
         recognitionTask = nil
         isListening = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        evalJS("window.dispatchEvent(new CustomEvent('speech-listening', { detail: { listening: false } }));")
     }
+
+    private func pushSpeechResult(transcript: String, error: String?) {
+        let escaped = transcript.replacingOccurrences(of: "'", with: "\\'")
+        let errStr = error.map { "'\($0)'" } ?? "null"
+        evalJS("window.dispatchEvent(new CustomEvent('speech-result', { detail: { transcript: '\(escaped)', error: \(errStr) } }));")
+    }
+
+    @objc func start(_ call: CAPPluginCall) { call.reject("Use native bridge") }
+    @objc func stop(_ call: CAPPluginCall) { stopSpeech(); call.resolve() }
 }
 
 // ── HealthKit Capacitor Plugin (keeps JS bridge as fallback) ──────────────────
