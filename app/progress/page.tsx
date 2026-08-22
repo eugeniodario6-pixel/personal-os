@@ -163,11 +163,11 @@ function SectionLabel({ icon, title, value, sub }: { icon: string; title: string
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 14, color: TEXT2 }}>{icon}</span>
-        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fff', letterSpacing: '-0.01em' }}>{title}</span>
+        <span style={{ fontSize: '0.78rem', fontWeight: 510, color: '#fff', letterSpacing: '-0.011em' }}>{title}</span>
       </div>
       {value !== undefined && (
         <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: LIME, letterSpacing: '-0.015em' }}>{value}</span>
+          <span style={{ fontSize: '0.9rem', fontWeight: 510, color: LIME, letterSpacing: '-0.011em' }}>{value}</span>
           {sub && <span style={{ fontSize: '0.55rem', color: TEXT3, marginLeft: 4, fontFamily: 'var(--font-mono)' }}>{sub}</span>}
         </div>
       )}
@@ -179,7 +179,7 @@ function StatRow({ label, value, color }: { label: string; value: string | numbe
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
       <span style={{ fontSize: '0.75rem', color: TEXT3 }}>{label}</span>
-      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: color ?? '#fff', letterSpacing: '-0.01em' }}>{value}</span>
+      <span style={{ fontSize: '0.8rem', fontWeight: 510, color: color ?? '#fff', letterSpacing: '-0.011em' }}>{value}</span>
     </div>
   );
 }
@@ -482,7 +482,7 @@ export default function ProgressPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {/* Streak fire */}
                   <div style={{ height: 6, width: Math.max(6, Math.min(80, h.streak * 3)), background: h.streak > 0 ? LIME : DIM, borderRadius: 3, opacity: h.streak > 0 ? 0.8 : 1 }} />
-                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: h.streak >= 7 ? LIME : '#fff', minWidth: 28, textAlign: 'right' }}>{h.streak}d</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 510, color: h.streak >= 7 ? LIME : '#fff', minWidth: 28, textAlign: 'right' }}>{h.streak}d</span>
                 </div>
               </div>
             ))}

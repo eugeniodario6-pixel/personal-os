@@ -63,7 +63,7 @@ export default function InsightsPage() {
 
       {/* ── Header ── */}
       <div style={{ padding: '20px 20px 16px' }}>
-        <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Analytics</p>
+        <p style={{ fontSize: 12, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Analytics</p>
         <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Insights</h1>
       </div>
 

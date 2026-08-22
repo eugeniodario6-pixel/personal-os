@@ -130,12 +130,12 @@ function VoicePicker({ voice, onSelect, onClose }: { voice: VoiceKey; onSelect: 
     <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ background: '#0D0D0D', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '28px 20px 52px', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}>
         <p style={{ margin: '0 0 4px', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-mono)' }}>JARVIS VOICE</p>
-        <p style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>Select Voice</p>
+        <p style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 510, color: '#fff' }}>Select Voice</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {VOICE_OPTIONS.map(v => (
             <button key={v.key} onClick={() => { onSelect(v.key); onClose(); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 14, background: voice === v.key ? 'rgba(218,255,1,0.08)' : '#141414', border: `1px solid ${voice === v.key ? 'rgba(218,255,1,0.35)' : 'rgba(255,255,255,0.06)'}`, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
               <div style={{ textAlign: 'left' }}>
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: voice === v.key ? '#DAFF01' : '#fff', fontFamily: 'var(--font)' }}>{v.name}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 510, color: voice === v.key ? '#DAFF01' : '#fff', fontFamily: 'var(--font)' }}>{v.name}</p>
                 <p style={{ margin: 0, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>{v.desc}</p>
               </div>
               {voice === v.key && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#DAFF01', boxShadow: '0 0 8px #DAFF01' }} />}
@@ -501,7 +501,7 @@ export default function JarvisPage() {
         </div>
 
         {/* Name + state */}
-        <p style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 700, letterSpacing: '0.2em', color: '#fff', fontFamily: 'var(--font-mono)' }}>VERONICA</p>
+        <p style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 510, letterSpacing: '0.05em', color: '#fff', fontFamily: 'var(--font-mono)' }}>VERONICA</p>
         <p style={{ margin: '0 0 28px', fontSize: '0.58rem', letterSpacing: '0.12em', color: stateColor, fontFamily: 'var(--font-mono)', transition: 'color 0.3s', minHeight: 14 }}>{state}</p>
 
         {/* Last Jarvis utterance */}

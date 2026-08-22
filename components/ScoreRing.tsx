@@ -63,7 +63,7 @@ export function ScoreRing({
         }}>
           <span style={{
             fontSize: size < 52 ? '0.7rem' : '0.875rem',
-            fontWeight: 700,
+            fontWeight: 510,
             letterSpacing: '-0.02em',
             color: 'var(--text)',
             fontFamily: 'var(--font-mono)',

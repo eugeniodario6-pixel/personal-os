@@ -84,11 +84,11 @@ export default function MeditationPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {/* Mini duration ring */}
               <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{suggested.duration_min}</span>
+                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)', fontWeight: 510 }}>{suggested.duration_min}</span>
               </div>
               <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '-0.01em' }}>{suggested.duration_min} min</span>
             </div>
-            <div style={{ background: '#fff', color: '#000', borderRadius: 99, padding: '8px 18px', fontSize: '0.78rem', fontWeight: 600, letterSpacing: '-0.01em' }}>
+            <div style={{ background: '#fff', color: '#000', borderRadius: 99, padding: '8px 18px', fontSize: '0.78rem', fontWeight: 510, letterSpacing: '-0.011em' }}>
               Start →
             </div>
           </div>

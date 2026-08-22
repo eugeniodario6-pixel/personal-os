@@ -112,7 +112,7 @@ function ExerciseCard({ ex, prescribed, pr, lastSet, currentWeight, children }: 
               {pr && currentWeight != null && currentWeight > pr.actual_weight && (
                 <span style={{
                   fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.04em',
-                  color: '#a3e635', fontWeight: 700,
+                  color: '#a3e635', fontWeight: 510,
                   padding: '0.2rem 0.5rem', borderRadius: 'var(--r-xs)',
                   background: 'rgba(163,230,53,0.1)', border: '1px solid rgba(163,230,53,0.3)',
                 }}>
@@ -177,7 +177,7 @@ function CompleteBtn({ onClick, saving }: { onClick: () => void; saving: boolean
     <button onClick={onClick} disabled={saving} style={{
       width: '100%', background: 'var(--cta-bg)', color: 'var(--cta-fg)',
       border: 'none', borderRadius: 'var(--r)', padding: '1rem',
-      fontSize: '0.75rem', letterSpacing: '0.08em', fontWeight: 600,
+      fontSize: '0.75rem', letterSpacing: '0.08em', fontWeight: 510,
       cursor: saving ? 'default' : 'pointer', fontFamily: 'var(--font)',
       opacity: saving ? 0.5 : 1,
     }}>
@@ -387,7 +387,7 @@ export default function PlanPage() {
             <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
               PROGRAMME SETUP
             </p>
-            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)' }}>
               STARTING WEIGHTS
             </h1>
           </div>
@@ -429,7 +429,7 @@ export default function PlanPage() {
         <button onClick={handleSetupSave} style={{
           width: '100%', background: 'var(--cta-bg)', color: 'var(--cta-fg)',
           border: 'none', borderRadius: 'var(--r)', padding: '1rem',
-          fontSize: '0.75rem', letterSpacing: '0.08em', fontWeight: 600,
+          fontSize: '0.75rem', letterSpacing: '0.08em', fontWeight: 510,
           cursor: 'pointer', fontFamily: 'var(--font)', marginTop: '0.5rem',
         }}>
           {hasSetup ? 'UPDATE WEIGHTS' : 'START PROGRAMME →'}
@@ -446,7 +446,7 @@ export default function PlanPage() {
           <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
             WEEK {week} · {plan?.phase?.toUpperCase()}
           </p>
-          <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+          <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)' }}>
             STRENGTH
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: '0.65rem', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
@@ -546,7 +546,7 @@ export default function PlanPage() {
             <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
               WEEK {week} · {plan?.phase?.toUpperCase()}
             </p>
-            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)' }}>
               CARDIO
             </h1>
             <p style={{ margin: '4px 0 0', fontSize: '0.65rem', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
@@ -589,7 +589,7 @@ export default function PlanPage() {
             <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
               WEEK {week} · {plan?.phase?.toUpperCase()}
             </p>
-            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)' }}>
               PAD & BOXING
             </h1>
             <p style={{ margin: '4px 0 0', fontSize: '0.65rem', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
@@ -625,7 +625,7 @@ export default function PlanPage() {
             <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
               WEEK {week} · {plan?.phase?.toUpperCase()}
             </p>
-            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+            <h1 style={{ margin: 0, fontSize: 'clamp(1.6rem, 8vw, 2.4rem)', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)' }}>
               AGILITY / BW
             </h1>
             <p style={{ margin: '4px 0 0', fontSize: '0.65rem', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
@@ -695,7 +695,7 @@ export default function PlanPage() {
             <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
               {todayLabel()}
             </p>
-            <h1 style={{ margin: 0, fontSize: 'clamp(1.8rem, 9vw, 2.8rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1 }}>
+            <h1 style={{ margin: 0, fontSize: 'clamp(1.8rem, 9vw, 2.8rem)', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', lineHeight: 1 }}>
               TRAINING PLAN
             </h1>
           </div>
@@ -726,7 +726,7 @@ export default function PlanPage() {
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', marginBottom: '20px' }}>
           <div>
             <p style={{ margin: '0 0 2px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-5)', fontFamily: 'var(--font-mono)' }}>WEEK</p>
-            <p style={{ margin: 0, fontSize: '3.5rem', fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1 }}>{week}</p>
+            <p style={{ margin: 0, fontSize: '3.5rem', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', lineHeight: 1 }}>{week}</p>
             <p style={{ margin: '2px 0 0', fontSize: '0.55rem', letterSpacing: '0.06em', color: 'var(--text-5)', fontFamily: 'var(--font-mono)' }}>OF 26</p>
           </div>
           <div style={{ paddingBottom: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -771,7 +771,7 @@ export default function PlanPage() {
                   <p style={{ margin: '0 0 4px', fontSize: '0.5rem', letterSpacing: '0.06em', color: 'var(--text-5)', fontFamily: 'var(--font-mono)' }}>
                     {l.key.split(' ')[0].slice(0, 5).toUpperCase()}
                   </p>
-                  <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: pw ? 'var(--text)' : 'var(--text-5)', fontFamily: 'var(--font-mono)' }}>
+                  <p style={{ margin: 0, fontSize: '1rem', fontWeight: 510, letterSpacing: '-0.011em', color: pw ? 'var(--text)' : 'var(--text-5)', fontFamily: 'var(--font-mono)' }}>
                     {pw ?? '—'}
                   </p>
                   <p style={{ margin: '2px 0 0', fontSize: '0.45rem', letterSpacing: '0.04em', color: 'var(--text-5)', fontFamily: 'var(--font-mono)' }}>KG</p>

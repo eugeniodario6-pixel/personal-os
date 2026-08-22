@@ -103,7 +103,7 @@ export default function BodyPage() {
             {delta !== null && (
               <div>
                 <p className="label" style={{ marginBottom: 6 }}>vs Last</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.012em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                   {delta > 0 ? '+' : ''}{delta}
                 </p>
               </div>
@@ -111,7 +111,7 @@ export default function BodyPage() {
             {totalDelta !== null && (
               <div>
                 <p className="label" style={{ marginBottom: 6 }}>From start</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.012em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                   {totalDelta > 0 ? '+' : ''}{totalDelta}
                 </p>
               </div>

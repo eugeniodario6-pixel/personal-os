@@ -225,7 +225,7 @@ export default function MeditationPlayerPage() {
         >←</button>
         <div>
           <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>{session.category} · {session.duration_min} min</p>
-          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#fff', letterSpacing: '-0.015em' }}>{session.name}</p>
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 510, color: '#fff', letterSpacing: '-0.011em' }}>{session.name}</p>
         </div>
       </div>
 
@@ -250,7 +250,7 @@ export default function MeditationPlayerPage() {
               </>
             ) : (
               <>
-                <p style={{ margin: 0, fontSize: '3rem', fontWeight: 510, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                <p style={{ margin: 0, fontSize: '3rem', fontWeight: 510, color: '#fff', letterSpacing: '-0.022em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                   {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
                 </p>
                 {/* Jarvis speaking indicator */}
@@ -326,7 +326,7 @@ export default function MeditationPlayerPage() {
                       style={{
                         padding: '12px', background: '#DAFF01', color: '#000',
                         border: 'none', borderRadius: 99, fontSize: '0.85rem',
-                        fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em',
+                        fontWeight: 510, cursor: 'pointer', letterSpacing: '-0.011em',
                         WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)',
                         opacity: preMoodLogging ? 0.6 : 1,
                       }}
@@ -346,7 +346,7 @@ export default function MeditationPlayerPage() {
               <button
                 onClick={start}
                 disabled={!canStart}
-                style={{ width: '100%', padding: '17px', background: canStart ? '#fff' : 'rgba(255,255,255,0.15)', color: canStart ? '#000' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 700, cursor: canStart ? 'pointer' : 'default', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
+                style={{ width: '100%', padding: '17px', background: canStart ? '#fff' : 'rgba(255,255,255,0.15)', color: canStart ? '#000' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 510, cursor: canStart ? 'pointer' : 'default', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
               >
                 Start Session
               </button>
@@ -417,7 +417,7 @@ export default function MeditationPlayerPage() {
                         style={{
                           padding: '12px', background: '#DAFF01', color: '#000',
                           border: 'none', borderRadius: 99, fontSize: '0.85rem',
-                          fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em',
+                          fontWeight: 510, cursor: 'pointer', letterSpacing: '-0.011em',
                           WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)',
                           opacity: moodLogging ? 0.6 : 1,
                         }}
@@ -447,7 +447,7 @@ export default function MeditationPlayerPage() {
                     : 'Mood held steady';
                   return (
                     <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
-                      <p style={{ margin: 0, fontSize: '0.95rem', color: deltaColor, letterSpacing: '-0.01em', fontWeight: 600 }}>
+                      <p style={{ margin: 0, fontSize: '0.95rem', color: deltaColor, letterSpacing: '-0.011em', fontWeight: 510 }}>
                         {preEmoji} → {postEmoji} ({sign}{moodDelta})
                       </p>
                       <p style={{ margin: '4px 0 0', fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '-0.005em' }}>{msg}</p>
@@ -464,7 +464,7 @@ export default function MeditationPlayerPage() {
               <button
                 onClick={() => router.push('/meditation')}
                 disabled={!canDone}
-                style={{ width: '100%', padding: '17px', background: canDone ? '#fff' : 'rgba(255,255,255,0.15)', color: canDone ? '#000' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 700, cursor: canDone ? 'pointer' : 'default', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
+                style={{ width: '100%', padding: '17px', background: canDone ? '#fff' : 'rgba(255,255,255,0.15)', color: canDone ? '#000' : 'rgba(255,255,255,0.3)', border: 'none', borderRadius: 99, fontSize: '0.95rem', fontWeight: 510, cursor: canDone ? 'pointer' : 'default', letterSpacing: '-0.01em', WebkitTapHighlightColor: 'transparent', fontFamily: 'var(--font)', transition: 'all 0.2s' }}
               >
                 Done →
               </button>

@@ -164,7 +164,7 @@ function Segment({ label, val, path, delta }: { label: string; val: number; path
         <div className="progress-fill" style={{ height: '100%', width: `${val}%`, background: 'var(--text)', borderRadius: 9999 }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <p style={{ fontSize: 10, fontWeight: 510, letterSpacing: '0.04em', textTransform: 'uppercase', color: active ? 'var(--text-3)' : 'var(--text-5)', margin: 0 }}>
+        <p style={{ fontSize: 10, fontWeight: 510, letterSpacing: '0.01em', textTransform: 'uppercase', color: active ? 'var(--text-3)' : 'var(--text-5)', margin: 0 }}>
           {label}
         </p>
         {delta !== undefined && delta !== 0 && (
@@ -381,7 +381,7 @@ export default function TodayPage() {
         <div style={{ padding: '0 20px 20px' }}>
 
           {/* Date */}
-          <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-5)', marginBottom: 12, marginTop: 4 }}>
+          <p style={{ fontSize: 12, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'var(--text-5)', marginBottom: 12, marginTop: 4 }}>
             {dateStr}
           </p>
 
@@ -577,7 +577,7 @@ export default function TodayPage() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'all 0.15s',
                       }}>
-                        {h.done && <span style={{ fontSize: 10, color: 'var(--invert)', fontWeight: 700 }}>✓</span>}
+                        {h.done && <span style={{ fontSize: 10, color: 'var(--invert)', fontWeight: 510 }}>✓</span>}
                       </div>
                       <span style={{
                         flex: 1, fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em',

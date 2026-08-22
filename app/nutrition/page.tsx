@@ -87,7 +87,7 @@ function MacroChart({ logs, profile }: { logs: MealLogWithFood[]; profile: Profi
               {m.label}
             </span>
             <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', letterSpacing: '-0.01em', color: m.over ? 'var(--negative)' : 'var(--text-3)' }}>
-              <span style={{ color: m.over ? 'var(--negative)' : 'var(--text)', fontWeight: 600 }}>{m.val}</span>
+              <span style={{ color: m.over ? 'var(--negative)' : 'var(--text)', fontWeight: 510 }}>{m.val}</span>
               <span style={{ color: 'var(--text-5)' }}> / {m.target}{m.unit === 'kcal' ? ' kcal' : 'g'}</span>
             </span>
           </div>
@@ -147,7 +147,7 @@ function QualityBreakdown({ breakdown }: { breakdown: FoodQualityBreakdown }) {
                 {row.label.toUpperCase()}
               </span>
               <MiniBar value={row.value} max={row.max} color={barColor} />
-              <span style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: barColor, fontWeight: 600, flexShrink: 0, marginLeft: 4 }}>
+              <span style={{ fontSize: '0.55rem', fontFamily: 'var(--font-mono)', color: barColor, fontWeight: 510, flexShrink: 0, marginLeft: 4 }}>
                 {row.value}/{row.max}
               </span>
               {'suffix' in row && row.suffix && (
@@ -190,7 +190,7 @@ function LogEntry({ log, onDelete, expanded, onToggleExpand }: {
               style={{
                 flexShrink: 0,
                 fontSize: '0.5rem',
-                fontWeight: 600,
+                fontWeight: 510,
                 letterSpacing: '0.06em',
                 fontFamily: 'var(--font-mono)',
                 color: qColor,
@@ -206,12 +206,12 @@ function LogEntry({ log, onDelete, expanded, onToggleExpand }: {
               {qLabel.toUpperCase()} {expanded ? '▲' : '▼'}
             </button>
           </div>
-          <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+          <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.01em' }}>
             {log.quantity}{log.food.serving_unit} · {prot}g PRO
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{cal}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 510, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{cal}</span>
           <button onClick={() => { haptic('light'); onDelete(); }} style={{
             background: 'none', border: 'none', color: 'var(--text-5)', cursor: 'pointer',
             fontSize: 14, padding: '4px', lineHeight: 1,
@@ -243,7 +243,7 @@ function FoodRow({ food, onSelect }: { food: FoodItem | FoodResult; onSelect: ()
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, flexShrink: 0, marginLeft: 12 }}>
-        <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{food.calories}</span>
+        <span style={{ fontSize: '1rem', fontWeight: 510, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{food.calories}</span>
         <span style={{ fontSize: '0.55rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>KCAL</span>
       </div>
     </button>
@@ -284,7 +284,7 @@ function FoodLogPanel({ selected, onLog, onCancel }: {
             border: 'none',
             background: mealType === mt ? 'var(--cta-bg)' : 'var(--surface-2)',
             color: mealType === mt ? 'var(--cta-fg)' : 'var(--text-4)',
-            fontSize: '0.6rem', fontWeight: 510, letterSpacing: '0.04em',
+            fontSize: '0.6rem', fontWeight: 510, letterSpacing: '0.01em',
             cursor: 'pointer', fontFamily: 'var(--font)',
           }}>
             {MEAL_LABELS[mt].slice(0,5).toUpperCase()}
@@ -298,7 +298,7 @@ function FoodLogPanel({ selected, onLog, onCancel }: {
         style={{
           width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-2)',
           borderRadius: 'var(--r-sm)', padding: '0.6rem 0.75rem',
-          color: 'var(--text)', fontSize: '1.5rem', fontWeight: 600, fontFamily: 'var(--font-mono)',
+          color: 'var(--text)', fontSize: '1.5rem', fontWeight: 510, fontFamily: 'var(--font-mono)',
           textAlign: 'center', outline: 'none', boxSizing: 'border-box', marginBottom: 8,
         }}
         autoFocus
@@ -321,7 +321,7 @@ function FoodLogPanel({ selected, onLog, onCancel }: {
         {[['KCAL', pCal],['PRO', `${pProt}g`],['CARB', `${pCarb}g`],['FAT', `${pFat}g`]].map(([l, v]) => (
           <div key={l} style={{ textAlign: 'center' }}>
             <p style={{ margin: '0 0 3px', fontSize: '0.45rem', letterSpacing: '0.08em', color: 'var(--text-5)', fontFamily: 'var(--font-mono)' }}>{l}</p>
-            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{v}</p>
+            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 510, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{v}</p>
           </div>
         ))}
       </div>
@@ -329,7 +329,7 @@ function FoodLogPanel({ selected, onLog, onCancel }: {
       <button onClick={() => onLog(qty, mealType)} style={{
         width: '100%', background: 'var(--cta-bg)', color: 'var(--cta-fg)',
         border: 'none', borderRadius: 'var(--r)', padding: '0.875rem',
-        fontSize: '0.75rem', letterSpacing: '0.08em', fontWeight: 600,
+        fontSize: '0.75rem', letterSpacing: '0.08em', fontWeight: 510,
         cursor: 'pointer', fontFamily: 'var(--font)',
       }}>
         LOG TO {MEAL_LABELS[mealType].toUpperCase()} →
@@ -464,14 +464,14 @@ function NutritionContent() {
             <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
               EAT · {dateStr}
             </p>
-            <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 10vw, 3rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1 }}>
+            <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 10vw, 3rem)', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', lineHeight: 1 }}>
               Fuel
             </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, paddingTop: 4 }}>
             <div style={{ textAlign: 'right' }}>
               <p style={{ margin: '0 0 2px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>REMAINING</p>
-              <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+              <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
                 {remaining > 0 ? remaining.toLocaleString() : '✓'}
               </p>
               {remaining > 0 && (
@@ -496,11 +496,11 @@ function NutritionContent() {
           {/* Quality score */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>QUALITY</span>
-            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: qualityColor, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 510, color: qualityColor, fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
               {dailyQualityScore}<span style={{ fontSize: '0.55rem', color: 'var(--text-5)', fontWeight: 400 }}>/100</span>
             </span>
             <span style={{
-              fontSize: '0.5rem', fontWeight: 600, letterSpacing: '0.06em',
+              fontSize: '0.5rem', fontWeight: 510, letterSpacing: '0.06em',
               fontFamily: 'var(--font-mono)',
               color: qualityColor,
               background: 'rgba(255,255,255,0.05)',
@@ -592,7 +592,7 @@ function NutritionContent() {
             <button onClick={doSearch} disabled={searching} style={{
               flexShrink: 0, padding: '0.75rem 1.25rem', borderRadius: 'var(--r)',
               background: 'var(--cta-bg)', color: 'var(--cta-fg)',
-              border: 'none', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer',
+              border: 'none', fontSize: '0.7rem', fontWeight: 510, cursor: 'pointer',
               opacity: searching ? 0.5 : 1, letterSpacing: '0.06em',
             }}>
               {searching ? '…' : 'GO'}
@@ -673,7 +673,7 @@ function NutritionContent() {
                   padding: '16px', boxShadow: 'var(--ring)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.01em' }}>
                     NOTHING LOGGED
                   </span>
                 </div>
