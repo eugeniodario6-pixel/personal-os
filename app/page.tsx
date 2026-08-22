@@ -353,6 +353,10 @@ export default function TodayPage() {
       if (data?.available) setHealthData(data);
     };
     window.addEventListener('healthkit-data', handler);
+
+    // Signal to native that JS is ready — triggers a re-push if data already fetched
+    window.dispatchEvent(new CustomEvent('healthkit-js-ready'));
+
     return () => window.removeEventListener('healthkit-data', handler);
   }, []);
 

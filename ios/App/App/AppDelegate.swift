@@ -22,9 +22,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return types
     }
 
+    // Cached health data — pushed to JS whenever the page is ready
+    private var cachedHealthJS: String?
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Request HealthKit permissions then push data to JS
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             self.initHealthKit()
         }
         return true
@@ -130,10 +133,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }}));
             """
             print("[HealthKit] Pushing to JS — steps:\(steps) bpm:\(bpm) weight:\(weightKg)kg sleep:\(sleepHours)h\(sleepMins)m kcal:\(kcal)")
-            // Find the CAPBridgeViewController and eval JS
+            self.cachedHealthJS = js
+            self.evalJS(js)
+        }
+    }
+
+    func evalJS(_ js: String, retries: Int = 5) {
+        DispatchQueue.main.async {
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let vc = scene.windows.first?.rootViewController as? CAPBridgeViewController {
-                vc.webView?.evaluateJavaScript(js, completionHandler: nil)
+               let vc = scene.windows.first?.rootViewController as? CAPBridgeViewController,
+               let webView = vc.webView {
+                webView.evaluateJavaScript(js) { _, err in
+                    if let err = err {
+                        print("[HealthKit] JS eval error (retries left: \(retries)): \(err)")
+                        if retries > 0 {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                self.evalJS(js, retries: retries - 1)
+                            }
+                        }
+                    } else {
+                        print("[HealthKit] JS event dispatched OK")
+                    }
+                }
+            } else if retries > 0 {
+                print("[HealthKit] WebView not ready, retrying...")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.evalJS(js, retries: retries - 1)
+                }
             }
         }
     }
