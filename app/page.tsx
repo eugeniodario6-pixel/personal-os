@@ -16,6 +16,7 @@ import { haptic } from '@/lib/haptic';
 import { toast } from '@/components/Toast';
 import { DashboardSkeleton } from '@/components/Skeleton';
 import QuickLogSheet from '@/components/QuickLogSheet';
+import ScoreSilhouette from '@/components/ScoreSilhouette';
 import { requestHealthKitPermissions, getHealthData, type HealthData } from '@/lib/healthkit';
 
 // ── Score logic ────────────────────────────────────────────────────────────────
@@ -422,7 +423,8 @@ export default function TodayPage() {
           </p>
 
           {/* Score hero */}
-          <div style={{ animation: scorePulsed ? 'score-pulse 0.5s ease' : undefined, marginBottom: 16 }}>
+          <div style={{ animation: scorePulsed ? 'score-pulse 0.5s ease' : undefined, marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+            <div style={{ flex: 1 }}>
             <div
               className="t-hero"
               style={{
@@ -447,6 +449,9 @@ export default function TodayPage() {
             <p style={{ fontSize: 11, fontWeight: 510, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-5)', marginTop: 8, marginBottom: 0 }}>
               {getTrainingRecommendation(score)}
             </p>
+            </div>
+            {/* Silhouette fill indicator */}
+            <ScoreSilhouette score={score} height={160} />
           </div>
 
           {/* Sparkline */}
