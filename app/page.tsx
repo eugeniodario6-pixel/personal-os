@@ -695,10 +695,10 @@ export default function TodayPage() {
                   )}
                 </div>
                 {/* Recent workouts from Health */}
-                {healthData.workouts.length > 0 && (
+                {(healthData.workouts ?? []).length > 0 && (
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
                     <p className="label" style={{ marginBottom: 8 }}>Recent workouts</p>
-                    {healthData.workouts.slice(0, 3).map((w, i) => (
+                    {(healthData.workouts ?? []).slice(0, 3).map((w, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, marginBottom: 8, borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
                         <span style={{ fontSize: 13, color: 'var(--text)', letterSpacing: '-0.011em' }}>{w.type}</span>
                         <span style={{ fontSize: 12, color: 'var(--text-4)' }}>{w.duration} min · {w.calories} kcal</span>
