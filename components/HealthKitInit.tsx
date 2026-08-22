@@ -1,36 +1,39 @@
 'use client';
 
 // HealthKitInit.tsx
-// Runs once on app launch (native only).
-// Syncs latest HealthKit weight + recent Garmin workouts into the Personal OS DB.
-// Permission request is handled by page.tsx — this just does the DB write.
+// Runs once per session (native only).
+// After page.tsx requests HealthKit permissions, this syncs weight + workouts into the DB.
 
 import { useEffect } from 'react';
-import { isNative, getHealthData } from '@/lib/healthkit';
-import { logWeight, addWorkoutLog, todayISO } from '@/lib/db';
+import { getHealthData } from '@/lib/healthkit';
+import { logWeight, addWorkoutLog } from '@/lib/db';
 
 export default function HealthKitInit() {
   useEffect(() => {
-    if (!isNative()) return;
+    // Only run in native Capacitor app
+    const isNative =
+      typeof window !== 'undefined' &&
+      typeof (window as any)?.Capacitor?.isNativePlatform === 'function' &&
+      (window as any).Capacitor.isNativePlatform();
 
-    const alreadyRan = sessionStorage.getItem('hk_synced');
-    if (alreadyRan) return;
+    if (!isNative) return;
+    if (sessionStorage.getItem('hk_synced')) return;
 
     async function syncToDb() {
       try {
+        // Wait for page.tsx to request permissions first
         const authorised = localStorage.getItem('hk_asked') === '1';
-        if (!authorised) return; // wait for page.tsx to request permission first
+        if (!authorised) return;
 
         const data = await getHealthData();
         if (!data.available) return;
 
-        // Sync weight
+        // Sync latest weight from Apple Health (Garmin writes here)
         if (data.weight > 0) {
           await logWeight(data.weight);
-          console.log('[HealthKit] Weight synced:', data.weight, 'kg');
         }
 
-        // Sync workouts to DB
+        // Sync recent workouts into DB
         for (const w of data.workouts) {
           if (w.duration > 0) {
             await addWorkoutLog({
@@ -47,14 +50,13 @@ export default function HealthKitInit() {
         }
 
         sessionStorage.setItem('hk_synced', '1');
-        console.log('[HealthKit] DB sync complete. Workouts:', data.workouts.length);
       } catch (e) {
         console.warn('[HealthKit] Sync error:', e);
       }
     }
 
     // Small delay to let page.tsx request permissions first
-    const t = setTimeout(syncToDb, 2000);
+    const t = setTimeout(syncToDb, 2500);
     return () => clearTimeout(t);
   }, []);
 
