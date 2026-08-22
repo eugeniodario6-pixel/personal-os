@@ -345,21 +345,28 @@ export default function TodayPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // ── HealthKit: listen for native data pushed from AppDelegate ───────────────
+  // ── HealthKit: fetch data directly via plugin after page loads ───────────────
   useEffect(() => {
+    // Also listen for native push event (in case Swift pushes proactively)
     const handler = (e: Event) => {
-      const data = (e as CustomEvent).detail;
-      console.log('[HealthKit] Received from native event:', JSON.stringify(data));
-      if (data?.available) setHealthData(data);
+      const d = (e as CustomEvent).detail;
+      if (d?.available) setHealthData(d);
     };
     window.addEventListener('healthkit-data', handler);
 
-    // Check if data already arrived before this component mounted
+    // Check window cache (data may have arrived before React mounted)
     const cached = (window as any).__healthKitData;
-    if (cached?.available) {
-      console.log('[HealthKit] Using cached data from window.__healthKitData');
-      setHealthData(cached);
-    }
+    if (cached?.available) setHealthData(cached);
+
+    // Direct pull via plugin — most reliable approach
+    const fetchHK = async () => {
+      try {
+        await requestHealthKitPermissions();
+        const data = await getHealthData();
+        if (data.available) setHealthData(data);
+      } catch { /* not on iOS */ }
+    };
+    fetchHK();
 
     return () => window.removeEventListener('healthkit-data', handler);
   }, []);
