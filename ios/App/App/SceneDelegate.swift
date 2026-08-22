@@ -12,6 +12,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
+
+        // Lock on launch
+        FaceIDLock.shared.lock(in: window)
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        // Re-lock every time app comes to foreground
+        FaceIDLock.shared.lock(in: window)
+    }
+
+    func sceneWillResignActive(_ scene: UIScene) {
+        // Reset so it locks again next time
+        FaceIDLock.shared.reset()
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {

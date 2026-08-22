@@ -33,18 +33,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        // Lock on every foreground — show Face ID prompt
-        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = scene.windows.first {
-            FaceIDLock.shared.lock(in: window)
-        }
-    }
-
-    func applicationWillResignActive(_ application: UIApplication) {
-        // Reset lock when app goes to background
-        FaceIDLock.shared.reset()
-    }
+    // Face ID handled in SceneDelegate
 
     private func initHealthKit() {
         guard HKHealthStore.isHealthDataAvailable() else { return }
