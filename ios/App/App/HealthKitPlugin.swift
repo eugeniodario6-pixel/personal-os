@@ -28,13 +28,13 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
         for id in ids {
             if let t = HKObjectType.quantityType(forIdentifier: id) { types.insert(t) }
         }
-        if let sleep   = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { types.insert(sleep) }
+        if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { types.insert(sleep) }
         types.insert(HKObjectType.workoutType())
         return types
     }
 
     // ── Request permissions ───────────────────────────────────────────────────
-    @objc func requestPermissions(_ call: CAPPluginCall) {
+    @objc override public func requestPermissions(_ call: CAPPluginCall) {
         guard HKHealthStore.isHealthDataAvailable() else {
             call.reject("HealthKit not available on this device")
             return
@@ -55,7 +55,11 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         let start = Calendar.current.startOfDay(for: Date())
         let pred  = HKQuery.predicateForSamples(withStart: start, end: Date())
-        let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, error in
+        let query = HKStatisticsQuery(
+            quantityType: type,
+            quantitySamplePredicate: pred,
+            options: .cumulativeSum
+        ) { _, stats, error in
             if let error = error { call.reject(error.localizedDescription); return }
             let steps = stats?.sumQuantity()?.doubleValue(for: .count()) ?? 0
             call.resolve(["steps": Int(steps)])
@@ -102,26 +106,33 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
             call.reject("Sleep type unavailable"); return
         }
-        let cal   = Calendar.current
         let now   = Date()
-        let start = cal.date(byAdding: .hour, value: -24, to: now)!
+        let start = Calendar.current.date(byAdding: .hour, value: -24, to: now)!
         let pred  = HKQuery.predicateForSamples(withStart: start, end: now)
         let sort  = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, error in
+        let query = HKSampleQuery(
+            sampleType: type,
+            predicate: pred,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sort]
+        ) { _, samples, error in
             if let error = error { call.reject(error.localizedDescription); return }
             guard let samples = samples as? [HKCategorySample], !samples.isEmpty else {
                 call.resolve(["hours": 0, "minutes": 0]); return
             }
-            // Sum asleep stages
-            let asleepValues: Set<Int> = [
-                HKCategoryValueSleepAnalysis.asleep.rawValue,
-                HKCategoryValueSleepAnalysis.asleepCore.rawValue,
-                HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
-                HKCategoryValueSleepAnalysis.asleepREM.rawValue,
-            ]
+
+            // Build set of "asleep" values — iOS 16+ adds granular stages
+            var asleepValues: Set<Int> = [HKCategoryValueSleepAnalysis.asleep.rawValue]
+            if #available(iOS 16.0, *) {
+                asleepValues.insert(HKCategoryValueSleepAnalysis.asleepCore.rawValue)
+                asleepValues.insert(HKCategoryValueSleepAnalysis.asleepDeep.rawValue)
+                asleepValues.insert(HKCategoryValueSleepAnalysis.asleepREM.rawValue)
+            }
+
             let totalSecs = samples
                 .filter { asleepValues.contains($0.value) }
                 .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+
             let hours   = Int(totalSecs / 3600)
             let minutes = Int((totalSecs.truncatingRemainder(dividingBy: 3600)) / 60)
             call.resolve(["hours": hours, "minutes": minutes, "totalMinutes": Int(totalSecs / 60)])
@@ -153,7 +164,11 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         let start = Calendar.current.startOfDay(for: Date())
         let pred  = HKQuery.predicateForSamples(withStart: start, end: Date())
-        let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, error in
+        let query = HKStatisticsQuery(
+            quantityType: type,
+            quantitySamplePredicate: pred,
+            options: .cumulativeSum
+        ) { _, stats, error in
             if let error = error { call.reject(error.localizedDescription); return }
             let kcal = stats?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0
             call.resolve(["kcal": Int(kcal)])
@@ -166,20 +181,37 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
         let start = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
         let pred  = HKQuery.predicateForSamples(withStart: start, end: Date())
         let sort  = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let query = HKSampleQuery(sampleType: .workoutType(), predicate: pred, limit: 20, sortDescriptors: [sort]) { _, samples, error in
+        let query = HKSampleQuery(
+            sampleType: .workoutType(),
+            predicate: pred,
+            limit: 20,
+            sortDescriptors: [sort]
+        ) { _, samples, error in
             if let error = error { call.reject(error.localizedDescription); return }
             guard let workouts = samples as? [HKWorkout] else {
                 call.resolve(["workouts": []]); return
             }
-            let result = workouts.map { w -> [String: Any] in
-                let duration = Int(w.duration / 60)
-                let calories = w.statistics(for: HKQuantityType(.activeEnergyBurned))?
-                    .sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0
-                let df = ISO8601DateFormatter()
+            let df = ISO8601DateFormatter()
+            let result: [[String: Any]] = workouts.map { w in
+                let durationMins = Int(w.duration / 60)
+
+                // calories — use totalEnergyBurned for compatibility with iOS 14/15
+                var calories = 0
+                if #available(iOS 16.0, *) {
+                    calories = Int(
+                        w.statistics(for: HKQuantityType(.activeEnergyBurned))?
+                            .sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0
+                    )
+                } else {
+                    calories = Int(
+                        w.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
+                    )
+                }
+
                 return [
                     "type":     w.workoutActivityType.name,
-                    "duration": duration,
-                    "calories": Int(calories),
+                    "duration": durationMins,
+                    "calories": calories,
                     "date":     df.string(from: w.endDate),
                 ]
             }
@@ -193,26 +225,26 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
 extension HKWorkoutActivityType {
     var name: String {
         switch self {
-        case .running:          return "Running"
-        case .cycling:          return "Cycling"
-        case .swimming:         return "Swimming"
-        case .walking:          return "Walking"
-        case .hiking:           return "Hiking"
-        case .yoga:             return "Yoga"
-        case .functionalStrengthTraining: return "Strength"
-        case .traditionalStrengthTraining: return "Strength"
+        case .running:                       return "Running"
+        case .cycling:                       return "Cycling"
+        case .swimming:                      return "Swimming"
+        case .walking:                       return "Walking"
+        case .hiking:                        return "Hiking"
+        case .yoga:                          return "Yoga"
+        case .functionalStrengthTraining:    return "Strength"
+        case .traditionalStrengthTraining:   return "Strength"
         case .highIntensityIntervalTraining: return "HIIT"
-        case .boxing:           return "Boxing"
-        case .soccer:           return "Soccer"
-        case .basketball:       return "Basketball"
-        case .tennis:           return "Tennis"
-        case .rowing:           return "Rowing"
-        case .elliptical:       return "Elliptical"
-        case .stairClimbing:    return "Stair Climbing"
-        case .pilates:          return "Pilates"
-        case .dance:            return "Dance"
-        case .golf:             return "Golf"
-        default:                return "Workout"
+        case .boxing:                        return "Boxing"
+        case .soccer:                        return "Soccer"
+        case .basketball:                    return "Basketball"
+        case .tennis:                        return "Tennis"
+        case .rowing:                        return "Rowing"
+        case .elliptical:                    return "Elliptical"
+        case .stairClimbing:                 return "Stair Climbing"
+        case .pilates:                       return "Pilates"
+        case .dance:                         return "Dance"
+        case .golf:                          return "Golf"
+        default:                             return "Workout"
         }
     }
 }
