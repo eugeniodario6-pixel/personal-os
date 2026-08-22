@@ -88,40 +88,41 @@ function speakBrowser(text: string, onEnd?: () => void): void {
 
 // ─── Voice input ───────────────────────────────────────────────────────────────
 function useVoiceInput(onResult: (text: string) => void) {
-  const recRef      = useRef<any>(null);
-  const onResultRef = useRef(onResult);
+  const onResultRef  = useRef(onResult);
   const listeningRef = useRef(false);
   const [listening, setListeningState] = useState(false);
-  const supported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  // Always keep ref current — never stale inside recognition callback
   useEffect(() => { onResultRef.current = onResult; }, [onResult]);
 
   const setListening = (v: boolean) => { listeningRef.current = v; setListeningState(v); };
 
-  const start = useCallback(() => {
-    if (!supported || listeningRef.current) return;
-    const SR  = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const rec = new SR();
-    rec.continuous = false; rec.interimResults = false; rec.lang = 'en-US';
-    // Always calls latest sendMessage via ref — fixes stale closure conversation loop
-    rec.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      setListening(false);
-      onResultRef.current(transcript);
-    };
-    rec.onend   = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    recRef.current = rec;
-    rec.start();
+  const start = useCallback(async () => {
+    if (listeningRef.current) return;
     setListening(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supported]);
+    try {
+      const { startSpeechRecognition } = await import('@/lib/speech');
+      const result = await startSpeechRecognition();
+      setListening(false);
+      if (result.transcript) {
+        onResultRef.current(result.transcript);
+      } else {
+        console.warn('[Speech] No transcript:', result.error);
+      }
+    } catch (e) {
+      console.warn('[Speech] Error:', e);
+      setListening(false);
+    }
+  }, []);
 
-  const stop   = useCallback(() => { recRef.current?.stop(); setListening(false); }, []);
+  const stop = useCallback(async () => {
+    const { stopSpeechRecognition } = await import('@/lib/speech');
+    await stopSpeechRecognition();
+    setListening(false);
+  }, []);
+
   const toggle = useCallback(() => listeningRef.current ? stop() : start(), [start, stop]);
 
-  return { listening, toggle, start, stop, supported };
+  return { listening, toggle, start, stop, supported: true };
 }
 
 // ─── Voice picker sheet ────────────────────────────────────────────────────────

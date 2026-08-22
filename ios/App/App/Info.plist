@@ -90,6 +90,8 @@
 	<string>Personal OS uses your microphone so you can speak to Veronica, your AI assistant.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Personal OS uses speech recognition to understand your voice commands to Veronica.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Veronica needs speech recognition to understand your voice.</string>
 	<key>WKAppBoundDomains</key>
 	<array>
 		<string>personal-os-xi-gilt.vercel.app</string>
