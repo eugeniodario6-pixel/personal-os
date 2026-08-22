@@ -10,18 +10,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         window = UIWindow(windowScene: windowScene)
         let bridgeVC = CAPBridgeViewController()
-        // Register message handlers so JS can trigger native speech
-        let appDelegate = UIApplication.shared.delegate as? AppDelegate
-        if let wv = bridgeVC.webView {
-            wv.configuration.userContentController.add(
-                SpeechMessageHandler(appDelegate: appDelegate), name: "startSpeech"
-            )
-            wv.configuration.userContentController.add(
-                StopSpeechMessageHandler(appDelegate: appDelegate), name: "stopSpeech"
-            )
-        }
         window?.rootViewController = bridgeVC
         window?.makeKeyAndVisible()
+
+        // Register message handlers after WebView is created
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            let appDelegate = UIApplication.shared.delegate as? AppDelegate
+            if let wv = bridgeVC.webView {
+                print("[Speech] Registering message handlers on WebView")
+                wv.configuration.userContentController.add(
+                    SpeechMessageHandler(appDelegate: appDelegate), name: "startSpeech"
+                )
+                wv.configuration.userContentController.add(
+                    StopSpeechMessageHandler(appDelegate: appDelegate), name: "stopSpeech"
+                )
+            } else {
+                print("[Speech] WebView not available for message handlers")
+            }
+        }
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }

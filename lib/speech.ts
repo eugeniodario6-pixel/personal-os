@@ -19,7 +19,7 @@ export function startSpeechRecognition(): Promise<SpeechResult> {
       const timeout = setTimeout(() => {
         cleanup();
         resolve({ transcript: '', error: 'Timeout' });
-      }, 10000);
+      }, 15000);
 
       function onResult(e: Event) {
         cleanup();
@@ -35,11 +35,14 @@ export function startSpeechRecognition(): Promise<SpeechResult> {
       window.addEventListener('speech-result', onResult, { once: true });
 
       // Trigger native speech via webkit message handler
-      try {
-        (window as any).webkit?.messageHandlers?.startSpeech?.postMessage({});
-      } catch {
-        // Fallback: set a global flag Swift polls
-        (window as any).__startSpeech = true;
+      console.log('[Speech] Sending startSpeech to native...');
+      const handler = (window as any).webkit?.messageHandlers?.startSpeech;
+      if (handler) {
+        console.log('[Speech] Handler found, posting message');
+        handler.postMessage({});
+      } else {
+        console.warn('[Speech] webkit.messageHandlers.startSpeech not found');
+        resolve({ transcript: '', error: 'Handler not registered' });
       }
     });
   }
