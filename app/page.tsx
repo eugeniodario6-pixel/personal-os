@@ -349,14 +349,16 @@ export default function TodayPage() {
   useEffect(() => {
     const initHealthKit = async () => {
       try {
-        const alreadyAsked = localStorage.getItem('hk_asked');
-        if (!alreadyAsked) {
-          localStorage.setItem('hk_asked', '1');
-          await requestHealthKitPermissions();
-        }
+        // Always request — let HealthKit decide if it's already been granted
+        const granted = await requestHealthKitPermissions();
+        localStorage.setItem('hk_asked', '1');
+        console.log('[HealthKit] Permission granted:', granted);
         const data = await getHealthData();
+        console.log('[HealthKit] Data:', JSON.stringify(data));
         if (data.available) setHealthData(data);
-      } catch { /* not on iOS or HealthKit unavailable */ }
+      } catch (e) {
+        console.warn('[HealthKit] Error:', e);
+      }
     };
     initHealthKit();
   }, []);
