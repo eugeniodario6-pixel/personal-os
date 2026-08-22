@@ -21,7 +21,23 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Auth temporarily disabled — bypass login redirect
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const isLoginPage = request.nextUrl.pathname.startsWith('/login');
+  const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback');
+
+  if (!user && !isLoginPage && !isAuthCallback) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isLoginPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
   return supabaseResponse;
 }
 
