@@ -19,18 +19,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
-
-        // Lock on launch
-        FaceIDLock.shared.lock(in: window)
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
-        // Re-lock every time app comes to foreground
+        // Lock on launch and every foreground — window is guaranteed ready here
         FaceIDLock.shared.lock(in: window)
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
-        // Reset so it locks again next time
+        // Reset so it re-locks next foreground
         FaceIDLock.shared.reset()
     }
 
