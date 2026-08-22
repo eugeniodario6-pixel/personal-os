@@ -14,6 +14,7 @@ import { haptic } from '@/lib/haptic';
 import { toast } from '@/components/Toast';
 import { DashboardSkeleton } from '@/components/Skeleton';
 import QuickLogSheet from '@/components/QuickLogSheet';
+import { requestHealthKitPermissions, getHealthData, type HealthData } from '@/lib/healthkit';
 
 // ── Score logic ────────────────────────────────────────────────────────────────
 function calcScore(calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean) {
@@ -261,6 +262,7 @@ export default function TodayPage() {
   const [allScores, setAllScores]     = useState<DailyScore[]>([]);
   const [workoutDaysGap, setWorkoutDaysGap] = useState(0);
   const [scorePulsed, setScorePulsed] = useState(false);
+  const [healthData, setHealthData]   = useState<HealthData | null>(null);
 
   const [yesterdayCalPct, setYesterdayCalPct]     = useState(0);
   const [yesterdayHabitPct, setYesterdayHabitPct] = useState(0);
@@ -342,6 +344,22 @@ export default function TodayPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // ── HealthKit: request permissions on first open, then fetch data ─────────
+  useEffect(() => {
+    const initHealthKit = async () => {
+      try {
+        const alreadyAsked = localStorage.getItem('hk_asked');
+        if (!alreadyAsked) {
+          localStorage.setItem('hk_asked', '1');
+          await requestHealthKitPermissions();
+        }
+        const data = await getHealthData();
+        if (data.available) setHealthData(data);
+      } catch { /* not on iOS or HealthKit unavailable */ }
+    };
+    initHealthKit();
+  }, []);
 
   const toggle = async (id: number) => {
     haptic('medium');
@@ -593,6 +611,83 @@ export default function TodayPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* HealthKit card — only shows when data is available (native app) */}
+          {healthData && healthData.available && (
+            <div className="bento-card-anim">
+              <div style={{ background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: 16 }}>
+                <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: '0 0 14px' }}>Apple Health</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  {/* Steps */}
+                  {healthData.steps > 0 && (
+                    <div>
+                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
+                        {healthData.steps.toLocaleString()}
+                      </p>
+                      <p className="label" style={{ marginTop: 4 }}>Steps</p>
+                    </div>
+                  )}
+                  {/* Heart rate */}
+                  {healthData.heartRate > 0 && (
+                    <div>
+                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
+                        {healthData.heartRate}
+                      </p>
+                      <p className="label" style={{ marginTop: 4 }}>BPM</p>
+                    </div>
+                  )}
+                  {/* HRV */}
+                  {healthData.hrv > 0 && (
+                    <div>
+                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
+                        {Math.round(healthData.hrv)}
+                      </p>
+                      <p className="label" style={{ marginTop: 4 }}>HRV ms</p>
+                    </div>
+                  )}
+                  {/* Sleep */}
+                  {healthData.sleepHours > 0 && (
+                    <div>
+                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
+                        {healthData.sleepHours}h{healthData.sleepMinutes > 0 ? `${healthData.sleepMinutes}m` : ''}
+                      </p>
+                      <p className="label" style={{ marginTop: 4 }}>Sleep</p>
+                    </div>
+                  )}
+                  {/* Active calories */}
+                  {healthData.activeCalories > 0 && (
+                    <div>
+                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
+                        {healthData.activeCalories}
+                      </p>
+                      <p className="label" style={{ marginTop: 4 }}>Active kcal</p>
+                    </div>
+                  )}
+                  {/* Weight from Health */}
+                  {healthData.weight > 0 && (
+                    <div>
+                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
+                        {healthData.weight}
+                      </p>
+                      <p className="label" style={{ marginTop: 4 }}>kg</p>
+                    </div>
+                  )}
+                </div>
+                {/* Recent workouts from Health */}
+                {healthData.workouts.length > 0 && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                    <p className="label" style={{ marginBottom: 8 }}>Recent workouts</p>
+                    {healthData.workouts.slice(0, 3).map((w, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, marginBottom: 8, borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
+                        <span style={{ fontSize: 13, color: 'var(--text)', letterSpacing: '-0.011em' }}>{w.type}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-4)' }}>{w.duration} min · {w.calories} kcal</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
