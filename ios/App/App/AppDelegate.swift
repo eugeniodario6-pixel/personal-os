@@ -2,6 +2,7 @@ import UIKit
 import Capacitor
 import HealthKit
 import AVFoundation
+import Speech
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -183,6 +184,86 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                                           sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
+    }
+}
+
+// ── Speech Capacitor Plugin ─────────────────────────────────────────────────────
+@objc(SpeechPlugin)
+public class SpeechPlugin: CAPPlugin {
+
+    private var audioEngine = AVAudioEngine()
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private var isListening = false
+
+    @objc public override func requestPermissions(_ call: CAPPluginCall) {
+        SFSpeechRecognizer.requestAuthorization { status in
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                call.resolve(["speech": status == .authorized, "microphone": granted])
+            }
+        }
+    }
+
+    @objc func start(_ call: CAPPluginCall) {
+        guard !isListening else { call.reject("Already listening"); return }
+        SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            guard status == .authorized else { call.reject("Not authorized"); return }
+            self?.doStart(call: call)
+        }
+    }
+
+    private func doStart(call: CAPPluginCall) {
+        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        guard recognizer?.isAvailable == true else { call.reject("Recognizer unavailable"); return }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+            guard let req = recognitionRequest else { call.reject("Request failed"); return }
+            req.shouldReportPartialResults = false
+            let inputNode = audioEngine.inputNode
+            let fmt = inputNode.outputFormat(forBus: 0)
+            inputNode.installTap(onBus: 0, bufferSize: 1024, format: fmt) { [weak self] buf, _ in
+                self?.recognitionRequest?.append(buf)
+            }
+            audioEngine.prepare()
+            try audioEngine.start()
+            isListening = true
+            print("[SpeechPlugin] Listening...")
+            recognitionTask = recognizer?.recognitionTask(with: req) { [weak self] result, error in
+                guard let self else { return }
+                if let result = result, result.isFinal {
+                    let text = result.bestTranscription.formattedString
+                    print("[SpeechPlugin] Transcript: \(text)")
+                    self.doStop()
+                    call.resolve(["transcript": text])
+                } else if let error = error {
+                    print("[SpeechPlugin] Error: \(error)")
+                    self.doStop()
+                    call.reject(error.localizedDescription)
+                }
+            }
+            // Auto-stop after 8s
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
+                self?.recognitionRequest?.endAudio()
+            }
+        } catch {
+            call.reject(error.localizedDescription)
+        }
+    }
+
+    @objc func stop(_ call: CAPPluginCall) { doStop(); call.resolve() }
+
+    private func doStop() {
+        recognitionRequest?.endAudio()
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionTask?.cancel()
+        recognitionRequest = nil
+        recognitionTask = nil
+        isListening = false
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 }
 
