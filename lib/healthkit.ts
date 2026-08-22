@@ -1,87 +1,97 @@
-// lib/healthkit.ts
-// JavaScript interface to the native HealthKit bridge
-// Works in Capacitor (native iOS) — gracefully no-ops in browser
-//
-// Usage:
-//   import { HealthKit } from '@/lib/healthkit'
-//   const weight = await HealthKit.getLatestWeight()
-
 import { registerPlugin } from '@capacitor/core';
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 export interface HealthKitPlugin {
-  requestAuthorization(): Promise<{ authorised: boolean }>;
-  getLatestWeight(): Promise<{ weight_kg: number | null; date: string }>;
-  getWorkouts(options: { days: number }): Promise<{ workouts: HealthKitWorkout[] }>;
-  getHeartRate(): Promise<{ avg_bpm: number; samples: number }>;
-  getSleep(): Promise<{ hours: number }>;
+  requestPermissions(): Promise<{ granted: boolean }>;
   getSteps(): Promise<{ steps: number }>;
-  writeWeight(options: { weight_kg: number }): Promise<void>;
+  getHeartRate(): Promise<{ bpm: number }>;
+  getHRV(): Promise<{ ms: number }>;
+  getSleep(): Promise<{ hours: number; minutes: number; totalMinutes: number }>;
+  getWeight(): Promise<{ kg: number }>;
+  getActiveCalories(): Promise<{ kcal: number }>;
+  getWorkouts(): Promise<{ workouts: HKWorkout[] }>;
 }
 
-export interface HealthKitWorkout {
+export interface HKWorkout {
   type: string;
-  duration_min: number;
-  calories: number;
-  distance_m: number;
-  start: string;
-  end: string;
-  source: string; // e.g. "Garmin Connect"
+  duration: number;   // minutes
+  calories: number;   // kcal
+  date: string;       // ISO8601
 }
 
-// Register the native plugin — returns a no-op stub in browser
-export const HealthKit = registerPlugin<HealthKitPlugin>('HealthKitBridge', {
+export interface HealthData {
+  steps: number;
+  heartRate: number;      // bpm
+  hrv: number;            // ms
+  sleepHours: number;
+  sleepMinutes: number;
+  weight: number;         // kg
+  activeCalories: number; // kcal
+  workouts: HKWorkout[];
+  available: boolean;
+}
+
+// ── Register plugin ───────────────────────────────────────────────────────────
+
+const HealthKit = registerPlugin<HealthKitPlugin>('HealthKit', {
+  // Web fallback — returns empty data so the app doesn't break in browser
   web: {
-    requestAuthorization: async () => ({ authorised: false }),
-    getLatestWeight:      async () => ({ weight_kg: null, date: '' }),
-    getWorkouts:          async () => ({ workouts: [] }),
-    getHeartRate:         async () => ({ avg_bpm: 0, samples: 0 }),
-    getSleep:             async () => ({ hours: 0 }),
-    getSteps:             async () => ({ steps: 0 }),
-    writeWeight:          async () => {},
+    requestPermissions: async () => ({ granted: false }),
+    getSteps:           async () => ({ steps: 0 }),
+    getHeartRate:       async () => ({ bpm: 0 }),
+    getHRV:             async () => ({ ms: 0 }),
+    getSleep:           async () => ({ hours: 0, minutes: 0, totalMinutes: 0 }),
+    getWeight:          async () => ({ kg: 0 }),
+    getActiveCalories:  async () => ({ kcal: 0 }),
+    getWorkouts:        async () => ({ workouts: [] }),
   },
 });
 
-// ── Convenience: is this running as a native app? ─────────────────────────────
-export function isNative(): boolean {
-  return typeof (window as any)?.Capacitor?.isNativePlatform === 'function'
-    && (window as any).Capacitor.isNativePlatform();
+// ── Request permissions ───────────────────────────────────────────────────────
+
+export async function requestHealthKitPermissions(): Promise<boolean> {
+  try {
+    const { granted } = await HealthKit.requestPermissions();
+    return granted;
+  } catch {
+    return false;
+  }
 }
 
-// ── Sync latest HealthKit weight → Personal OS DB ──────────────────────────────
-// Call this on app launch to pull the latest Garmin/Apple Health weight
-export async function syncHealthKitWeight(
-  logWeightFn: (kg: number) => Promise<void>
-): Promise<{ synced: boolean; weight_kg?: number }> {
-  if (!isNative()) return { synced: false };
-  try {
-    const { authorised } = await HealthKit.requestAuthorization();
-    if (!authorised) return { synced: false };
-    const { weight_kg } = await HealthKit.getLatestWeight();
-    if (weight_kg && weight_kg > 0) {
-      await logWeightFn(weight_kg);
-      return { synced: true, weight_kg };
-    }
-    return { synced: false };
-  } catch { return { synced: false }; }
-}
+// ── Fetch all health data in one call ─────────────────────────────────────────
 
-// ── Sync recent Garmin workouts → Personal OS DB ───────────────────────────────
-export async function syncHealthKitWorkouts(
-  logWorkoutFn: (name: string, duration_min: number, calories: number) => Promise<void>,
-  days = 7
-): Promise<{ synced: number }> {
-  if (!isNative()) return { synced: 0 };
+export async function getHealthData(): Promise<HealthData> {
+  const empty: HealthData = {
+    steps: 0, heartRate: 0, hrv: 0,
+    sleepHours: 0, sleepMinutes: 0,
+    weight: 0, activeCalories: 0,
+    workouts: [], available: false,
+  };
+
   try {
-    const { authorised } = await HealthKit.requestAuthorization();
-    if (!authorised) return { synced: 0 };
-    const { workouts } = await HealthKit.getWorkouts({ days });
-    let synced = 0;
-    for (const w of workouts) {
-      if (w.source.toLowerCase().includes('garmin') || w.duration_min > 0) {
-        await logWorkoutFn(w.type, w.duration_min, w.calories);
-        synced++;
-      }
-    }
-    return { synced };
-  } catch { return { synced: 0 }; }
+    const [steps, hr, hrv, sleep, weight, calories, workouts] = await Promise.allSettled([
+      HealthKit.getSteps(),
+      HealthKit.getHeartRate(),
+      HealthKit.getHRV(),
+      HealthKit.getSleep(),
+      HealthKit.getWeight(),
+      HealthKit.getActiveCalories(),
+      HealthKit.getWorkouts(),
+    ]);
+
+    return {
+      steps:          steps.status === 'fulfilled'    ? steps.value.steps           : 0,
+      heartRate:      hr.status === 'fulfilled'       ? hr.value.bpm                : 0,
+      hrv:            hrv.status === 'fulfilled'      ? hrv.value.ms                : 0,
+      sleepHours:     sleep.status === 'fulfilled'    ? sleep.value.hours           : 0,
+      sleepMinutes:   sleep.status === 'fulfilled'    ? sleep.value.minutes         : 0,
+      weight:         weight.status === 'fulfilled'   ? weight.value.kg             : 0,
+      activeCalories: calories.status === 'fulfilled' ? calories.value.kcal         : 0,
+      workouts:       workouts.status === 'fulfilled' ? workouts.value.workouts     : [],
+      available: true,
+    };
+  } catch {
+    return empty;
+  }
 }

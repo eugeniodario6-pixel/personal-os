@@ -66,5 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Personal OS reads your health data to show steps, heart rate, sleep, weight and workouts on your dashboard.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Personal OS can write weight and workout data to Apple Health.</string>
 </dict>
 </plist>
