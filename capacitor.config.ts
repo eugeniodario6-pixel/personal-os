@@ -21,6 +21,7 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    Speech: {}, // native iOS SFSpeechRecognizer via SpeechPlugin
   },
 };
 
