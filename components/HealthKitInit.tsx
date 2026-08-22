@@ -1,57 +1,61 @@
 'use client';
 
 // HealthKitInit.tsx
-// Mounts invisibly in layout — requests HealthKit permission on first native launch
-// then syncs weight + recent Garmin workouts into the Personal OS DB.
+// Runs once on app launch (native only).
+// Syncs latest HealthKit weight + recent Garmin workouts into the Personal OS DB.
+// Permission request is handled by page.tsx — this just does the DB write.
 
 import { useEffect } from 'react';
-import { HealthKit, isNative } from '@/lib/healthkit';
+import { isNative, getHealthData } from '@/lib/healthkit';
 import { logWeight, addWorkoutLog, todayISO } from '@/lib/db';
 
 export default function HealthKitInit() {
   useEffect(() => {
     if (!isNative()) return;
 
-    async function init() {
+    const alreadyRan = sessionStorage.getItem('hk_synced');
+    if (alreadyRan) return;
+
+    async function syncToDb() {
       try {
-        const { authorised } = await HealthKit.requestAuthorization();
-        if (!authorised) return;
+        const authorised = localStorage.getItem('hk_asked') === '1';
+        if (!authorised) return; // wait for page.tsx to request permission first
 
-        localStorage.setItem('hk_authorised', 'true');
+        const data = await getHealthData();
+        if (!data.available) return;
 
-        // ── Sync latest weight from Apple Health (Garmin writes here) ──
-        const { weight_kg } = await HealthKit.getLatestWeight();
-        if (weight_kg && weight_kg > 0) {
-          await logWeight(weight_kg);
-          console.log('[HealthKit] Weight synced:', weight_kg, 'kg');
+        // Sync weight
+        if (data.weight > 0) {
+          await logWeight(data.weight);
+          console.log('[HealthKit] Weight synced:', data.weight, 'kg');
         }
 
-        // ── Sync recent workouts (last 7 days) ──
-        const { workouts } = await HealthKit.getWorkouts({ days: 7 });
-        const today = todayISO();
-        for (const w of workouts) {
-          if (w.duration_min > 0) {
-            const workoutDate = w.start.slice(0, 10);
+        // Sync workouts to DB
+        for (const w of data.workouts) {
+          if (w.duration > 0) {
             await addWorkoutLog({
-              date: workoutDate,
+              date: w.date.slice(0, 10),
               template_id: null,
               name: w.type,
-              duration_min: w.duration_min,
+              duration_min: Math.round(w.duration),
               intensity: w.calories > 400 ? 'high' : w.calories > 200 ? 'moderate' : 'low',
               calories_burned: w.calories > 0 ? Math.round(w.calories) : null,
               source: 'healthkit',
-              logged_at: w.start,
+              logged_at: w.date,
             });
           }
         }
-        console.log('[HealthKit] Workouts synced:', workouts.length);
 
+        sessionStorage.setItem('hk_synced', '1');
+        console.log('[HealthKit] DB sync complete. Workouts:', data.workouts.length);
       } catch (e) {
-        console.warn('[HealthKit] Init error:', e);
+        console.warn('[HealthKit] Sync error:', e);
       }
     }
 
-    init();
+    // Small delay to let page.tsx request permissions first
+    const t = setTimeout(syncToDb, 2000);
+    return () => clearTimeout(t);
   }, []);
 
   return null;
