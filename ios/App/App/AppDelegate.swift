@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import HealthKit
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -26,6 +27,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private var cachedHealthJS: String?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Request microphone permission for Veronica voice input
+        AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            print("[Mic] Permission granted: \(granted)")
+        }
+
         // Request HealthKit permissions then push data to JS
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
             self.initHealthKit()

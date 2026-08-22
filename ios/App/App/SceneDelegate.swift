@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WebKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -8,7 +9,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = CAPBridgeViewController()
+        let bridgeVC = CAPBridgeViewController()
+        // Allow WebView to access microphone for Veronica voice input
+        bridgeVC.webView?.configuration.allowsAirPlayForMediaPlayback = true
+        if #available(iOS 15.0, *) {
+            bridgeVC.webView?.configuration.upgradeKnownHostsToHTTPS = false
+        }
+        window?.rootViewController = bridgeVC
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)

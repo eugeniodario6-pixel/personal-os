@@ -14,6 +14,8 @@ const config: CapacitorConfig = {
     preferredContentMode: 'mobile',
     limitsNavigationsToAppBoundDomains: true,
     scrollEnabled: true,
+    allowsLinkPreview: false,
+    handleApplicationNotifications: false,
   },
   plugins: {
     PushNotifications: {
