@@ -164,7 +164,7 @@ function Segment({ label, val, path, delta }: { label: string; val: number; path
       onClick={() => { haptic('light'); router.push(path); }}
       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}
     >
-      <div className="progress" style={{ marginBottom: 5, height: 2, background: 'var(--surface-3)', borderRadius: 9999, overflow: 'hidden' }}>
+      <div className="progress" style={{ marginBottom: 5, height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden' }}>
         <div className="progress-fill" style={{ height: '100%', width: `${val}%`, background: 'var(--text)', borderRadius: 9999 }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -228,8 +228,8 @@ function ScoreSparkline({ scores }: { scores: DailyScore[] }) {
 function BentoCard({ children, onClick, elevated, style }: { children: React.ReactNode; onClick?: () => void; elevated?: boolean; style?: React.CSSProperties }) {
   const base: React.CSSProperties = {
     background: 'var(--surface)',
-    borderRadius: 24,
-    boxShadow: 'var(--ring)',
+    borderRadius: 'var(--r)',
+    border: '1px solid rgba(216,234,255,0.08)',
     padding: 18,
     ...style,
   };
@@ -485,8 +485,8 @@ export default function TodayPage() {
               <p className="t-unit" style={{ marginTop: 2, marginBottom: 10 }}>
                 {remaining > 0 ? `${remaining} left` : 'Target hit'}
               </p>
-              <div style={{ height: 2, background: 'var(--surface-3)', borderRadius: 9999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(calPct, 100)}%`, background: 'var(--text)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+              <div style={{ height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.min(calPct, 100)}%`, background: 'var(--color-electric-cobalt)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
               </div>
             </BentoCard>
 
@@ -503,7 +503,7 @@ export default function TodayPage() {
               {/* 7-day dots */}
               <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                 {Array.from({ length: 7 }, (_, i) => (
-                  <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: i < habitDone ? 'var(--text)' : 'var(--surface-3)' }} />
+                  <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: i < habitDone ? 'var(--color-electric-cobalt)' : 'rgba(216,234,255,0.08)' }} />
                 ))}
               </div>
             </BentoCard>
@@ -512,7 +512,7 @@ export default function TodayPage() {
           {/* Row 2: Nudge card (full-width) */}
           {(nudge || allDone) && (
             <div className="bento-card-anim">
-              <div style={{ background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: 18 }}>
+              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 18 }}>
                 {allDone ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
@@ -551,8 +551,8 @@ export default function TodayPage() {
               <p className="t-unit">
                 {workoutsToday > 0 ? `${workoutsToday} workout${workoutsToday > 1 ? 's' : ''}` : 'none today'}
               </p>
-              <div style={{ height: 2, background: 'var(--surface-3)', borderRadius: 9999, overflow: 'hidden', marginTop: 10 }}>
-                <div style={{ height: '100%', width: workoutsToday > 0 ? '100%' : '0%', background: 'var(--text)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+              <div style={{ height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden', marginTop: 10 }}>
+                <div style={{ height: '100%', width: workoutsToday > 0 ? '100%' : '0%', background: 'var(--color-electric-cobalt)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
               </div>
             </BentoCard>
 
@@ -565,15 +565,15 @@ export default function TodayPage() {
               <p className="t-unit">
                 {medDone ? 'done' : 'not yet'}
               </p>
-              <div style={{ height: 2, background: 'var(--surface-3)', borderRadius: 9999, overflow: 'hidden', marginTop: 10 }}>
-                <div style={{ height: '100%', width: medDone ? '100%' : '0%', background: 'var(--text)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+              <div style={{ height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden', marginTop: 10 }}>
+                <div style={{ height: '100%', width: medDone ? '100%' : '0%', background: 'var(--color-electric-cobalt)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
               </div>
             </BentoCard>
           </div>
 
           {/* Pillar breakdown card */}
           <div className="bento-card-anim">
-            <div style={{ background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: 16 }}>
+            <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
               <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: '0 0 12px' }}>Score breakdown</p>
               {pillars.map(p => (
                 <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--border)' }}>
@@ -588,7 +588,7 @@ export default function TodayPage() {
           {/* Row 4: Habits list (full-width) */}
           {habits.length > 0 && (
             <div className="bento-card-anim">
-              <div style={{ background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: 16 }}>
+              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: 0 }}>Daily habits</p>
                   <button
@@ -643,7 +643,7 @@ export default function TodayPage() {
           {/* HealthKit card — only shows when data is available (native app) */}
           {healthData && healthData.available && (
             <div className="bento-card-anim">
-              <div style={{ background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: 16 }}>
+              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
                 <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: '0 0 14px' }}>Apple Health</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                   {/* Steps */}
@@ -720,7 +720,7 @@ export default function TodayPage() {
           {/* Row 5: Suggested meditation (full-width) */}
           {suggested && !medDone && (
             <div className="bento-card-anim">
-              <div style={{ background: 'var(--surface)', borderRadius: 24, boxShadow: 'var(--ring)', padding: 18 }}>
+              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 18 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div
                     style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}

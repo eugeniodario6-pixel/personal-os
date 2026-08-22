@@ -9,21 +9,26 @@ import { useTheme } from './ThemeProvider';
 const TABS = [
   { href: '/',           label: 'Today',    icon: '◉' },
   { href: '/nutrition',  label: 'Eat',      icon: '⊕' },
-  { href: '/jarvis',     label: 'Jarvis',   icon: '⬡', lime: true },
+  { href: '/jarvis',     label: 'Jarvis',   icon: '⬡', accent: true },
   { href: '/fitness',    label: 'Move',     icon: '△' },
   { href: '/progress',   label: 'Progress', icon: '◈' },
 ];
 
 const DRAWER = [
-  { href: '/',           label: 'Today',    sub: 'Dashboard' },
-  { href: '/nutrition',  label: 'Eat',      sub: 'Nutrition' },
-  { href: '/fitness',    label: 'Move',     sub: 'Fitness' },
-  { href: '/body',       label: 'Body',     sub: 'Weight log' },
-  { href: '/habits',     label: 'Habits',   sub: 'Daily habits' },
-  { href: '/meditation', label: 'Mind',     sub: 'Meditation' },
-  { href: '/insights',   label: 'Data',     sub: 'Insights' },
-  { href: '/settings',   label: 'Settings', sub: 'Preferences' },
+  { href: '/',           label: 'TODAY',    sub: 'Dashboard' },
+  { href: '/nutrition',  label: 'EAT',      sub: 'Nutrition' },
+  { href: '/fitness',    label: 'MOVE',     sub: 'Fitness' },
+  { href: '/body',       label: 'BODY',     sub: 'Weight log' },
+  { href: '/habits',     label: 'HABITS',   sub: 'Daily habits' },
+  { href: '/meditation', label: 'MIND',     sub: 'Meditation' },
+  { href: '/insights',   label: 'DATA',     sub: 'Insights' },
+  { href: '/settings',   label: 'SETTINGS', sub: 'Preferences' },
 ];
+
+// Atlantic ice-white at various opacities
+const ICE   = 'rgba(216,234,255,';
+const COBALT = '#1f58f2';
+const ORANGE = '#ff4105';
 
 export default function Nav() {
   const pathname = usePathname();
@@ -35,32 +40,28 @@ export default function Nav() {
 
   return (
     <>
-      {/* ── Top-right menu button ── */}
-      <div style={{
-        position: 'fixed', top: 16, right: 16,
-        zIndex: 300,
-      }}>
+      {/* ── Top-right menu button — wireframe circle ── */}
+      <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 300 }}>
         <button
           onClick={() => { haptic('light'); setOpen(o => !o); }}
           style={{
             width: 36, height: 36,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#141414',
+            background: '#0d0d0f',
             borderRadius: '50%',
-            border: 'none',
-            boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset',
+            border: `1px solid ${ICE}0.13)`,
             cursor: 'pointer',
             WebkitTapHighlightColor: 'transparent',
-            transition: 'background 0.15s',
+            transition: 'border-color 0.15s',
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5, width: 14 }}>
             {[0, 1, 2].map(i => (
               <span key={i} style={{
                 display: 'block',
-                width: '100%',
-                height: 1.5,
-                background: open ? 'var(--text)' : 'var(--text-3)',
+                width: i === 1 ? '75%' : '100%',
+                height: 1,
+                background: open ? ICE + '0.8)' : ICE + '0.35)',
                 borderRadius: 1,
                 transition: 'background 0.15s',
               }} />
@@ -69,7 +70,7 @@ export default function Nav() {
         </button>
       </div>
 
-      {/* ── Floating pill tab bar ── */}
+      {/* ── Floating pill tab bar — Atlantic wireframe ── */}
       <div style={{
         position: 'fixed',
         bottom: 24,
@@ -79,15 +80,15 @@ export default function Nav() {
         display: 'flex',
         alignItems: 'center',
         gap: 0,
-        padding: '7px',
-        paddingBottom: 'max(7px, env(safe-area-inset-bottom))',
-        background: '#141414',
+        padding: '6px',
+        paddingBottom: 'max(6px, env(safe-area-inset-bottom))',
+        background: '#0d0d0f',
         borderRadius: 9999,
-        boxShadow: 'rgba(255,255,255,0.07) 0px 0px 0px 1px inset, rgba(0,0,0,0.6) 0px 12px 40px 0px',
+        border: `1px solid ${ICE}0.10)`,
       }}>
         {TABS.map(tab => {
           const active = isActive(tab.href);
-          const isJarvis = (tab as any).lime;
+          const isAccent = tab.accent;
           return (
             <Link
               key={tab.href}
@@ -98,15 +99,17 @@ export default function Nav() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: active ? 56 : isJarvis ? 54 : 52,
-                height: 56,
+                width: 52,
+                height: 52,
                 borderRadius: 9999,
                 background: active
-                  ? (isJarvis ? '#1F58F2' : '#1F58F2')
-                  : isJarvis ? 'transparent' : 'transparent',
-                boxShadow: !active && isJarvis
-                  ? 'rgba(218,255,1,0.5) 0px 0px 0px 1.5px inset, rgba(218,255,1,0.15) 0px 0px 12px'
-                  : 'none',
+                  ? ICE + '0.08)'
+                  : 'transparent',
+                border: active
+                  ? `1px solid ${ICE}0.15)`
+                  : isAccent
+                  ? `1px solid ${COBALT}44`
+                  : '1px solid transparent',
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
                 transition: 'all 0.2s cubic-bezier(0.4,0,0.2,1)',
@@ -114,11 +117,14 @@ export default function Nav() {
               }}
             >
               <span style={{
-                fontSize: isJarvis ? 22 : 20,
-                color: active ? '#000000' : isJarvis ? '#1F58F2' : 'rgba(255,255,255,0.30)',
+                fontSize: 18,
+                color: active
+                  ? ICE + '0.90)'
+                  : isAccent
+                  ? COBALT
+                  : ICE + '0.25)',
                 transition: 'color 0.2s',
                 lineHeight: 1,
-                filter: !active && isJarvis ? 'drop-shadow(0 0 6px #1F58F2)' : 'none',
               }}>
                 {tab.icon}
               </span>
@@ -133,26 +139,33 @@ export default function Nav() {
           onClick={() => setOpen(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 298,
-            background: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
           }}
         />
       )}
 
-      {/* ── Drawer ── */}
+      {/* ── Drawer — Atlantic wireframe panel ── */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: '68vw', maxWidth: 260,
-        background: '#141414',
-        boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset, rgba(0,0,0,0.6) 0px 0px 40px 0px',
+        background: '#0d0d0f',
+        borderLeft: `1px solid ${ICE}0.10)`,
         zIndex: 299,
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.2s cubic-bezier(0.4,0,0.2,1)',
         display: 'flex', flexDirection: 'column',
-        paddingTop: 60,
+        paddingTop: 72,
         overflowY: 'auto',
       }}>
+        {/* Wordmark */}
+        <div style={{ padding: '0 20px 24px', borderBottom: `1px solid ${ICE}0.06)` }}>
+          <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', letterSpacing: '0.20em', color: ICE + '0.25)', margin: 0 }}>
+            PERSONAL OS
+          </p>
+        </div>
+
         {DRAWER.map(link => {
           const active = isActive(link.href);
           return (
@@ -162,41 +175,45 @@ export default function Nav() {
               onClick={() => { haptic('light'); setOpen(false); }}
               style={{
                 display: 'flex', alignItems: 'center',
-                padding: '10px 16px',
-                background: active ? 'rgba(255,255,255,0.04)' : 'transparent',
-                borderLeft: `2px solid ${active ? 'rgba(255,255,255,0.5)' : 'transparent'}`,
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                padding: '12px 20px',
+                background: active ? `${ICE}0.04)` : 'transparent',
+                borderBottom: `1px solid ${ICE}0.05)`,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
                 transition: 'background 0.12s',
                 gap: 12,
               }}
             >
+              {/* Active indicator — cobalt dot */}
               <span style={{
-                width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                background: active ? 'rgba(255,255,255,0.7)' : 'transparent',
+                width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
+                background: active ? COBALT : 'transparent',
                 transition: 'background 0.15s',
               }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  fontSize: 14,
-                  fontWeight: active ? 510 : 400,
-                  letterSpacing: '-0.011em',
-                  color: active ? '#ffffff' : 'rgba(255,255,255,0.50)',
-                  margin: 0, marginBottom: 1,
-                  fontFeatureSettings: '"cv01" on, "ss03" on',
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 400,
+                  letterSpacing: '0.12em',
+                  color: active ? ICE + '0.90)' : ICE + '0.35)',
+                  margin: 0, marginBottom: 2,
                 }}>
                   {link.label}
                 </p>
                 <p style={{
-                  fontSize: 12,
-                  color: 'rgba(255,255,255,0.25)',
+                  fontSize: 11,
+                  color: ICE + '0.20)',
                   margin: 0,
-                  letterSpacing: '-0.01em',
+                  letterSpacing: '0.04em',
                 }}>
                   {link.sub}
                 </p>
               </div>
+              {/* Active chevron */}
+              {active && (
+                <span style={{ fontSize: 10, color: COBALT, opacity: 0.7 }}>›</span>
+              )}
             </Link>
           );
         })}
@@ -206,24 +223,22 @@ export default function Nav() {
           onClick={() => { haptic('light'); toggle(); }}
           style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 16px',
+            padding: '12px 20px',
             background: 'transparent', border: 'none',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: `1px solid ${ICE}0.06)`,
             cursor: 'pointer', marginTop: 'auto',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.28)' }}>
-            {theme === 'dark' ? '○' : '●'}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.35)', letterSpacing: '-0.011em' }}>
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', letterSpacing: '0.12em', color: ICE + '0.25)' }}>
+            {theme === 'dark' ? 'LIGHT' : 'DARK'}
           </span>
         </button>
 
-        <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', letterSpacing: '-0.01em', fontFamily: 'var(--font-mono)' }}>
-            Personal OS · v0.1
+        {/* Version stamp */}
+        <div style={{ padding: '10px 20px', borderTop: `1px solid ${ICE}0.05)` }}>
+          <p style={{ fontSize: 10, color: ICE + '0.15)', letterSpacing: '0.10em', fontFamily: 'var(--font-mono)', margin: 0 }}>
+            v0.1 · {new Date().getFullYear()}
           </p>
         </div>
       </div>

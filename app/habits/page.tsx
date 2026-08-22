@@ -109,7 +109,7 @@ export default function HabitsPage() {
 
       {/* ── Add form ── */}
       {mode === 'add' && (
-        <div style={{ margin: '16px 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, padding: 20 }}>
+        <div style={{ margin: '16px 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 'var(--r)', padding: 20 }}>
           <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 16 }}>New habit</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {addError && (
@@ -125,7 +125,7 @@ export default function HabitsPage() {
                 onKeyDown={e => e.key === 'Enter' && save()}
                 placeholder="e.g. Morning walk"
                 autoFocus
-                style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+                style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
               />
             </div>
             <div>
@@ -133,7 +133,7 @@ export default function HabitsPage() {
               <select
                 value={addAfter}
                 onChange={e => setAddAfter(e.target.value ? Number(e.target.value) : '')}
-                style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+                style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
               >
                 <option value="">None — standalone</option>
                 {habits.map(h => <option key={h.id} value={h.id}>After: {h.name}</option>)}
@@ -149,7 +149,7 @@ export default function HabitsPage() {
 
       {/* ── Habit list ── */}
       {mode === 'list' && (
-        <div style={{ margin: '16px 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, overflow: 'hidden' }}>
+        <div style={{ margin: '16px 20px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 'var(--r)', overflow: 'hidden' }}>
           {habits.length === 0 ? (
             <div style={{ padding: '32px 24px', textAlign: 'center' }}>
               <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)', marginBottom: 6 }}>No habits tracked yet</p>

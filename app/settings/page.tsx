@@ -21,7 +21,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ margin: '0 20px 12px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 24, overflow: 'hidden' }}>
+    <div style={{ margin: '0 20px 12px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 'var(--r)', overflow: 'hidden' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
         <p className="label">{title}</p>
       </div>
@@ -117,7 +117,7 @@ export default function SettingsPage() {
         <Field label="Calorie target (kcal)">
           <input
             type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)}
-            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
           />
         </Field>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
@@ -129,7 +129,7 @@ export default function SettingsPage() {
             <Field key={m.label} label={m.label}>
               <input
                 type="number" value={m.val} onChange={e => m.set(e.target.value)}
-                style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+                style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
               />
             </Field>
           ))}
@@ -137,19 +137,19 @@ export default function SettingsPage() {
         <Field label="Starting weight (kg)" hint="Your baseline — set once, track progress from here">
           <input
             type="number" value={startingWeight} onChange={e => setStartingWeight(e.target.value)} placeholder="e.g. 85"
-            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
           />
         </Field>
         <Field label="Weight goal (kg)">
           <input
             type="number" value={weightGoal} onChange={e => setWeightGoal(e.target.value)} placeholder="Optional"
-            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
           />
         </Field>
         <Field label="Units">
           <select
             value={units} onChange={e => setUnits(e.target.value as 'metric' | 'imperial')}
-            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
           >
             <option value="metric">Metric</option>
             <option value="imperial">Imperial</option>

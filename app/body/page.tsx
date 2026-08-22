@@ -89,7 +89,7 @@ export default function BodyPage() {
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
         {/* ── Stats card ── */}
-        <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, padding: 18 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', padding: 18 }}>
 
           {/* Current / deltas */}
           <div style={{ display: 'flex', gap: 24, marginBottom: path ? 16 : 0 }}>
@@ -145,7 +145,7 @@ export default function BodyPage() {
         </div>
 
         {/* ── Log input ── */}
-        <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, padding: 18 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', padding: 18 }}>
           <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 16 }}>
             {todayLogged ? 'Update today' : 'Log weight'}
           </p>
@@ -156,14 +156,14 @@ export default function BodyPage() {
             placeholder={latest ? String(latest.weight_kg) : '80.0'}
             style={{
               fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', textAlign: 'center', marginBottom: 8,
-              background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14,
+              background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14,
               fontVariantNumeric: 'tabular-nums',
             }}
           />
           <input
             value={note} onChange={e => setNote(e.target.value)}
             placeholder="Note (optional)"
-            style={{ marginBottom: 12, background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+            style={{ marginBottom: 12, background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
           />
           <button
             onClick={handleLog}
@@ -178,7 +178,7 @@ export default function BodyPage() {
         {entries.length > 0 && (
           <div>
             <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 8, paddingLeft: 4 }}>History</p>
-            <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
               {entries.map((e, i) => {
                 const prev = entries[i + 1];
                 const d = prev ? Math.round((e.weight_kg - prev.weight_kg) * 10) / 10 : null;
@@ -219,7 +219,7 @@ export default function BodyPage() {
 
         {/* Empty state */}
         {entries.length === 0 && (
-          <div style={{ background: 'var(--surface)', boxShadow: 'var(--ring)', borderRadius: 24, padding: '32px 24px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', padding: '32px 24px', textAlign: 'center' }}>
             <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)', marginBottom: 6 }}>No weight logged yet</p>
             <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
               Weigh in each morning for accurate trends — consistency unlocks the insight.

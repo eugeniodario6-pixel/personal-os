@@ -80,7 +80,7 @@ function MacroChart({ logs, profile }: { logs: MealLogWithFood[]; profile: Profi
       background: 'var(--surface)',
       borderRadius: 'var(--r)',
       padding: '16px 20px',
-      boxShadow: 'var(--ring)',
+      border: '1px solid rgba(216,234,255,0.08)',
     }}>
       {macros.map((m, i) => (
         <div key={m.label} style={{ marginBottom: i < macros.length - 1 ? 14 : 0 }}>
@@ -270,7 +270,7 @@ function FoodLogPanel({ selected, onLog, onCancel }: {
   const pFat  = Math.round(selected.fat      * r * 10) / 10;
 
   return (
-    <div style={{ background: 'var(--surface)', borderRadius: 'var(--r)', padding: '20px', margin: '0 20px 16px', boxShadow: 'var(--ring)' }}>
+    <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', padding: '20px', margin: '0 20px 16px', border: '1px solid rgba(216,234,255,0.08)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 510, color: 'var(--text)', letterSpacing: '-0.011em', flex: 1, marginRight: 12 }}>
           {selected.name}
@@ -493,7 +493,7 @@ function NutritionContent() {
           padding: '10px 16px',
           background: 'var(--surface)',
           borderRadius: 'var(--r)',
-          boxShadow: 'var(--ring)',
+          border: '1px solid rgba(216,234,255,0.08)',
         }}>
           {/* Quality score */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
@@ -542,9 +542,9 @@ function NutritionContent() {
           flex: 1, padding: '0.75rem', borderRadius: 'var(--r)',
           background: mode === 'recents' ? 'var(--cta-bg)' : 'var(--surface)',
           color: mode === 'recents' ? 'var(--cta-fg)' : 'var(--text-3)',
-          border: '1px solid var(--border-2)', cursor: 'pointer',
+          cursor: 'pointer',
           fontSize: '0.7rem', letterSpacing: '0.06em', fontWeight: 510, fontFamily: 'var(--font)',
-          boxShadow: 'var(--ring)',
+          border: '1px solid rgba(216,234,255,0.08)',
         }}>
           + LOG
         </button>
@@ -552,9 +552,9 @@ function NutritionContent() {
           flex: 1, padding: '0.75rem', borderRadius: 'var(--r)',
           background: mode === 'search' ? 'var(--cta-bg)' : 'var(--surface)',
           color: mode === 'search' ? 'var(--cta-fg)' : 'var(--text-3)',
-          border: '1px solid var(--border-2)', cursor: 'pointer',
+          cursor: 'pointer',
           fontSize: '0.7rem', letterSpacing: '0.06em', fontWeight: 510, fontFamily: 'var(--font)',
-          boxShadow: 'var(--ring)',
+          border: '1px solid rgba(216,234,255,0.08)',
         }}>
           SEARCH
         </button>
@@ -569,7 +569,7 @@ function NutritionContent() {
 
       {/* ── Recents drawer ── */}
       {mode === 'recents' && !selectedFood && (
-        <div style={{ margin: '12px 20px 0', background: 'var(--surface)', borderRadius: 'var(--r)', padding: '0 16px', boxShadow: 'var(--ring)' }}>
+        <div style={{ margin: '12px 20px 0', background: 'var(--color-carbon)', borderRadius: 'var(--r)', padding: '0 16px', border: '1px solid rgba(216,234,255,0.08)' }}>
           {recentFoods.length === 0 ? (
             <p style={{ padding: '24px 0', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-4)' }}>No recent foods — search to add</p>
           ) : recentFoods.map(food => (
@@ -602,7 +602,7 @@ function NutritionContent() {
           </div>
           {searchError && <p style={{ fontSize: '0.8rem', color: 'var(--negative)', margin: '0 0 8px' }}>{searchError}</p>}
           {results.length > 0 && (
-            <div style={{ background: 'var(--surface)', borderRadius: 'var(--r)', padding: '0 16px', boxShadow: 'var(--ring)' }}>
+            <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', padding: '0 16px', border: '1px solid rgba(216,234,255,0.08)' }}>
               {results.map((r, i) => <FoodRow key={i} food={r} onSelect={() => setSelectedFood(r)} />)}
             </div>
           )}
@@ -647,7 +647,7 @@ function NutritionContent() {
 
               {/* Log entries */}
               {mealLogs.length > 0 ? (
-                <div style={{ background: 'var(--surface)', borderRadius: 'var(--r)', padding: '0 16px', boxShadow: 'var(--ring)' }}>
+                <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', padding: '0 16px', border: '1px solid rgba(216,234,255,0.08)' }}>
                   {mealLogs.map(log => (
                     <LogEntry
                       key={log.id}
@@ -671,8 +671,8 @@ function NutritionContent() {
                 </div>
               ) : (
                 <div style={{
-                  background: 'var(--surface)', borderRadius: 'var(--r)',
-                  padding: '16px', boxShadow: 'var(--ring)',
+                  background: 'var(--color-carbon)', borderRadius: 'var(--r)',
+                  padding: '16px', border: '1px solid rgba(216,234,255,0.08)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-5)', fontFamily: 'var(--font-mono)', letterSpacing: '0.01em' }}>
