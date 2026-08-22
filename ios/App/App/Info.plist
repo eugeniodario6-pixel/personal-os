@@ -28,6 +28,8 @@
 	<string>Use Face ID to quickly and securely unlock Personal OS.</string>
 	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
 	<string></string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Personal OS uses Face ID to keep your health data private.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Personal OS reads your health data to show steps, heart rate, sleep, weight and workouts on your dashboard.</string>
 	<key>NSHealthUpdateUsageDescription</key>
