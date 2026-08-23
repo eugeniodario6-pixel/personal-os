@@ -85,7 +85,7 @@ export default function Nav() {
           style={{
             width: 36, height: 36,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#0d0d0f',
+            background: 'var(--color-carbon)',
             borderRadius: '50%',
             border: `1px solid ${ICE}0.13)`,
             cursor: 'pointer',
@@ -120,7 +120,7 @@ export default function Nav() {
         gap: 0,
         padding: '6px',
         paddingBottom: 'max(6px, env(safe-area-inset-bottom))',
-        background: '#0d0d0f',
+        background: 'var(--color-carbon)',
         borderRadius: 9999,
         border: `1px solid ${ICE}0.10)`,
       }}>
@@ -187,7 +187,7 @@ export default function Nav() {
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: '68vw', maxWidth: 260,
-        background: '#0d0d0f',
+        background: 'var(--color-carbon)',
         borderLeft: `1px solid ${ICE}0.10)`,
         zIndex: 299,
         transform: open ? 'translateX(0)' : 'translateX(100%)',

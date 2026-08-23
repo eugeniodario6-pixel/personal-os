@@ -555,7 +555,7 @@ export default function ProgressPage() {
       {loading ? (
         <div style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[120, 160, 140, 120, 140].map((h, i) => (
-            <div key={i} style={{ height: h, borderRadius: 20, background: '#111', opacity: 0.5 - i * 0.07 }} />
+            <div key={i} style={{ height: h, borderRadius: 20, background: 'var(--color-carbon)', opacity: 0.5 - i * 0.07 }} />
           ))}
         </div>
       ) : (
