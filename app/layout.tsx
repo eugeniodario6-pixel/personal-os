@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { ToastContainer } from '@/components/Toast';
 import HealthKitInit from '@/components/HealthKitInit';
 import PushInit from '@/components/PushInit';
+import SplashScreen from '@/components/SplashScreen';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         <ThemeProvider>
+          <SplashScreen />
           <SWRegister />
           <HealthKitInit />
           <PushInit />
