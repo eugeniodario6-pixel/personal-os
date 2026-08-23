@@ -17,6 +17,7 @@ import { toast } from '@/components/Toast';
 import { DashboardSkeleton } from '@/components/Skeleton';
 import QuickLogSheet from '@/components/QuickLogSheet';
 import ScoreSilhouette, { VitruvianBackground } from '@/components/ScoreSilhouette';
+import ScoreDonut from '@/components/ScoreDonut';
 import { requestHealthKitPermissions, getHealthData, type HealthData } from '@/lib/healthkit';
 
 // ── Score logic ────────────────────────────────────────────────────────────────
@@ -679,24 +680,10 @@ export default function TodayPage() {
             ))}
           </div>
 
-          {/* ROW E — Score breakdown (full width) */}
+          {/* ROW E — Score breakdown donut */}
           <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 18 }}>
-            <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 14px' }}>Score breakdown</p>
-            {pillars.map((p, idx) => (
-              <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: idx < pillars.length - 1 ? 12 : 0, marginBottom: idx < pillars.length - 1 ? 12 : 0, borderBottom: idx < pillars.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', width: 50, flexShrink: 0 }}>{p.name}</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: p.score === p.maxScore ? '#78dc64' : '#fff', width: 38, flexShrink: 0, letterSpacing: '-0.02em' }}>
-                  {p.score}
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>/{p.maxScore}</span>
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
-                    <div style={{ height: '100%', width: `${(p.score / p.maxScore) * 100}%`, background: p.score === p.maxScore ? '#78dc64' : 'rgba(255,255,255,0.55)', borderRadius: 99, transition: 'width 0.8s' }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{p.reason}</span>
-                </div>
-              </div>
-            ))}
+            <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(216,234,255,0.30)', margin: '0 0 16px' }}>Score breakdown</p>
+            <ScoreDonut pillars={pillars} total={score} />
           </div>
 
           {/* ROW F — Daily habits */}
