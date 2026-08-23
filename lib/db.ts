@@ -260,6 +260,18 @@ export async function getMealLogs(date: string): Promise<(MealLog & { food: Food
   return (data ?? []).map(row => ({ ...row, food: row.food ?? null }));
 }
 
+export async function getMealLogsRange(startDate: string, endDate: string): Promise<(MealLog & { food: FoodItem | null })[]> {
+  const userId = await getUserId();
+  const { data } = await supabase
+    .from('meal_log')
+    .select('*, food:food_item(*)')
+    .eq('user_id', userId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('logged_at', { ascending: true });
+  return (data ?? []).map(row => ({ ...row, food: row.food ?? null }));
+}
+
 export async function deleteMealLog(id: number): Promise<void> {
   await supabase.from('meal_log').delete().eq('id', id);
 }

@@ -6,7 +6,8 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   getHabits, getHabitStreaks, getDailyScores, getWeightHistory,
   getWorkoutHistory, getMeditationSessions, getLiftHistory, getMoodLogs,
-  type DailyScore, type WeightEntry, type LiftHistory, type MoodEntry,
+  getMealLogsRange, getProfile,
+  type DailyScore, type WeightEntry, type LiftHistory, type MoodEntry, type Profile,
 } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
@@ -14,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 interface DayHabit { date: string; done: number; total: number }
 interface MedDay   { date: string; mins: number; sessions: number }
 interface WorkDay  { date: string; sessions: number; minutes: number }
+interface NutritionDay { date: string; calories: number; protein: number; carbs: number; fat: number; logged: number }
 
 type Period = '7' | '30';
 
@@ -262,7 +264,9 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(true);
 
   // Nutrition
-  const [scores, setScores] = useState<DailyScore[]>([]);
+  const [scores, setScores]         = useState<DailyScore[]>([]);
+  const [nutritionDays, setNutritionDays] = useState<NutritionDay[]>([]);
+  const [profile, setProfile]       = useState<Profile | null>(null);
 
   // Habits
   const [habitDays, setHabitDays]     = useState<DayHabit[]>([]);
@@ -293,7 +297,7 @@ export default function ProgressPage() {
       const MAIN_LIFTS = ['Back Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Barbell Row'];
 
       const [
-        scoresData, habitsData, weightsData, workoutsData, liftData, moodData,
+        scoresData, habitsData, weightsData, workoutsData, liftData, moodData, mealLogsData, profileData,
       ] = await Promise.all([
         getDailyScores(days),
         getHabits(),
@@ -301,14 +305,35 @@ export default function ProgressPage() {
         getWorkoutHistory(days),
         getLiftHistory(MAIN_LIFTS, Math.ceil(days / 7) + 1),
         getMoodLogs(days),
+        getMealLogsRange(dates[0], dates[dates.length - 1]),
+        getProfile(),
       ]);
 
       setMoodLogs(moodData);
-
       setLiftHistory(liftData);
+      setProfile(profileData);
 
-      // ── Scores / Nutrition
+      // ── Scores / Nutrition from daily_score (fallback to meal_log)
       setScores(scoresData);
+
+      // ── Compute per-day nutrition from raw meal_log + food_item
+      const mealByDate = new Map<string, { calories: number; protein: number; carbs: number; fat: number; logged: number }>();
+      for (const log of mealLogsData) {
+        if (!log.food) continue;
+        const r = log.quantity / log.food.serving_size;
+        const cur = mealByDate.get(log.date) ?? { calories: 0, protein: 0, carbs: 0, fat: 0, logged: 0 };
+        mealByDate.set(log.date, {
+          calories: cur.calories + log.food.calories * r,
+          protein:  cur.protein  + log.food.protein  * r,
+          carbs:    cur.carbs    + log.food.carbs    * r,
+          fat:      cur.fat      + log.food.fat      * r,
+          logged:   cur.logged   + 1,
+        });
+      }
+      setNutritionDays(dates.map(d => ({
+        date: d,
+        ...(mealByDate.get(d) ?? { calories: 0, protein: 0, carbs: 0, fat: 0, logged: 0 }),
+      })));
 
       // ── Weights
       setWeights(weightsData);
@@ -376,12 +401,30 @@ export default function ProgressPage() {
 
   // ── Derived: Nutrition ─────────────────────────────────────────────────────
   const scoreMap = new Map(scores.map(s => [s.date, s]));
+  const nutMap   = new Map(nutritionDays.map(d => [d.date, d]));
+
+  // Prefer raw meal data; fall back to daily_score actuals
+  const calData  = dates.map(d => ({ label: shortLabel(d, period), value: Math.round(nutMap.get(d)?.calories ?? scoreMap.get(d)?.calories_actual ?? 0) }));
+  const protData = dates.map(d => ({ label: shortLabel(d, period), value: Math.round(nutMap.get(d)?.protein  ?? scoreMap.get(d)?.protein_actual  ?? 0) }));
+  const fatData  = dates.map(d => ({ label: shortLabel(d, period), value: Math.round(nutMap.get(d)?.fat      ?? scoreMap.get(d)?.fat_actual      ?? 0) }));
+  const carbData = dates.map(d => ({ label: shortLabel(d, period), value: Math.round(nutMap.get(d)?.carbs    ?? scoreMap.get(d)?.carbs_actual    ?? 0) }));
+
+  const loggedDays = nutritionDays.filter(d => d.logged > 0);
+  const avgCal  = loggedDays.length ? Math.round(loggedDays.reduce((s, d) => s + d.calories, 0) / loggedDays.length) : 0;
+  const avgProt = loggedDays.length ? Math.round(loggedDays.reduce((s, d) => s + d.protein,  0) / loggedDays.length) : 0;
+  const avgFat  = loggedDays.length ? Math.round(loggedDays.reduce((s, d) => s + d.fat,      0) / loggedDays.length) : 0;
+  const avgCarb = loggedDays.length ? Math.round(loggedDays.reduce((s, d) => s + d.carbs,    0) / loggedDays.length) : 0;
+
+  const calTarget  = profile?.calorie_target        ?? 1855;
+  const protTarget = profile?.macro_targets?.protein ?? 175;
+  const fatTarget  = profile?.macro_targets?.fat     ?? 118;
+  const carbTarget = profile?.macro_targets?.carbs   ?? 23;
+
   const scoreData = dates.map(d => ({ label: shortLabel(d, period), value: scoreMap.get(d)?.total_score ?? 0 }));
-  const calData   = dates.map(d => ({ label: shortLabel(d, period), value: scoreMap.get(d)?.calories_actual ?? 0 }));
-  const protData  = dates.map(d => ({ label: shortLabel(d, period), value: Math.round(scoreMap.get(d)?.protein_actual ?? 0) }));
   const avgScore  = scores.length ? Math.round(scores.reduce((s, d) => s + d.total_score, 0) / scores.length) : 0;
-  const avgCal    = scores.length ? Math.round(scores.reduce((s, d) => s + d.calories_actual, 0) / scores.length) : 0;
-  const avgProt   = scores.length ? Math.round(scores.reduce((s, d) => s + d.protein_actual, 0) / scores.length) : 0;
+
+  const todayNut = nutMap.get(dates[dates.length - 1]);
+  const todayLogged = todayNut && todayNut.logged > 0;
 
   // ── Derived: Habits ────────────────────────────────────────────────────────
   const totalHabitDone = habitDays.reduce((s, d) => s + d.done, 0);
@@ -523,19 +566,62 @@ export default function ProgressPage() {
 
           {/* ── EATING ── */}
           <Card>
-            <SectionLabel icon="◎" title="Eating" value={avgScore} sub="avg score" />
-            <BarChart data={scoreData} max={100} color={LIME} height={72} period={period} unit="/100" />
-            <div style={{ marginTop: 14 }}>
-              <StatRow label="Avg daily score" value={`${avgScore}/100`} color={avgScore >= 75 ? LIME : avgScore >= 50 ? '#fff' : TEXT2} />
-              <StatRow label="Avg calories" value={`${avgCal} kcal`} />
-              <StatRow label="Avg protein" value={`${avgProt}g`} />
-            </div>
-            {/* Protein sparkline */}
-            {protData.some(d => d.value > 0) && (
-              <div style={{ marginTop: 14 }}>
-                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', color: TEXT3, letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>PROTEIN TREND</p>
-                <Sparkline values={protData.map(d => d.value)} color="#8B8BFF" height={36} />
-              </div>
+            <SectionLabel icon="◎" title="Eating"
+              value={loggedDays.length > 0 ? `${avgCal} kcal` : undefined}
+              sub={loggedDays.length > 0 ? `avg · ${loggedDays.length}d logged` : undefined}
+            />
+
+            {loggedDays.length === 0 ? (
+              <p style={{ fontSize: '0.78rem', color: TEXT3, margin: 0, lineHeight: 1.6 }}>No meals logged in this period — head to Fuel to start tracking.</p>
+            ) : (
+              <>
+                {/* Calorie bar chart */}
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', color: TEXT3, letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>DAILY CALORIES</p>
+                <BarChart data={calData} max={Math.max(calTarget * 1.2, ...calData.map(d => d.value))} color={LIME} height={72} period={period} unit=" kcal" />
+
+                {/* Target line indicator */}
+                <p style={{ margin: '6px 0 14px', fontSize: '0.55rem', color: TEXT3, letterSpacing: '0.04em', fontFamily: 'var(--font-mono)' }}>
+                  TARGET {calTarget.toLocaleString()} KCAL
+                </p>
+
+                {/* Stats */}
+                <StatRow label="Avg calories" value={`${avgCal.toLocaleString()} kcal`} color={Math.abs(avgCal - calTarget) < calTarget * 0.1 ? LIME : '#fff'} />
+                <StatRow label="Cal target" value={`${calTarget.toLocaleString()} kcal`} />
+                <StatRow label="Avg protein" value={`${avgProt}g`} color={avgProt >= protTarget * 0.9 ? LIME : '#fff'} />
+                <StatRow label="Protein target" value={`${protTarget}g`} />
+                <StatRow label="Avg fat" value={`${avgFat}g`} color={Math.abs(avgFat - fatTarget) < fatTarget * 0.15 ? LIME : '#fff'} />
+                <StatRow label="Avg carbs" value={`${avgCarb}g`} />
+                <StatRow label="Days logged" value={`${loggedDays.length} / ${days}`} />
+
+                {/* Today snapshot */}
+                {todayLogged && (
+                  <div style={{ marginTop: 14, padding: '12px 14px', background: 'rgba(31,88,242,0.08)', borderRadius: 8, border: '1px solid rgba(31,88,242,0.2)' }}>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.55rem', color: LIME, letterSpacing: '0.08em', fontFamily: 'var(--font-mono)' }}>TODAY</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+                      {[
+                        { label: 'CALORIES', value: `${Math.round(todayNut!.calories)}`, target: calTarget, unit: 'kcal' },
+                        { label: 'PROTEIN',  value: `${Math.round(todayNut!.protein)}g`,  target: protTarget, unit: 'g' },
+                        { label: 'FAT',      value: `${Math.round(todayNut!.fat)}g`,      target: fatTarget,  unit: 'g' },
+                        { label: 'CARBS',    value: `${Math.round(todayNut!.carbs)}g`,    target: carbTarget, unit: 'g' },
+                      ].map(({ label, value, target, unit }) => (
+                        <div key={label}>
+                          <p style={{ margin: '0 0 2px', fontSize: '0.5rem', color: TEXT3, letterSpacing: '0.08em', fontFamily: 'var(--font-mono)' }}>{label}</p>
+                          <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 510, letterSpacing: '-0.011em', color: '#fff', lineHeight: 1.1 }}>{value}</p>
+                          <p style={{ margin: '1px 0 0', fontSize: '0.5rem', color: TEXT3, fontFamily: 'var(--font-mono)' }}>/ {target}{unit}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Protein trend sparkline */}
+                {protData.some(d => d.value > 0) && (
+                  <div style={{ marginTop: 14 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.55rem', color: TEXT3, letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>PROTEIN TREND</p>
+                    <Sparkline values={protData.map(d => d.value)} color="#8B8BFF" height={36} />
+                  </div>
+                )}
+              </>
             )}
           </Card>
 
