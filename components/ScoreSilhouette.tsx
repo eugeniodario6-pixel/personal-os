@@ -8,6 +8,60 @@ interface Props {
   height?: number;
 }
 
+// Full-viewport background variant — fixed, centred, fills the screen
+export function VitruvianBackground({ score }: { score: number }) {
+  const pct = Math.max(0, Math.min(100, score));
+  const uid = 'vbg';
+  const clipId = `clip-${uid}`;
+  const glowId = `glow-${uid}`;
+  const totalH = 362.32;
+  const fillY = totalH - (pct / 100) * totalH;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      pointerEvents: 'none',
+      overflow: 'hidden',
+    }}>
+      <svg
+        viewBox="0 0 361.89 362.32"
+        style={{
+          width: '100vmax',
+          height: '100vmax',
+          opacity: 0.07,
+          display: 'block',
+          flexShrink: 0,
+        }}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          <clipPath id={clipId}>
+            <rect x="0" y={fillY} width="361.89" height={totalH - fillY} />
+          </clipPath>
+          <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {/* Ghost base — ice white */}
+        <path d={PATH} fill="rgba(216,234,255,0.5)" />
+        {/* Cobalt fill rising from feet */}
+        <g clipPath={`url(#${clipId})`}>
+          <path d={PATH} fill="#1F58F2" filter={pct > 5 ? `url(#${glowId})` : undefined} />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 export default function ScoreSilhouette({ score, height = 160 }: Props) {
   const pct = Math.max(0, Math.min(100, score));
   const uid = Math.random().toString(36).slice(2, 7);
@@ -38,17 +92,11 @@ export default function ScoreSilhouette({ score, height = 160 }: Props) {
             </feMerge>
           </filter>
         </defs>
-
         {/* Dim base */}
         <path d={PATH} fill="rgba(216,234,255,0.08)" />
-
         {/* Cobalt fill rising from feet */}
         <g clipPath={`url(#${clipId})`}>
-          <path
-            d={PATH}
-            fill="#1F58F2"
-            filter={pct > 5 ? `url(#${glowId})` : undefined}
-          />
+          <path d={PATH} fill="#1F58F2" filter={pct > 5 ? `url(#${glowId})` : undefined} />
         </g>
       </svg>
     </div>
