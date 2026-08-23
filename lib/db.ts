@@ -80,6 +80,7 @@ export interface Habit {
   user_id: string;
   name: string;
   active: boolean;
+  routine: 'morning' | 'evening';
   stacked_after_habit_id: number | null;
   streak_freeze_available: number;
   created_at: string;
@@ -371,20 +372,21 @@ export async function deleteWorkoutLog(id: number): Promise<void> {
 
 // ── Habits ─────────────────────────────────────────────────────────────────
 
-export async function getHabits(): Promise<Habit[]> {
+export async function getHabits(routine?: 'morning' | 'evening'): Promise<Habit[]> {
   const userId = await getUserId();
-  const { data } = await supabase
+  let query = supabase
     .from('habit')
     .select('*')
     .eq('user_id', userId)
-    .eq('active', true)
-    .order('created_at');
+    .eq('active', true);
+  if (routine) query = query.eq('routine', routine);
+  const { data } = await query.order('created_at');
   return data ?? [];
 }
 
 export async function addHabit(h: Omit<Habit, 'id' | 'user_id'>): Promise<void> {
   const userId = await getUserId();
-  await supabase.from('habit').insert({ ...h, user_id: userId });
+  await supabase.from('habit').insert({ ...h, user_id: userId, routine: h.routine ?? 'morning' });
 }
 
 export async function deactivateHabit(id: number): Promise<void> {
@@ -522,6 +524,21 @@ export async function getTodayHabitStatus(): Promise<{ completed: number; total:
   return { completed: habits.filter(h => completedIds.has(h.id)).length, total: habits.length };
 }
 
+export async function getTodayHabitStatusByRoutine(): Promise<{
+  morning: { completed: number; total: number };
+  evening: { completed: number; total: number };
+}> {
+  const habits = await getHabits();
+  const completions = await getHabitCompletions(todayISO());
+  const completedIds = new Set(completions.filter(c => c.completed_at).map(c => c.habit_id));
+  const morning = habits.filter(h => h.routine === 'morning');
+  const evening = habits.filter(h => h.routine === 'evening');
+  return {
+    morning: { completed: morning.filter(h => completedIds.has(h.id)).length, total: morning.length },
+    evening: { completed: evening.filter(h => completedIds.has(h.id)).length, total: evening.length },
+  };
+}
+
 // ── Meditation Sessions ────────────────────────────────────────────────────
 
 export async function getMeditationSessions(): Promise<MeditationSession[]> {
@@ -605,9 +622,10 @@ const DEFAULT_WORKOUT_TEMPLATES = [
 ];
 
 const DEFAULT_HABITS = [
-  { name: 'Morning water', active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
-  { name: 'Read 20 pages', active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
-  { name: 'No screens before bed', active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
+  { name: 'Morning water', active: true, routine: 'morning' as const, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
+  { name: 'Morning journal', active: true, routine: 'morning' as const, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
+  { name: 'Read 20 pages', active: true, routine: 'evening' as const, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
+  { name: 'No screens before bed', active: true, routine: 'evening' as const, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() },
 ];
 
 // Guard so seedUserData only runs once per browser session, not on every page load.

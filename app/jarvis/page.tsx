@@ -215,7 +215,7 @@ export default function JarvisPage() {
           break;
 
         case 'createHabit':
-          await addHabit({ name: toolCall.name as string, active: true, stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() });
+          await addHabit({ name: toolCall.name as string, active: true, routine: 'morning', stacked_after_habit_id: null, streak_freeze_available: 0, created_at: new Date().toISOString() });
           break;
 
         case 'deleteHabit':
