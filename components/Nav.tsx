@@ -5,14 +5,51 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { haptic } from '@/lib/haptic';
 import { useTheme } from './ThemeProvider';
-import { Home, Utensils, BrainCircuit, Zap, TrendingUp } from 'lucide-react';
+// Inline SVG icons — no external dependency
+const HomeIcon = ({ size, strokeWidth, color }: { size: number; strokeWidth: number; color: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+const UtensilsIcon = ({ size, strokeWidth, color }: { size: number; strokeWidth: number; color: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+    <path d="M7 2v20" />
+    <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
+  </svg>
+);
+const BrainIcon = ({ size, strokeWidth, color }: { size: number; strokeWidth: number; color: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+    <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+    <path d="M17.599 6.5a3 3 0 0 0 .399-1.375" />
+    <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5" />
+    <path d="M3.477 10.896a4 4 0 0 1 .585-.396" />
+    <path d="M19.938 10.5a4 4 0 0 1 .585.396" />
+    <path d="M6 18a4 4 0 0 1-1.967-.516" />
+    <path d="M19.967 17.484A4 4 0 0 1 18 18" />
+  </svg>
+);
+const ZapIcon = ({ size, strokeWidth, color }: { size: number; strokeWidth: number; color: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+const TrendingUpIcon = ({ size, strokeWidth, color }: { size: number; strokeWidth: number; color: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+    <polyline points="16 7 22 7 22 13" />
+  </svg>
+);
 
 const TABS = [
-  { href: '/',           label: 'Today',    Icon: Home },
-  { href: '/nutrition',  label: 'Eat',      Icon: Utensils },
-  { href: '/jarvis',     label: 'Jarvis',   Icon: BrainCircuit, accent: true },
-  { href: '/fitness',    label: 'Move',     Icon: Zap },
-  { href: '/progress',   label: 'Progress', Icon: TrendingUp },
+  { href: '/',           label: 'Today',    Icon: HomeIcon },
+  { href: '/nutrition',  label: 'Eat',      Icon: UtensilsIcon },
+  { href: '/jarvis',     label: 'Jarvis',   Icon: BrainIcon, accent: true },
+  { href: '/fitness',    label: 'Move',     Icon: ZapIcon },
+  { href: '/progress',   label: 'Progress', Icon: TrendingUpIcon },
 ];
 
 const DRAWER = [
