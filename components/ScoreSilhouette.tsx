@@ -20,11 +20,11 @@ export function VitruvianBackground({ score }: { score: number }) {
   return (
     <div style={{
       position: 'fixed',
-      inset: 0,
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
       zIndex: 0,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
       pointerEvents: 'none',
       overflow: 'hidden',
     }}>
@@ -35,12 +35,11 @@ export function VitruvianBackground({ score }: { score: number }) {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '160vw',
-          height: '160vw',
+          width: '200vw',
+          height: '200vw',
           maxWidth: 'none',
-          opacity: 0.09,
-          display: 'block',
-          flexShrink: 0,
+          maxHeight: 'none',
+          opacity: 0.10,
         }}
         preserveAspectRatio="xMidYMid meet"
       >
