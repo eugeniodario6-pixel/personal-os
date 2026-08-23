@@ -585,9 +585,9 @@ export default function TodayPage() {
 
           {/* Row 4: Habits list (full-width) */}
           {habits.length > 0 && (() => {
-            const morningHabits = habits.filter(h => h.schedule?.time === 'morning');
-            const eveningHabits = habits.filter(h => h.schedule?.time === 'evening');
-            const otherHabits = habits.filter(h => h.schedule?.time !== 'morning' && h.schedule?.time !== 'evening');
+            const morningHabits = habits.filter(h => h.routine === 'morning');
+            const eveningHabits = habits.filter(h => h.routine === 'evening');
+            const otherHabits = habits.filter(h => h.routine !== 'morning' && h.routine !== 'evening');
             const renderHabitRow = (h: typeof habits[0]) => (
               <button
                 key={h.id}
