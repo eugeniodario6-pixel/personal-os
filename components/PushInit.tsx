@@ -39,18 +39,26 @@ export default function PushInit() {
 
         PushNotifications.addListener('registration', async (token) => {
           console.log('[Push] Token:', token.value);
-          // Store in Supabase
-          const { supabase } = await import('@/lib/supabase');
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-          await supabase.from('device_tokens').upsert({
-            user_id: user.id,
-            token: token.value,
-            platform: 'ios',
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id,platform' });
-          sessionStorage.setItem('push_registered', '1');
-          console.log('[Push] Token stored ✓');
+          // Retry until user is authenticated (may take a few seconds after app load)
+          let attempts = 0;
+          const tryStore = async () => {
+            attempts++;
+            const { supabase } = await import('@/lib/supabase');
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+              if (attempts < 10) setTimeout(tryStore, 2000);
+              return;
+            }
+            await supabase.from('device_tokens').upsert({
+              user_id: user.id,
+              token: token.value,
+              platform: 'ios',
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id,platform' });
+            sessionStorage.setItem('push_registered', '1');
+            console.log('[Push] Token stored ✓');
+          };
+          await tryStore();
         });
 
         PushNotifications.addListener('registrationError', (e) => {
