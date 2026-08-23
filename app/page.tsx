@@ -18,6 +18,7 @@ import { DashboardSkeleton } from '@/components/Skeleton';
 import QuickLogSheet from '@/components/QuickLogSheet';
 import ScoreSilhouette, { VitruvianBackground } from '@/components/ScoreSilhouette';
 import ScoreDonut from '@/components/ScoreDonut';
+import HabitSwipeCard from '@/components/HabitSwipeCard';
 import { requestHealthKitPermissions, getHealthData, type HealthData } from '@/lib/healthkit';
 
 // ── Score logic ────────────────────────────────────────────────────────────────
@@ -686,93 +687,12 @@ export default function TodayPage() {
             <ScoreDonut pillars={pillars} total={score} />
           </div>
 
-          {/* ROW F — Daily habits */}
-          {habits.length > 0 && (() => {
-            const morningHabits = habits.filter(h => h.routine === 'morning');
-            const eveningHabits = habits.filter(h => h.routine === 'evening');
-            const otherHabits = habits.filter(h => h.routine !== 'morning' && h.routine !== 'evening');
-            const renderHabitRow = (h: typeof habits[0]) => (
-              <button
-                key={h.id}
-                onClick={() => toggle(h.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  width: '100%', padding: '11px 0',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  cursor: 'pointer', textAlign: 'left',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                <div style={{
-                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  background: h.done ? '#fff' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s',
-                }}>
-                  {h.done && <span style={{ fontSize: 10, color: '#000', fontWeight: 700 }}>✓</span>}
-                </div>
-                <span style={{
-                  flex: 1, fontSize: 14, fontWeight: 500, letterSpacing: '-0.011em',
-                  color: h.done ? 'rgba(255,255,255,0.30)' : '#fff',
-                  textDecoration: h.done ? 'line-through' : 'none',
-                  transition: 'color 0.2s',
-                }}>
-                  {h.name}
-                </span>
-                {h.streak > 1 && (
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', flexShrink: 0 }}>{h.streak}d</span>
-                )}
-              </button>
-            );
-            const renderBlockHeader = (icon: string, label: string, group: typeof habits) => {
-              const done = group.filter(h => h.done).length;
-              const allGroupDone = group.length > 0 && done === group.length;
-              return (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0 2px' }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.40)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>{icon} {label}</span>
-                  <span style={{ fontSize: 11, color: allGroupDone ? '#78dc64' : 'rgba(255,255,255,0.30)' }}>{done}/{group.length}</span>
-                </div>
-              );
-            };
-            const hasSections = morningHabits.length > 0 || eveningHabits.length > 0;
-            return (
-              <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 18 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: 0 }}>Daily habits</p>
-                  <button
-                    onClick={() => router.push('/habits')}
-                    style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.40)', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    Manage →
-                  </button>
-                </div>
-                {hasSections ? (
-                  <>
-                    {morningHabits.length > 0 && (
-                      <div style={{ marginBottom: eveningHabits.length > 0 ? 12 : 0 }}>
-                        {renderBlockHeader('☀️', 'Morning', morningHabits)}
-                        {morningHabits.map(renderHabitRow)}
-                      </div>
-                    )}
-                    {eveningHabits.length > 0 && (
-                      <div>
-                        {renderBlockHeader('🌙', 'Evening', eveningHabits)}
-                        {eveningHabits.map(renderHabitRow)}
-                      </div>
-                    )}
-                    {otherHabits.length > 0 && (
-                      <div style={{ marginTop: 12 }}>
-                        {otherHabits.map(renderHabitRow)}
-                      </div>
-                    )}
-                  </>
-                ) : habits.map(renderHabitRow)}
-              </div>
-            );
-          })()}
+          {/* ROW F — Habit swipe card */}
+          {habits.length > 0 && (
+            <div className="ba">
+              <HabitSwipeCard habits={habits} onToggle={toggle} />
+            </div>
+          )}
 
           {/* ROW G — Apple Health */}
           {healthData && healthData.available && (
