@@ -68,7 +68,7 @@ function getScoreBreakdown(
   const mindScore = hasMed ? 15 : 0;
   const streakBonus = streakDays >= 7 ? 10 : streakDays >= 5 ? 6 : streakDays >= 3 ? 3 : 0;
   const yCalOk = yesterdayCalPct >= 85 && yesterdayCalPct <= 115;
-  const yEat = yCalOk ? 25 : yCalOk ? 12 : 0;
+  const yEat = yCalOk ? 25 : yesterdayCalPct >= 70 ? 12 : 0;
   const yHabit = Math.round(yesterdayHabitPct * 25) / 100;
   const yMove = yesterdayHadWorkout ? 25 : 0;
   const yMind = yesterdayHadMed ? 15 : 0;
@@ -487,12 +487,13 @@ export default function TodayPage() {
           {/* Sparkline */}
           {allScores.length >= 2 && <ScoreSparkline scores={allScores} />}
 
-          {/* 4 segment bars */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginTop: 20 }}>
-            <Segment label="Eat"    val={Math.min(calPct, 100)}        path="/nutrition" delta={pillars[0]?.delta} />
-            <Segment label="Habits" val={Math.min(habitPct, 100)}      path="/habits"    delta={pillars[1]?.delta} />
-            <Segment label="Move"   val={workoutsToday > 0 ? 100 : 0} path="/fitness"   delta={pillars[2]?.delta} />
-            <Segment label="Mind"   val={medDone ? 100 : 0}           path="/meditation" delta={pillars[3]?.delta} />
+          {/* 5 segment bars: Eat · Move · Habits · Mind · Streak */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10, marginTop: 20 }}>
+            <Segment label="Eat"    val={Math.min(calPct, 100)}                              path="/nutrition"  delta={pillars[0]?.delta} />
+            <Segment label="Move"   val={workoutsToday > 0 ? 100 : 0}                        path="/fitness"    delta={pillars[2]?.delta} />
+            <Segment label="Habits" val={Math.min(habitPct, 100)}                            path="/habits"     delta={pillars[1]?.delta} />
+            <Segment label="Mind"   val={medDone ? 100 : 0}                                  path="/meditation" delta={pillars[3]?.delta} />
+            <Segment label="Streak" val={Math.min(Math.round((streakDays / 7) * 100), 100)} path="/"           delta={pillars[4]?.delta} />
           </div>
         </div>
 
