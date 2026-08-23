@@ -84,6 +84,7 @@ export interface Habit {
   stacked_after_habit_id: number | null;
   streak_freeze_available: number;
   created_at: string;
+  schedule?: { type?: string; time?: 'morning' | 'evening' | string };
 }
 
 export interface HabitCompletion {
