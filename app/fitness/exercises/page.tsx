@@ -33,7 +33,7 @@ export default function ExercisesPage() {
   const filtered = filter === 'All' ? exercises : exercises.filter(e => e.type === filter);
 
   if (selected) return (
-    <div className="page" style={{ paddingTop: '4rem' }}>
+    <div style={{ minHeight: "100dvh", background: "#000", paddingTop: "4.5rem", paddingBottom: "130px" }}>
       {/* Exercise detail header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -99,7 +99,7 @@ export default function ExercisesPage() {
   );
 
   return (
-    <div className="page" style={{ paddingTop: '4rem' }}>
+    <div style={{ minHeight: "100dvh", background: "#000", paddingTop: "4.5rem", paddingBottom: "130px" }}>
       {/* Header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>

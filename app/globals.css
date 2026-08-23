@@ -3,18 +3,18 @@
 
 /* ─────────────────────────────────────────────────────────────────────────────
    ATLANTIC.VC DESIGN SYSTEM — Personal OS
-   Midnight observatory · Ice-white on layered charcoal · Electric cobalt accent
-   Inspired by: Atlantic.vc — dark canvas, wireframe-in-light borders
+   Awwwards-level bento dark UI · Near-black canvas · Monochrome
+   Reference: Workouts bento, Weight log, Habit detail, Athletic dashboard
 ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
   /* ── Atlantic surface stack ── */
-  --color-void:      #000000;   /* page canvas */
-  --color-carbon:    #0d0d0f;   /* cards */
-  --color-graphite:  #232529;   /* body bg */
-  --color-slate:     #2b2f33;   /* elevated panels */
-  --color-iron:      #41464c;   /* muted dividers */
-  --color-steel:     #565e66;   /* tertiary text */
+  --color-void:      #000000;   /* page canvas — true black */
+  --color-carbon:    #111113;   /* primary cards — bento dark */
+  --color-graphite:  #141416;   /* slightly elevated cards */
+  --color-slate:     #1a1a1c;   /* elevated panels */
+  --color-iron:      #252528;   /* muted dividers */
+  --color-steel:     #3a3a3e;   /* tertiary text */
   --color-fog:       #6c757f;   /* helper text */
 
   /* ── Atlantic accent ── */
@@ -212,6 +212,116 @@ body {
 .bento-full  { grid-column: 1 / -1; }
 .bento-left  { grid-column: 1; }
 .bento-right { grid-column: 2; }
+
+/* ── Bento dark cards — Awwwards reference aesthetic ── */
+.bento-card {
+  background: #111113;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.bento-card-sm {
+  background: #111113;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.bento-card-dark {
+  background: #0a0a0c;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+/* Data number — massive display value in bento cards */
+.bento-num {
+  font-size: clamp(40px, 12vw, 56px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #ffffff;
+}
+.bento-num-lg {
+  font-size: clamp(52px, 16vw, 72px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: #ffffff;
+}
+.bento-num-sm {
+  font-size: clamp(28px, 8vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: #ffffff;
+}
+/* Micro label — 10px muted caps above/below numbers */
+.bento-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.30);
+  line-height: 1;
+}
+/* Bento sub-value */
+.bento-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+/* Page header — large bold title */
+.bento-page-title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: #ffffff;
+}
+/* Thin progress bar — 3px, white fill */
+.bento-progress {
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.bento-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: #ffffff;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+.bento-progress-fill--accent {
+  background: #1F58F2;
+}
+/* Icon circle button */
+.bento-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.bento-icon-btn:active { background: rgba(255,255,255,0.14); }
+/* Divider */
+.bento-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 14px 0;
+}
 
 /* ── Typography — Atlantic scale ── */
 .t-hero {

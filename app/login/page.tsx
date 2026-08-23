@@ -61,7 +61,7 @@ export default function LoginPage() {
             background: 'rgba(235,87,87,0.08)',
             border: '1px solid rgba(235,87,87,0.2)',
             borderRadius: 12, padding: '10px 14px',
-            fontSize: 13, color: 'var(--color-coral-red)',
+            fontSize: 13, color: '#ff6b6b',
             letterSpacing: '-0.011em',
           }}>
             {error}
@@ -72,9 +72,9 @@ export default function LoginPage() {
         {message && (
           <div style={{
             background: 'rgba(255,255,255,0.04)',
-            border: '1px solid var(--border)',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 12, padding: '10px 14px',
-            fontSize: 13, color: 'var(--text)',
+            fontSize: 13, color: '#fff',
             letterSpacing: '-0.011em',
           }}>
             {message}
@@ -90,7 +90,7 @@ export default function LoginPage() {
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="you@example.com"
             autoComplete="email"
-            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 14, boxShadow: 'none' }}
           />
         </div>
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="••••••••"
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            style={{ background: 'var(--surface-2)', boxShadow: 'var(--ring)', borderRadius: 14 }}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 14, boxShadow: 'none' }}
           />
         </div>
 

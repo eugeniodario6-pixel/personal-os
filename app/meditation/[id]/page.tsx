@@ -296,7 +296,7 @@ export default function MeditationPlayerPage() {
             <>
               {/* Pre-session mood check-in */}
               {!preMoodLogged && !preMoodSkipped && (
-                <div style={{ background: '#141616', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ background: '#111113', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>How are you feeling?</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     {MOODS.map((emoji, i) => (
@@ -371,7 +371,7 @@ export default function MeditationPlayerPage() {
             <>
               {/* Post-session mood check-in */}
               {!moodLogged && !moodSkipped && (
-                <div style={{ background: '#141616', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ background: '#111113', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>How do you feel?</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     {MOODS.map((emoji, i) => (
@@ -474,7 +474,7 @@ export default function MeditationPlayerPage() {
 
         {/* Instructions — ready state only */}
         {phase === 'ready' && session.instructions && (
-          <div style={{ background: '#141616', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, padding: '16px 18px' }}>
+          <div style={{ background: '#111113', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, padding: '16px 18px' }}>
             <p style={{ margin: '0 0 8px', fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>Instructions</p>
             <p style={{ margin: 0, fontSize: '0.82rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.4)', letterSpacing: '-0.008em' }}>
               {session.instructions}

@@ -53,152 +53,167 @@ export default function MeditationPage() {
   const doneCount = loggedIds.size;
   const totalCount = sessions.length;
 
+  const PAD = 16;
+  const GAP = 10;
+
   return (
-    <div style={{ minHeight: '100dvh', background: '#000', paddingTop: '4rem', paddingBottom: '9rem' }}>
+    <div style={{ minHeight: '100dvh', background: '#000', paddingTop: '4.5rem', paddingBottom: '130px' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '24px 20px 20px' }}>
-        <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>Mind</p>
+      <div style={{ padding: `0 ${PAD}px 20px` }}>
+        <p style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 10, marginTop: 4 }}>Mind</p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <h1 style={{ margin: 0, fontSize: 38, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#fff' }}>Meditation</h1>
+          <h1 style={{ margin: 0, fontSize: 40, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff' }}>Meditation</h1>
           {totalCount > 0 && (
             <div style={{ textAlign: 'right' }}>
-              <p style={{ margin: 0, fontSize: 28, fontWeight: 510, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>{doneCount}</p>
-              <p style={{ margin: 0, fontSize: '0.55rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>OF {totalCount} TODAY</p>
+              <p style={{ margin: 0, fontSize: 'clamp(32px,9vw,44px)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1, color: '#fff' }}>{doneCount}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>of {totalCount} today</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Suggested ── */}
-      {suggested && !loading && (
-        <div
-          onClick={() => router.push(`/meditation/${suggested.id}`)}
-          style={{ margin: '0 20px 16px', padding: '20px', background: '#141616', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 24, cursor: 'pointer', WebkitTapHighlightColor: 'transparent', position: 'relative', overflow: 'hidden' }}
-        >
-          {/* Subtle glow blob */}
-          <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(218,255,1,0.04)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+      <div style={{ padding: `0 ${PAD}px`, display: 'flex', flexDirection: 'column', gap: GAP }}>
 
-          <p style={{ margin: '0 0 10px', fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>Suggested · {suggested.category}</p>
-          <p style={{ margin: '0 0 16px', fontSize: 22, fontWeight: 510, letterSpacing: '-0.015em', color: '#fff', lineHeight: 1.25 }}>{suggested.name}</p>
+        {/* ── Suggested card ── */}
+        {suggested && !loading && (
+          <button
+            onClick={() => router.push(`/meditation/${suggested.id}`)}
+            style={{
+              width: '100%', background: '#111113', borderRadius: 24,
+              border: '1px solid rgba(255,255,255,0.06)', padding: '20px 20px 18px',
+              cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent',
+              position: 'relative', overflow: 'hidden',
+            }}
+          >
+            {/* Subtle glow */}
+            <div style={{ position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,0.03)', filter: 'blur(40px)', pointerEvents: 'none' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Mini duration ring */}
-              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)', fontWeight: 510 }}>{suggested.duration_min}</span>
+            <p style={{ margin: '0 0 10px', fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>
+              Suggested · {suggested.category}
+            </p>
+            <p style={{ margin: '0 0 18px', fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.2 }}>{suggested.name}</p>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  border: '1.5px solid rgba(255,255,255,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 700 }}>{suggested.duration_min}</span>
+                </div>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)' }}>{suggested.duration_min} min</span>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '-0.01em' }}>{suggested.duration_min} min</span>
+              <div style={{ background: '#fff', color: '#000', borderRadius: 99, padding: '8px 20px', fontSize: 13, fontWeight: 700 }}>
+                Start →
+              </div>
             </div>
-            <div style={{ background: '#fff', color: '#000', borderRadius: 99, padding: '8px 18px', fontSize: '0.78rem', fontWeight: 510, letterSpacing: '-0.011em' }}>
-              Start →
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Duration filter tabs ── */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '0 20px 10px', scrollbarWidth: 'none' }}>
-        {DURATIONS.map(d => (
-          <button
-            key={d}
-            onClick={() => setDur(d)}
-            style={{
-              flex: '0 0 auto', padding: '6px 13px', borderRadius: 9999,
-              background: dur === d ? 'rgba(218,255,1,0.12)' : 'transparent',
-              color: dur === d ? '#1F58F2' : 'rgba(255,255,255,0.32)',
-              border: `1px solid ${dur === d ? 'rgba(218,255,1,0.3)' : 'rgba(255,255,255,0.08)'}`,
-              fontSize: '0.72rem', fontWeight: dur === d ? 600 : 400,
-              cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              letterSpacing: '-0.01em', fontFamily: 'var(--font)',
-              transition: 'all 0.15s',
-            }}
-          >
-            {d}
           </button>
-        ))}
-      </div>
+        )}
 
-      {/* ── Category pills ── */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '0 20px 16px', scrollbarWidth: 'none' }}>
-        {CATS.map(c => (
-          <button
-            key={c}
-            onClick={() => setCat(c)}
-            style={{
-              flex: '0 0 auto', padding: '7px 14px', borderRadius: 9999,
-              background: cat === c ? '#fff' : 'transparent',
-              color: cat === c ? '#000' : 'rgba(255,255,255,0.32)',
-              border: `1px solid ${cat === c ? 'transparent' : 'rgba(255,255,255,0.08)'}`,
-              fontSize: '0.75rem', fontWeight: cat === c ? 600 : 400,
-              cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              letterSpacing: '-0.01em', fontFamily: 'var(--font)',
-              transition: 'all 0.15s',
-            }}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Session list ── */}
-      {loading ? (
-        <div style={{ padding: '48px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[1,2,3,4].map(i => (
-            <div key={i} style={{ height: 68, borderRadius: 16, background: '#111', opacity: 0.6 - i * 0.1 }} />
+        {/* ── Duration filter ── */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {DURATIONS.map(d => (
+            <button
+              key={d}
+              onClick={() => setDur(d)}
+              style={{
+                flex: '0 0 auto', padding: '7px 14px', borderRadius: 99,
+                background: dur === d ? '#fff' : 'transparent',
+                color: dur === d ? '#000' : 'rgba(255,255,255,0.40)',
+                border: `1px solid ${dur === d ? 'transparent' : 'rgba(255,255,255,0.10)'}`,
+                fontSize: 12, fontWeight: dur === d ? 700 : 500,
+                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              {d}
+            </button>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '-0.01em' }}>No sessions in this category</p>
-        </div>
-      ) : (
-        <div style={{ margin: '0 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {filtered.map((s) => {
-            const done = loggedIds.has(s.id);
-            return (
-              <button
-                key={s.id}
-                onClick={() => router.push(`/meditation/${s.id}`)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  width: '100%', padding: '14px 16px',
-                  background: done ? 'rgba(255,255,255,0.02)' : '#141616',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: 18, cursor: 'pointer', textAlign: 'left',
-                  WebkitTapHighlightColor: 'transparent', transition: 'background 0.12s',
-                }}
-              >
-                {/* Category glyph */}
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: done ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${done ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, color: done ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.5)',
-                }}>
-                  {done ? '✓' : (CAT_ICONS[s.category] ?? '◎')}
-                </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    margin: '0 0 2px', fontSize: '0.9rem', fontWeight: 500,
-                    letterSpacing: '-0.011em',
-                    color: done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.78)',
-                    textDecoration: done ? 'line-through' : 'none',
-                    lineHeight: 1.3,
-                  }}>{s.name}</p>
-                  <p style={{ margin: 0, fontSize: '0.65rem', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.02em', fontFamily: 'var(--font-mono)' }}>
-                    {s.category.toUpperCase()} · {s.duration_min} MIN
-                  </p>
-                </div>
-
-                <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 18, flexShrink: 0 }}>›</span>
-              </button>
-            );
-          })}
+        {/* ── Category pills ── */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {CATS.map(c => (
+            <button
+              key={c}
+              onClick={() => setCat(c)}
+              style={{
+                flex: '0 0 auto', padding: '7px 14px', borderRadius: 99,
+                background: cat === c ? 'rgba(255,255,255,0.12)' : 'transparent',
+                color: cat === c ? '#fff' : 'rgba(255,255,255,0.40)',
+                border: `1px solid ${cat === c ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.08)'}`,
+                fontSize: 12, fontWeight: cat === c ? 600 : 400,
+                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              {c}
+            </button>
+          ))}
         </div>
-      )}
+
+        {/* ── Session list ── */}
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+            {[1,2,3,4].map(i => (
+              <div key={i} style={{ height: 72, borderRadius: 18, background: '#111113', opacity: 0.6 - i * 0.1 }} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '48px 20px', textAlign: 'center', background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>No sessions in this category</p>
+          </div>
+        ) : (
+          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+            {filtered.map((s, idx) => {
+              const done = loggedIds.has(s.id);
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => router.push(`/meditation/${s.id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    width: '100%', padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: idx < filtered.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    cursor: 'pointer', textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  {/* Category glyph */}
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                    background: done ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${done ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: done ? 14 : 16, color: done ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.60)',
+                  }}>
+                    {done ? '✓' : (CAT_ICONS[s.category] ?? '◎')}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      margin: '0 0 3px', fontSize: 15, fontWeight: 600,
+                      letterSpacing: '-0.011em',
+                      color: done ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.85)',
+                      textDecoration: done ? 'line-through' : 'none',
+                      lineHeight: 1.3,
+                    }}>{s.name}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      {s.category} · {s.duration_min} min
+                    </p>
+                  </div>
+
+                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 20, flexShrink: 0 }}>›</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -156,7 +156,7 @@ function Sparkline({ values, color = LIME, height = 48 }: { values: number[]; co
 // ─── Section card ───────────────────────────────────────────────────────────────
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ background: '#141616', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--r)', padding: '18px 18px 14px', ...style }}>
+    <div style={{ background: '#111113', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: '18px 18px 14px', ...style }}>
       {children}
     </div>
   );
@@ -534,15 +534,15 @@ export default function ProgressPage() {
   const maxVolume = volumeBarData.length > 0 ? Math.max(...volumeBarData.map(d => d.value)) : 1;
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#000', paddingTop: '4rem', paddingBottom: '9rem' }}>
+    <div style={{ minHeight: '100dvh', background: '#000', paddingTop: '4.5rem', paddingBottom: '130px' }}>
 
       {/* ── Header ── */}
       <div style={{ padding: '24px 20px 0' }}>
         <p style={{ margin: '0 0 4px', fontSize: '0.6rem', letterSpacing: '0.1em', color: TEXT3, fontFamily: 'var(--font-mono)' }}>OVERVIEW</p>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <h1 style={{ margin: 0, fontSize: 36, fontWeight: 510, letterSpacing: '-0.022em', color: '#fff', lineHeight: 1.1 }}>Progress</h1>
+          <h1 style={{ margin: 0, fontSize: 40, fontWeight: 700, letterSpacing: '-0.03em', color: '#fff', lineHeight: 1 }}>Progress</h1>
           {/* Period toggle */}
-          <div style={{ display: 'flex', background: '#141616', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 99, padding: 3, gap: 2 }}>
+          <div style={{ display: 'flex', background: '#111113', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 99, padding: 3, gap: 3 }}>
             {(['7', '30'] as Period[]).map(p => (
               <button key={p} onClick={() => setPeriod(p)} style={{ padding: '5px 14px', borderRadius: 99, border: 'none', background: period === p ? '#fff' : 'transparent', color: period === p ? '#000' : TEXT3, fontSize: '0.7rem', fontWeight: period === p ? 700 : 400, cursor: 'pointer', fontFamily: 'var(--font)', letterSpacing: '-0.01em', transition: 'all 0.15s' }}>
                 {p}d
@@ -555,7 +555,7 @@ export default function ProgressPage() {
       {loading ? (
         <div style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[120, 160, 140, 120, 140].map((h, i) => (
-            <div key={i} style={{ height: h, borderRadius: 'var(--r)', background: '#111', opacity: 0.5 - i * 0.07 }} />
+            <div key={i} style={{ height: h, borderRadius: 20, background: '#111', opacity: 0.5 - i * 0.07 }} />
           ))}
         </div>
       ) : (

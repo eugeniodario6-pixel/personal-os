@@ -64,7 +64,7 @@ export default function BodyPage() {
   };
 
   if (loading) return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100dvh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>Loading…</p>
     </div>
   );
@@ -75,79 +75,73 @@ export default function BodyPage() {
     : 0;
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
+    <div style={{ minHeight: '100dvh', background: '#000', paddingTop: '4rem', paddingBottom: '8rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '20px 20px 16px' }}>
-        <p style={{ fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Track</p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Body Weight</h1>
-          <ScoreRing score={score} label={todayLogged ? 'Logged' : 'Log today'} />
-        </div>
+      <div style={{ padding: '20px 16px 12px' }}>
+        <p style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 8 }}>Track</p>
+        <h1 style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff', margin: '0 0 4px' }}>Body Weight</h1>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0 }}>Add a new log</p>
       </div>
 
-      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-        {/* ── Stats card ── */}
-        <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', padding: 18 }}>
-
-          {/* Current / deltas */}
-          <div style={{ display: 'flex', gap: 24, marginBottom: path ? 16 : 0 }}>
+        {/* ── Hero weight card (Weight log screen style) ── */}
+        <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 20, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <p className="label" style={{ marginBottom: 6 }}>Current</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontSize: 48, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+              <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginBottom: 10 }}>Current weight</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                <span style={{ fontSize: 'clamp(56px,18vw,80px)', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
                   {latest ? latest.weight_kg : '—'}
                 </span>
-                <span style={{ fontSize: 15, color: 'var(--text-3)', fontWeight: 400, letterSpacing: '-0.011em' }}>kg</span>
+                <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.40)', fontWeight: 600 }}>kg</span>
               </div>
             </div>
-            {delta !== null && (
-              <div>
-                <p className="label" style={{ marginBottom: 6 }}>vs Last</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.012em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
-                  {delta > 0 ? '+' : ''}{delta}
-                </p>
-              </div>
-            )}
-            {totalDelta !== null && (
-              <div>
-                <p className="label" style={{ marginBottom: 6 }}>From start</p>
-                <p style={{ fontSize: 24, fontWeight: 510, letterSpacing: '-0.012em', color: 'var(--text-3)', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
-                  {totalDelta > 0 ? '+' : ''}{totalDelta}
-                </p>
-              </div>
-            )}
+            <div style={{ textAlign: 'right' }}>
+              {delta !== null && (
+                <div style={{ marginBottom: 8 }}>
+                  <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 4 }}>vs Last</p>
+                  <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: delta > 0 ? '#ff6b6b' : '#78dc64', margin: 0, lineHeight: 1 }}>{delta > 0 ? '+' : ''}{delta}</p>
+                </div>
+              )}
+              {totalDelta !== null && (
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 4 }}>From start</p>
+                  <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: totalDelta > 0 ? '#ff6b6b' : '#78dc64', margin: 0, lineHeight: 1 }}>{totalDelta > 0 ? '+' : ''}{totalDelta}</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Sparkline — monochrome: white stroke, no gradient fill */}
+          {/* Sparkline */}
           {path && (
-            <div style={{ marginTop: 4 }}>
-              <svg width="100%" viewBox="0 0 300 56" preserveAspectRatio="none" style={{ display: 'block', height: 52, marginBottom: goalWeight && startingWeight ? 16 : 0 }}>
-                <path d={path} fill="none" stroke="var(--text)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <svg width="100%" viewBox="0 0 300 48" preserveAspectRatio="none" style={{ display: 'block', height: 44, marginBottom: 8 }}>
+                <path d={path} fill="none" stroke="rgba(255,255,255,0.70)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
               </svg>
-              <p className="label" style={{ marginBottom: goalWeight && startingWeight ? 0 : undefined }}>Last {[...entries].reverse().slice(-12).length} entries</p>
+              <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>Last {[...entries].reverse().slice(-12).length} entries</p>
             </div>
           )}
 
           {/* Goal progress */}
           {goalWeight && startingWeight && latest && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span className="label">Start {startingWeight}kg</span>
-                <span className="label">Goal {goalWeight}kg</span>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Start {startingWeight}kg</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Goal {goalWeight}kg</span>
               </div>
-              <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--text)', borderRadius: 2, transition: 'width 0.4s ease' }} />
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progressPct}%`, background: '#fff', borderRadius: 99, transition: 'width 0.6s ease' }} />
               </div>
             </div>
           )}
         </div>
 
-        {/* ── Log input ── */}
-        <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', padding: 18 }}>
-          <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 16 }}>
-            {todayLogged ? 'Update today' : 'Log weight'}
+        {/* ── Log input card ── */}
+        <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 20 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 16 }}>
+            {todayLogged ? 'Update today’s weight' : 'Log weight'}
           </p>
           <input
             type="number" value={input} step="0.1" min="20" max="300"
@@ -155,76 +149,84 @@ export default function BodyPage() {
             onKeyDown={e => e.key === 'Enter' && handleLog()}
             placeholder={latest ? String(latest.weight_kg) : '80.0'}
             style={{
-              fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', textAlign: 'center', marginBottom: 8,
-              background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14,
-              fontVariantNumeric: 'tabular-nums',
+              fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', textAlign: 'center', marginBottom: 10,
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 14,
+              color: '#fff', fontVariantNumeric: 'tabular-nums', padding: '14px 16px',
             }}
           />
           <input
             value={note} onChange={e => setNote(e.target.value)}
             placeholder="Note (optional)"
-            style={{ marginBottom: 12, background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
+            style={{ marginBottom: 14, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12, color: '#fff', padding: '12px 16px' }}
           />
           <button
             onClick={handleLog}
             disabled={saving || !input}
-            className="btn btn-primary btn-block"
+            style={{
+              width: '100%', background: '#fff', color: '#000', border: 'none', borderRadius: 99,
+              padding: '16px', fontSize: 15, fontWeight: 700, cursor: saving || !input ? 'not-allowed' : 'pointer',
+              opacity: saving || !input ? 0.5 : 1, transition: 'opacity 0.15s',
+              WebkitTapHighlightColor: 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
           >
-            {saved ? 'Saved ✓' : saving ? '…' : todayLogged ? 'Update →' : 'Log →'}
+            {saved ? '✓ Saved' : saving ? '…' : todayLogged ? 'Update' : 'Log weight'}
           </button>
         </div>
 
-        {/* ── History ── */}
+        {/* ── Recent logs ── */}
         {entries.length > 0 && (
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text-3)', marginBottom: 8, paddingLeft: 4 }}>History</p>
-            <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
-              {entries.map((e, i) => {
-                const prev = entries[i + 1];
-                const d = prev ? Math.round((e.weight_kg - prev.weight_kg) * 10) / 10 : null;
-                return (
-                  <div
-                    key={e.id}
-                    style={{
-                      display: 'flex', alignItems: 'center',
-                      padding: '12px 16px',
-                      borderBottom: i < entries.length - 1 ? '1px solid var(--border)' : 'none',
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                        <span style={{ fontWeight: 510, color: 'var(--text)', fontSize: 20, letterSpacing: '-0.012em', fontVariantNumeric: 'tabular-nums' }}>{e.weight_kg}kg</span>
-                        {d !== null && (
-                          <span style={{ fontSize: 13, letterSpacing: '-0.011em', color: 'var(--text-3)' }}>
-                            {d > 0 ? '+' : ''}{d}
-                          </span>
-                        )}
-                      </div>
-                      <p className="label" style={{ marginTop: 3 }}>
-                        {e.logged_at}{e.note ? ` · ${e.note}` : ''}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(e.id)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: 14, padding: '4px 6px', lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                );
-              })}
+          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 18px 12px' }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', margin: 0 }}>Recent logs</p>
             </div>
+            {entries.slice(0, 10).map((e, i) => {
+              const prev = entries[i + 1];
+              const d = prev ? Math.round((e.weight_kg - prev.weight_kg) * 10) / 10 : null;
+              return (
+                <div
+                  key={e.id}
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    padding: '14px 18px',
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: 50, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 14, flexShrink: 0 }}>
+                    <span style={{ fontSize: 14 }}>⚖️</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                      <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{e.weight_kg} kg</span>
+                      {d !== null && (
+                        <span style={{ fontSize: 13, color: d > 0 ? '#ff6b6b' : d < 0 ? '#78dc64' : 'rgba(255,255,255,0.35)' }}>
+                          {d > 0 ? '+' : ''}{d}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: 0, marginTop: 2 }}>
+                      {e.logged_at}{e.note ? ` · ${e.note}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(e.id)}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', cursor: 'pointer', fontSize: 16, padding: '4px 6px', lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    ›
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
         {/* Empty state */}
         {entries.length === 0 && (
-          <div style={{ background: 'var(--surface)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 'var(--r)', padding: '32px 24px', textAlign: 'center' }}>
-            <p style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)', marginBottom: 6 }}>No weight logged yet</p>
-            <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em', lineHeight: 1.6, marginBottom: 16 }}>
-              Weigh in each morning for accurate trends — consistency unlocks the insight.
+          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '40px 24px', textAlign: 'center' }}>
+            <p style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', marginBottom: 8 }}>No weight logged yet</p>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', lineHeight: 1.6 }}>
+              Weigh in each morning for accurate trends.
             </p>
-            <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>↑ Log your first weigh-in above</p>
           </div>
         )}
       </div>

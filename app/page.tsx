@@ -262,15 +262,17 @@ function ScoreSparkline({ scores }: { scores: DailyScore[] }) {
 // ── Bento card ───────────────────────────────────────────────────────────────
 function BentoCard({ children, onClick, elevated, style }: { children: React.ReactNode; onClick?: () => void; elevated?: boolean; style?: React.CSSProperties }) {
   const base: React.CSSProperties = {
-    background: 'var(--surface)',
-    borderRadius: 'var(--r)',
-    border: '1px solid rgba(216,234,255,0.08)',
+    background: '#111113',
+    borderRadius: 20,
+    border: '1px solid rgba(255,255,255,0.06)',
     padding: 18,
+    position: 'relative',
+    overflow: 'hidden',
     ...style,
   };
   if (onClick) {
     return (
-      <button onClick={onClick} style={{ ...base, border: 'none', cursor: 'pointer', textAlign: 'left', display: 'block', width: '100%', WebkitTapHighlightColor: 'transparent' }}>
+      <button onClick={onClick} style={{ ...base, cursor: 'pointer', textAlign: 'left', display: 'block', width: '100%', WebkitTapHighlightColor: 'transparent' }}>
         {children}
       </button>
     );
@@ -450,68 +452,64 @@ export default function TodayPage() {
 
   if (loading) return <DashboardSkeleton />;
 
+  const GAP = 10;
+  const PAD = 16;
+
   return (
     <>
       <style>{`
-        @keyframes bento-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .bento-card-anim { animation: bento-in 0.35s ease both; }
-        .bento-card-anim:nth-child(1) { animation-delay: 0ms; }
-        .bento-card-anim:nth-child(2) { animation-delay: 60ms; }
-        .bento-card-anim:nth-child(3) { animation-delay: 120ms; }
-        .bento-card-anim:nth-child(4) { animation-delay: 180ms; }
-        .bento-card-anim:nth-child(5) { animation-delay: 240ms; }
-        .bento-card-anim:nth-child(6) { animation-delay: 300ms; }
+        @keyframes bento-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        .ba { animation: bento-in 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+        .ba:nth-child(1) { animation-delay: 0ms; }
+        .ba:nth-child(2) { animation-delay: 55ms; }
+        .ba:nth-child(3) { animation-delay: 110ms; }
+        .ba:nth-child(4) { animation-delay: 165ms; }
+        .ba:nth-child(5) { animation-delay: 220ms; }
+        .ba:nth-child(6) { animation-delay: 275ms; }
+        .ba:nth-child(7) { animation-delay: 330ms; }
       `}</style>
 
-      <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4.5rem', paddingBottom: '130px' }}>
+      <div style={{ minHeight: '100dvh', background: '#000', paddingTop: '4.5rem', paddingBottom: '130px' }}>
 
-        {/* ── Hero section ── */}
-        <div style={{ padding: '0 20px 20px' }}>
-
-          {/* Date */}
-          <p style={{ fontSize: 12, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'var(--text-5)', marginBottom: 12, marginTop: 4 }}>
+        {/* ── Page header ── */}
+        <div style={{ padding: `0 ${PAD}px 20px` }}>
+          <p style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 12, marginTop: 4 }}>
             {dateStr}
           </p>
 
-          {/* Score hero */}
-          <div style={{ animation: scorePulsed ? 'score-pulse 0.5s ease' : undefined, marginBottom: 16, position: 'relative' }}>
-            <div style={{ paddingRight: 80 }}>
-            <div
-              className="t-hero"
-              style={{
-                lineHeight: 0.9,
-                color: getScoreColour(score),
-                fontFeatureSettings: '"cv01" on, "ss03" on, "zero" on',
-              }}
-            >
-              {score}
+          {/* Score hero row */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: 'clamp(72px,22vw,96px)',
+                fontWeight: 700,
+                letterSpacing: '-0.04em',
+                lineHeight: 0.88,
+                color: '#fff',
+                animation: scorePulsed ? 'score-pulse 0.5s ease' : undefined,
+              }}>
+                {score}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.011em', color: allDone ? '#fff' : 'rgba(255,255,255,0.60)' }}>
+                  {allDone ? 'Perfect day' : scoreLabel(score)}
+                </span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>/ 100</span>
+              </div>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginTop: 6, lineHeight: 1.4, maxWidth: 240 }}>
+                {getScoreExplanation(calPct, habitPct, workoutsToday > 0, medDone, protein, proteinTarget, calories, calorieTarget)}
+              </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 10 }}>
-              <span style={{ fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: allDone ? 'var(--text)' : 'var(--text-3)' }}>
-                {allDone ? 'Perfect day' : scoreLabel(score)}
-              </span>
-              <span style={{ fontSize: 12, color: 'var(--text-5)', letterSpacing: '0.01em', textTransform: 'uppercase' }}>/ 100</span>
-            </div>
-            {/* Score explanation */}
-            <p style={{ fontSize: 12, color: 'var(--text-4)', marginTop: 6, marginBottom: 0, lineHeight: 1.4 }}>
-              {getScoreExplanation(calPct, habitPct, workoutsToday > 0, medDone, protein, proteinTarget, calories, calorieTarget)}
-            </p>
-            {/* Training recommendation */}
-            <p style={{ fontSize: 11, fontWeight: 510, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-5)', marginTop: 8, marginBottom: 0 }}>
-              {getTrainingRecommendation(score)}
-            </p>
-            </div>
-            {/* Silhouette fill indicator */}
-            <div style={{ position: 'absolute', top: 0, right: 0 }}>
-              <ScoreSilhouette score={score} height={148} />
+            <div style={{ flexShrink: 0 }}>
+              <ScoreSilhouette score={score} height={130} />
             </div>
           </div>
 
-          {/* Sparkline */}
+          {/* Weekly sparkline */}
           {allScores.length >= 2 && <ScoreSparkline scores={allScores} />}
 
-          {/* 5 segment bars: Eat · Move · Habits · Mind · Streak */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10, marginTop: 20 }}>
+          {/* 5 pillar bars */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginTop: 18 }}>
             <Segment label="Eat"    val={Math.min(calPct, 100)}                              path="/nutrition"  delta={pillars[0]?.delta} />
             <Segment label="Move"   val={workoutsToday > 0 ? 100 : 0}                        path="/fitness"    delta={pillars[2]?.delta} />
             <Segment label="Habits" val={Math.min(habitPct, 100)}                            path="/habits"     delta={pillars[1]?.delta} />
@@ -521,123 +519,186 @@ export default function TodayPage() {
         </div>
 
         {/* ── Bento grid ── */}
-        <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ padding: `0 ${PAD}px`, display: 'flex', flexDirection: 'column', gap: GAP }}>
 
-          {/* Row 1: Calories + Habits (half-width) */}
-          <div className="bento-card-anim" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {/* ROW A — Calories (wide) + Habits (narrow) */}
+          <div className="ba" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: GAP }}>
 
-            {/* Calories card */}
-            <BentoCard onClick={() => router.push('/nutrition')}>
-              <p className="label" style={{ marginBottom: 8 }}>Calories</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)' }}>
+            {/* Calories */}
+            <button
+              onClick={() => router.push('/nutrition')}
+              style={{
+                background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)',
+                padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                display: 'flex', flexDirection: 'column', gap: 0,
+              }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>Calories</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginTop: 8 }}>
+                <span style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff' }}>
                   {calories > 0 ? calories.toLocaleString() : '—'}
                 </span>
               </div>
-              <p className="t-unit" style={{ marginTop: 2, marginBottom: 10 }}>
-                {remaining > 0 ? `${remaining} left` : 'Target hit'}
-              </p>
-              <div style={{ height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(calPct, 100)}%`, background: 'var(--color-electric-cobalt)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 3, display: 'block' }}>
+                {remaining > 0 ? `${remaining} left` : 'On target'}
+              </span>
+              <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginTop: 14 }}>
+                <div style={{ height: '100%', width: `${Math.min(calPct, 100)}%`, background: '#fff', borderRadius: 99, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
               </div>
-            </BentoCard>
+            </button>
 
-            {/* Habits card */}
-            <BentoCard onClick={() => router.push('/habits')}>
-              <p className="label" style={{ marginBottom: 8 }}>Habits</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 2 }}>
-                <span style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)' }}>{habitDone}</span>
-                <span style={{ fontSize: 13, color: 'var(--text-5)' }}>/{habits.length}</span>
+            {/* Habits */}
+            <button
+              onClick={() => router.push('/habits')}
+              style={{
+                background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)',
+                padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                display: 'flex', flexDirection: 'column', gap: 0,
+              }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>Habits</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginTop: 8 }}>
+                <span style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff' }}>{habitDone}</span>
+                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.28)', letterSpacing: '-0.01em' }}>/{habits.length}</span>
               </div>
-              <p className="t-unit" style={{ marginBottom: 10 }}>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 3, display: 'block' }}>
                 {habits.length > 0 ? `${Math.round(habitPct)}% done` : 'none set'}
-              </p>
-              {/* 7-day dots */}
-              <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                {Array.from({ length: 7 }, (_, i) => (
-                  <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: i < habitDone ? 'var(--color-electric-cobalt)' : 'rgba(216,234,255,0.08)' }} />
+              </span>
+              <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginTop: 14 }}>
+                {Array.from({ length: Math.min(habits.length, 7) }, (_, i) => (
+                  <div key={i} style={{ width: 6, height: 6, borderRadius: 2, background: i < habitDone ? '#fff' : 'rgba(255,255,255,0.10)' }} />
                 ))}
               </div>
-            </BentoCard>
+            </button>
           </div>
 
-          {/* Row 2: Nudge card (full-width) */}
+          {/* ROW B — Move + Mind */}
+          <div className="ba" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: GAP }}>
+
+            {/* Move */}
+            <button
+              onClick={() => router.push('/fitness')}
+              style={{
+                background: workoutsToday > 0 ? '#0f1f0f' : '#111113',
+                borderRadius: 20,
+                border: workoutsToday > 0 ? '1px solid rgba(120,220,100,0.14)' : '1px solid rgba(255,255,255,0.06)',
+                padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                display: 'flex', flexDirection: 'column', gap: 0,
+              }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>Move</span>
+              <span style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff', marginTop: 8, display: 'block' }}>
+                {workoutsToday > 0 ? workoutsToday : '—'}
+              </span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 3, display: 'block' }}>
+                {workoutsToday > 0 ? `workout${workoutsToday > 1 ? 's' : ''} today` : 'none logged'}
+              </span>
+              <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginTop: 14 }}>
+                <div style={{ height: '100%', width: workoutsToday > 0 ? '100%' : '0%', background: workoutsToday > 0 ? '#78dc64' : 'transparent', borderRadius: 99, transition: 'width 0.8s' }} />
+              </div>
+            </button>
+
+            {/* Mind */}
+            <button
+              onClick={() => router.push('/meditation')}
+              style={{
+                background: medDone ? '#0f0f1f' : '#111113',
+                borderRadius: 20,
+                border: medDone ? '1px solid rgba(100,120,255,0.14)' : '1px solid rgba(255,255,255,0.06)',
+                padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                display: 'flex', flexDirection: 'column', gap: 0,
+              }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>Mind</span>
+              <span style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff', marginTop: 8, display: 'block' }}>
+                {medDone ? '✓' : '—'}
+              </span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 3, display: 'block' }}>
+                {medDone ? 'complete' : 'not yet'}
+              </span>
+              <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginTop: 14 }}>
+                <div style={{ height: '100%', width: medDone ? '100%' : '0%', background: medDone ? '#6478ff' : 'transparent', borderRadius: 99, transition: 'width 0.8s' }} />
+              </div>
+            </button>
+          </div>
+
+          {/* ROW C — Nudge / all done (full width) */}
           {(nudge || allDone) && (
-            <div className="bento-card-anim">
-              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', borderLeft: allDone ? '2px solid #1f58f2' : '2px solid #ff4105', padding: 18 }}>
-                {allDone ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <p style={{ fontSize: 14, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 4px' }}>Perfect day</p>
-                      <p style={{ fontSize: 12, color: 'var(--text-4)', margin: 0 }}>All four pillars complete</p>
-                    </div>
-                    <span style={{ fontSize: 24 }}>◉</span>
-                  </div>
-                ) : nudge && (
-                  <div
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                    onClick={() => router.push(nudge.path)}
-                  >
-                    <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
-                      <p style={{ fontSize: 14, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nudge.label}</p>
-                      <p style={{ fontSize: 12, color: 'var(--text-4)', margin: 0, lineHeight: 1.4 }}>{nudge.sub}</p>
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 510, color: 'var(--text-3)', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      {nudge.cta} →
-                    </span>
-                  </div>
+            <div className="ba">
+              <div
+                onClick={() => nudge && router.push(nudge.path)}
+                style={{
+                  background: '#111113',
+                  borderRadius: 20,
+                  borderLeft: allDone ? '2px solid #78dc64' : '2px solid rgba(255,65,5,0.8)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  padding: '16px 18px',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  cursor: nudge ? 'pointer' : 'default',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', margin: '0 0 3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {allDone ? 'Perfect day ✔' : nudge?.label}
+                  </p>
+                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', margin: 0, lineHeight: 1.4 }}>
+                    {allDone ? 'All four pillars complete' : nudge?.sub}
+                  </p>
+                </div>
+                {nudge && !allDone && (
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.50)', flexShrink: 0, marginLeft: 12, whiteSpace: 'nowrap' }}>
+                    {nudge.cta} →
+                  </span>
                 )}
               </div>
             </div>
           )}
 
-          {/* Row 3: Move + Mind (half-width) */}
-          <div className="bento-card-anim" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-
-            {/* Move card */}
-            <BentoCard onClick={() => router.push('/fitness')}>
-              <p className="label" style={{ marginBottom: 8 }}>Move</p>
-              <p style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)', marginBottom: 4 }}>
-                {workoutsToday > 0 ? '△' : '—'}
-              </p>
-              <p className="t-unit">
-                {workoutsToday > 0 ? `${workoutsToday} workout${workoutsToday > 1 ? 's' : ''}` : 'none today'}
-              </p>
-              <div style={{ height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden', marginTop: 10 }}>
-                <div style={{ height: '100%', width: workoutsToday > 0 ? '100%' : '0%', background: 'var(--color-electric-cobalt)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
-              </div>
-            </BentoCard>
-
-            {/* Mind card */}
-            <BentoCard onClick={() => router.push('/meditation')}>
-              <p className="label" style={{ marginBottom: 8 }}>Mind</p>
-              <p style={{ fontSize: 32, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1, color: 'var(--text)', marginBottom: 4 }}>
-                {medDone ? '✓' : '—'}
-              </p>
-              <p className="t-unit">
-                {medDone ? 'done' : 'not yet'}
-              </p>
-              <div style={{ height: 2, background: 'rgba(216,234,255,0.08)', borderRadius: 9999, overflow: 'hidden', marginTop: 10 }}>
-                <div style={{ height: '100%', width: medDone ? '100%' : '0%', background: 'var(--color-electric-cobalt)', borderRadius: 9999, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
-              </div>
-            </BentoCard>
-          </div>
-
-          {/* Pillar breakdown card */}
-          <div className="bento-card-anim">
-            <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: '0 0 12px' }}>Score breakdown</p>
-              {pillars.map(p => (
-                <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 12, fontWeight: 510, letterSpacing: '0.03em', textTransform: 'uppercase', color: 'var(--text-4)', width: 48, flexShrink: 0 }}>{p.name}</span>
-                  <span style={{ fontSize: 13, fontWeight: 510, color: p.score === p.maxScore ? '#1F58F2' : 'var(--text)', width: 40, flexShrink: 0 }}>{p.score}<span style={{ fontSize: 10, color: 'var(--text-5)', fontWeight: 400 }}>/{p.maxScore}</span></span>
-                  <span style={{ fontSize: 12, color: 'var(--text-4)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.reason}</span>
+          {/* ROW D — Macro stats row: Protein / Carbs / Fat */}
+          <div className="ba" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: GAP }}>
+            {([['Protein', protein, proteinTarget, 'g'], ['Carbs', carbs, carbTarget, 'g'], ['Fat', fat, fatTarget, 'g']] as [string, number, number, string][]).map(([label, val, target, unit]) => (
+              <button
+                key={label}
+                onClick={() => router.push('/nutrition')}
+                style={{
+                  background: '#111113', borderRadius: 18, border: '1px solid rgba(255,255,255,0.06)',
+                  padding: '14px 14px 12px', textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                  display: 'flex', flexDirection: 'column', gap: 0,
+                }}
+              >
+                <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>{label}</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginTop: 6 }}>
+                  <span style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1, color: '#fff' }}>{Math.round(val)}</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)' }}>{unit}</span>
                 </div>
-              ))}
-            </div>
+                <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginTop: 10 }}>
+                  <div style={{ height: '100%', width: `${target > 0 ? Math.min((val / target) * 100, 100) : 0}%`, background: 'rgba(255,255,255,0.45)', borderRadius: 99, transition: 'width 0.8s' }} />
+                </div>
+              </button>
+            ))}
           </div>
 
-          {/* Row 4: Habits list (full-width) */}
+          {/* ROW E — Score breakdown (full width) */}
+          <div className="ba" style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 18 }}>
+            <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 14px' }}>Score breakdown</p>
+            {pillars.map((p, idx) => (
+              <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: idx < pillars.length - 1 ? 12 : 0, marginBottom: idx < pillars.length - 1 ? 12 : 0, borderBottom: idx < pillars.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', width: 50, flexShrink: 0 }}>{p.name}</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: p.score === p.maxScore ? '#78dc64' : '#fff', width: 38, flexShrink: 0, letterSpacing: '-0.02em' }}>
+                  {p.score}
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>/{p.maxScore}</span>
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
+                    <div style={{ height: '100%', width: `${(p.score / p.maxScore) * 100}%`, background: p.score === p.maxScore ? '#78dc64' : 'rgba(255,255,255,0.55)', borderRadius: 99, transition: 'width 0.8s' }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{p.reason}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ROW F — Daily habits */}
           {habits.length > 0 && (() => {
             const morningHabits = habits.filter(h => h.routine === 'morning');
             const eveningHabits = habits.filter(h => h.routine === 'evening');
@@ -648,186 +709,154 @@ export default function TodayPage() {
                 onClick={() => toggle(h.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
-                  width: '100%', padding: '10px 0',
-                  background: h.done ? 'rgba(255,255,255,0.02)' : 'transparent',
+                  width: '100%', padding: '11px 0',
+                  background: 'transparent',
                   border: 'none',
-                  borderBottom: '1px solid var(--border)',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
                   cursor: 'pointer', textAlign: 'left',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
                 <div style={{
-                  width: 22, height: 22, borderRadius: 5, flexShrink: 0,
-                  border: `1px solid var(--border-2)`,
-                  background: h.done ? 'var(--text)' : 'transparent',
+                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  background: h.done ? '#fff' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.15s',
                 }}>
-                  {h.done && <span style={{ fontSize: 10, color: 'var(--invert)', fontWeight: 510 }}>✓</span>}
+                  {h.done && <span style={{ fontSize: 10, color: '#000', fontWeight: 700 }}>✓</span>}
                 </div>
                 <span style={{
-                  flex: 1, fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em',
-                  color: h.done ? 'var(--text-5)' : 'var(--text)',
+                  flex: 1, fontSize: 14, fontWeight: 500, letterSpacing: '-0.011em',
+                  color: h.done ? 'rgba(255,255,255,0.30)' : '#fff',
                   textDecoration: h.done ? 'line-through' : 'none',
                   transition: 'color 0.2s',
                 }}>
                   {h.name}
                 </span>
                 {h.streak > 1 && (
-                  <span style={{ fontSize: 11, color: 'var(--text-4)', flexShrink: 0 }}>{h.streak}d</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', flexShrink: 0 }}>{h.streak}d</span>
                 )}
               </button>
             );
             const renderBlockHeader = (icon: string, label: string, group: typeof habits) => {
               const done = group.filter(h => h.done).length;
-              const allDone = group.length > 0 && done === group.length;
+              const allGroupDone = group.length > 0 && done === group.length;
               return (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0 4px' }}>
-                  <span style={{ fontSize: 12, fontWeight: 510, color: 'var(--text-3)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{icon} {label}</span>
-                  <span style={{ fontSize: 11, color: allDone ? 'var(--color-cobalt, #4DA3FF)' : 'var(--text-4)' }}>{done}/{group.length}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0 2px' }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.40)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>{icon} {label}</span>
+                  <span style={{ fontSize: 11, color: allGroupDone ? '#78dc64' : 'rgba(255,255,255,0.30)' }}>{done}/{group.length}</span>
                 </div>
               );
             };
             const hasSections = morningHabits.length > 0 || eveningHabits.length > 0;
             return (
-              <div className="bento-card-anim">
-                <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                    <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: 0 }}>Daily habits</p>
-                    <button
-                      onClick={() => router.push('/habits')}
-                      style={{ fontSize: 12, color: 'var(--text-4)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '-0.01em' }}
-                    >
-                      Manage →
-                    </button>
-                  </div>
-                  <div>
-                    {hasSections ? (
-                      <>
-                        {morningHabits.length > 0 && (
-                          <div style={{ marginBottom: eveningHabits.length > 0 ? 12 : 0 }}>
-                            {renderBlockHeader('☀️', 'Morning', morningHabits)}
-                            {morningHabits.map(renderHabitRow)}
-                          </div>
-                        )}
-                        {eveningHabits.length > 0 && (
-                          <div>
-                            {renderBlockHeader('🌙', 'Evening', eveningHabits)}
-                            {eveningHabits.map(renderHabitRow)}
-                          </div>
-                        )}
-                        {otherHabits.length > 0 && (
-                          <div style={{ marginTop: 12 }}>
-                            {otherHabits.map(renderHabitRow)}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      habits.map(renderHabitRow)
-                    )}
-                  </div>
+              <div className="ba" style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 18 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: 0 }}>Daily habits</p>
+                  <button
+                    onClick={() => router.push('/habits')}
+                    style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.40)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Manage →
+                  </button>
                 </div>
+                {hasSections ? (
+                  <>
+                    {morningHabits.length > 0 && (
+                      <div style={{ marginBottom: eveningHabits.length > 0 ? 12 : 0 }}>
+                        {renderBlockHeader('☀️', 'Morning', morningHabits)}
+                        {morningHabits.map(renderHabitRow)}
+                      </div>
+                    )}
+                    {eveningHabits.length > 0 && (
+                      <div>
+                        {renderBlockHeader('🌙', 'Evening', eveningHabits)}
+                        {eveningHabits.map(renderHabitRow)}
+                      </div>
+                    )}
+                    {otherHabits.length > 0 && (
+                      <div style={{ marginTop: 12 }}>
+                        {otherHabits.map(renderHabitRow)}
+                      </div>
+                    )}
+                  </>
+                ) : habits.map(renderHabitRow)}
               </div>
             );
           })()}
 
-          {/* HealthKit card — only shows when data is available (native app) */}
+          {/* ROW G — Apple Health */}
           {healthData && healthData.available && (
-            <div className="bento-card-anim">
-              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
-                <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: '0 0 14px' }}>Apple Health</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                  {/* Steps */}
-                  {healthData.steps > 0 && (
-                    <div>
-                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-                        {healthData.steps.toLocaleString()}
-                      </p>
-                      <p className="label" style={{ marginTop: 4 }}>Steps</p>
-                    </div>
-                  )}
-                  {/* Heart rate */}
-                  {healthData.heartRate > 0 && (
-                    <div>
-                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-                        {healthData.heartRate}
-                      </p>
-                      <p className="label" style={{ marginTop: 4 }}>BPM</p>
-                    </div>
-                  )}
-                  {/* HRV */}
-                  {healthData.hrv > 0 && (
-                    <div>
-                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-                        {Math.round(healthData.hrv)}
-                      </p>
-                      <p className="label" style={{ marginTop: 4 }}>HRV ms</p>
-                    </div>
-                  )}
-                  {/* Sleep */}
-                  {healthData.sleepHours > 0 && (
-                    <div>
-                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-                        {healthData.sleepHours}h{healthData.sleepMinutes > 0 ? `${healthData.sleepMinutes}m` : ''}
-                      </p>
-                      <p className="label" style={{ marginTop: 4 }}>Sleep</p>
-                    </div>
-                  )}
-                  {/* Active calories */}
-                  {healthData.activeCalories > 0 && (
-                    <div>
-                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-                        {healthData.activeCalories}
-                      </p>
-                      <p className="label" style={{ marginTop: 4 }}>Active kcal</p>
-                    </div>
-                  )}
-                  {/* Weight from Health */}
-                  {healthData.weight > 0 && (
-                    <div>
-                      <p style={{ fontSize: 22, fontWeight: 510, letterSpacing: '-0.022em', color: 'var(--text)', margin: 0, lineHeight: 1 }}>
-                        {healthData.weight}
-                      </p>
-                      <p className="label" style={{ marginTop: 4 }}>kg</p>
-                    </div>
-                  )}
-                </div>
-                {/* Recent workouts from Health */}
-                {(healthData.workouts ?? []).length > 0 && (
-                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-                    <p className="label" style={{ marginBottom: 8 }}>Recent workouts</p>
-                    {(healthData.workouts ?? []).slice(0, 3).map((w, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, marginBottom: 8, borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
-                        <span style={{ fontSize: 13, color: 'var(--text)', letterSpacing: '-0.011em' }}>{w.type}</span>
-                        <span style={{ fontSize: 12, color: 'var(--text-4)' }}>{w.duration} min · {w.calories} kcal</span>
-                      </div>
-                    ))}
+            <div className="ba" style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 18 }}>
+              <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 16px' }}>Apple Health</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                {healthData.steps > 0 && (
+                  <div>
+                    <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: '#fff', margin: 0, lineHeight: 1 }}>{healthData.steps.toLocaleString()}</p>
+                    <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginTop: 5 }}>Steps</p>
+                  </div>
+                )}
+                {healthData.heartRate > 0 && (
+                  <div>
+                    <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: '#fff', margin: 0, lineHeight: 1 }}>{healthData.heartRate}</p>
+                    <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginTop: 5 }}>BPM</p>
+                  </div>
+                )}
+                {healthData.hrv > 0 && (
+                  <div>
+                    <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: '#fff', margin: 0, lineHeight: 1 }}>{Math.round(healthData.hrv)}</p>
+                    <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginTop: 5 }}>HRV ms</p>
+                  </div>
+                )}
+                {healthData.sleepHours > 0 && (
+                  <div>
+                    <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: '#fff', margin: 0, lineHeight: 1 }}>
+                      {healthData.sleepHours}h{healthData.sleepMinutes > 0 ? `${healthData.sleepMinutes}m` : ''}
+                    </p>
+                    <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginTop: 5 }}>Sleep</p>
+                  </div>
+                )}
+                {healthData.activeCalories > 0 && (
+                  <div>
+                    <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: '#fff', margin: 0, lineHeight: 1 }}>{healthData.activeCalories}</p>
+                    <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginTop: 5 }}>Active kcal</p>
+                  </div>
+                )}
+                {healthData.weight > 0 && (
+                  <div>
+                    <p style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: '#fff', margin: 0, lineHeight: 1 }}>{healthData.weight}</p>
+                    <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginTop: 5 }}>kg</p>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Row 5: Suggested meditation (full-width) */}
+          {/* ROW H — Suggested meditation */}
           {suggested && !medDone && (
-            <div className="bento-card-anim">
-              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 18 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div
-                    style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}
-                    onClick={() => router.push(`/meditation/${suggested.id}`)}
-                  >
-                    <p className="label" style={{ marginBottom: 6 }}>Suggested</p>
-                    <p style={{ fontSize: 20, fontWeight: 510, letterSpacing: '-0.012em', color: 'var(--text)', margin: '0 0 4px' }}>{suggested.name}</p>
-                    <p style={{ fontSize: 12, color: 'var(--text-4)' }}>{suggested.category} · {suggested.duration_min} min</p>
-                  </div>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={e => { e.stopPropagation(); haptic('light'); router.push(`/meditation/${suggested.id}`); }}
-                  >
-                    Start →
-                  </button>
+            <div className="ba" style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}
+                  onClick={() => router.push(`/meditation/${suggested.id}`)}
+                >
+                  <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 8px' }}>Suggested</p>
+                  <p style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 4px' }}>{suggested.name}</p>
+                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{suggested.category} · {suggested.duration_min} min</p>
                 </div>
+                <button
+                  onClick={e => { e.stopPropagation(); haptic('light'); router.push(`/meditation/${suggested.id}`); }}
+                  style={{
+                    background: '#fff', color: '#000', border: 'none',
+                    borderRadius: 99, padding: '8px 16px',
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    flexShrink: 0, marginLeft: 12, letterSpacing: '-0.01em',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  Start
+                </button>
               </div>
             </div>
           )}
@@ -835,8 +864,6 @@ export default function TodayPage() {
       </div>
 
       <QuickLogSheet open={quickLog} onClose={() => setQuickLog(false)} onLogged={() => load()} />
-
-
     </>
   );
 }
