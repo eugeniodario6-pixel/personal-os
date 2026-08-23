@@ -5,13 +5,14 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { haptic } from '@/lib/haptic';
 import { useTheme } from './ThemeProvider';
+import { Home, Utensils, BrainCircuit, Zap, TrendingUp } from 'lucide-react';
 
 const TABS = [
-  { href: '/',           label: 'Today',    icon: '◉' },
-  { href: '/nutrition',  label: 'Eat',      icon: '⊕' },
-  { href: '/jarvis',     label: 'Jarvis',   icon: '⬡', accent: true },
-  { href: '/fitness',    label: 'Move',     icon: '△' },
-  { href: '/progress',   label: 'Progress', icon: '◈' },
+  { href: '/',           label: 'Today',    Icon: Home },
+  { href: '/nutrition',  label: 'Eat',      Icon: Utensils },
+  { href: '/jarvis',     label: 'Jarvis',   Icon: BrainCircuit, accent: true },
+  { href: '/fitness',    label: 'Move',     Icon: Zap },
+  { href: '/progress',   label: 'Progress', Icon: TrendingUp },
 ];
 
 const DRAWER = [
@@ -116,18 +117,17 @@ export default function Nav() {
                 flexShrink: 0,
               }}
             >
-              <span style={{
-                fontSize: 18,
-                color: active
-                  ? ICE + '0.90)'
-                  : isAccent
-                  ? COBALT
-                  : ICE + '0.25)',
-                transition: 'color 0.2s',
-                lineHeight: 1,
-              }}>
-                {tab.icon}
-              </span>
+              <tab.Icon
+                size={22}
+                strokeWidth={active ? 2.5 : 1.5}
+                color={
+                  active
+                    ? `rgba(216,234,255,0.90)`
+                    : isAccent
+                    ? COBALT
+                    : `rgba(216,234,255,0.25)`
+                }
+              />
             </Link>
           );
         })}
