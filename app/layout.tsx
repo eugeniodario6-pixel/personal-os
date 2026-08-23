@@ -6,6 +6,7 @@ import SWRegister from './sw-register';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ToastContainer } from '@/components/Toast';
 import HealthKitInit from '@/components/HealthKitInit';
+import PushInit from '@/components/PushInit';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <SWRegister />
           <HealthKitInit />
+          <PushInit />
           <main className="page">{children}</main>
           <Nav />
           <ToastContainer />
