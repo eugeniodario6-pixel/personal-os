@@ -1,5 +1,10 @@
 import type { NextConfig } from 'next';
 
+// Provide placeholder env vars at build time so Supabase client doesn't throw during prerender
+// Real values come from Vercel environment variables at runtime
+process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+
 const nextConfig: NextConfig = {
   // Allow build to complete even with minor type issues
   typescript: {
