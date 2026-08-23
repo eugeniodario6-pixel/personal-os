@@ -346,8 +346,20 @@ function NutritionContent() {
   const [recentFoods, setRecentFoods] = useState<FoodItem[]>([]);
   const [profile, setProfile]         = useState<Profile | null>(null);
   const [selectedFood, setSelectedFood] = useState<FoodResult | FoodItem | null>(null);
-  const [mode, setMode]               = useState<'idle' | 'recents' | 'search'>('idle');
+  const [mode, setMode]               = useState<'idle' | 'recents' | 'search' | 'manual'>('idle');
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
+
+  // Manual entry
+  const [addName, setAddName]         = useState('');
+  const [addCalories, setAddCalories] = useState('');
+  const [addProtein, setAddProtein]   = useState('');
+  const [addCarbs, setAddCarbs]       = useState('');
+  const [addFat, setAddFat]           = useState('');
+  const [addServing, setAddServing]   = useState('100');
+  const [addServingUnit, setAddServingUnit] = useState('g');
+  const [addQuantity, setAddQuantity] = useState('100');
+  const [addMealType, setAddMealType] = useState<MealType>('lunch');
+  const [addError, setAddError]       = useState('');
 
   // Search
   const [query, setQuery]       = useState('');
@@ -383,6 +395,39 @@ function NutritionContent() {
       setResults(r);
     } catch { setSearchError('Search failed'); }
     finally { setSearching(false); }
+  };
+
+  const handleManualAdd = async () => {
+    setAddError('');
+    if (!addName.trim()) { setAddError('Name is required'); return; }
+    if (!addCalories) { setAddError('Calories are required'); return; }
+    haptic('medium');
+    try {
+      const foodId = await addFoodItem({
+        external_id: null, name: addName.trim(), brand: null, barcode: null,
+        serving_unit: addServingUnit, serving_size: parseFloat(addServing) || 100,
+        calories: parseFloat(addCalories) || 0,
+        protein: parseFloat(addProtein) || 0,
+        carbs: parseFloat(addCarbs) || 0,
+        fat: parseFloat(addFat) || 0,
+        is_favorite: false,
+      });
+      await addMealLog({
+        date: todayISO(), meal_type: addMealType, food_item_id: foodId,
+        quantity: parseFloat(addQuantity) || 100,
+        logged_at: new Date().toISOString(), source: 'manual',
+      });
+      fetch('/api/food-contribute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: addName.trim(), calories: parseFloat(addCalories), protein: parseFloat(addProtein) || 0, carbs: parseFloat(addCarbs) || 0, fat: parseFloat(addFat) || 0, serving_size: parseFloat(addServing) || 100, serving_unit: addServingUnit }),
+      }).catch(() => {});
+      setAddName(''); setAddCalories(''); setAddProtein(''); setAddCarbs(''); setAddFat('');
+      setAddServing('100'); setAddQuantity('100');
+      toast(`${addName.trim()} logged ✓`);
+      setMode('idle');
+      await reloadAndScore();
+    } catch { setAddError('Failed to save — try again'); }
   };
 
   const handleLog = async (qty: number, mt: MealType) => {
@@ -558,6 +603,16 @@ function NutritionContent() {
         }}>
           SEARCH
         </button>
+        <button onClick={() => { setMode(mode === 'manual' ? 'idle' : 'manual'); setSelectedFood(null); setResults([]); setAddError(''); }} style={{
+          flex: 1, padding: '0.75rem', borderRadius: 'var(--r)',
+          background: mode === 'manual' ? 'var(--cta-bg)' : 'var(--surface)',
+          color: mode === 'manual' ? 'var(--cta-fg)' : 'var(--text-3)',
+          cursor: 'pointer',
+          fontSize: '0.7rem', letterSpacing: '0.06em', fontWeight: 510, fontFamily: 'var(--font)',
+          border: '1px solid rgba(216,234,255,0.08)',
+        }}>
+          MANUAL
+        </button>
       </div>
 
       {/* ── Log panel (selected food) ── */}
@@ -606,6 +661,95 @@ function NutritionContent() {
               {results.map((r, i) => <FoodRow key={i} food={r} onSelect={() => setSelectedFood(r)} />)}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Manual entry drawer ── */}
+      {mode === 'manual' && (
+        <div style={{ margin: '12px 20px 0', background: 'var(--color-carbon)', borderRadius: 'var(--r)', padding: '16px', border: '1px solid rgba(216,234,255,0.08)' }}>
+          <p style={{ margin: '0 0 12px', fontSize: '0.6rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>ADD MANUALLY</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {addError && (
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--negative)', fontFamily: 'var(--font-mono)' }}>⚠ {addError}</p>
+            )}
+            <div>
+              <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>NAME *</p>
+              <input value={addName} onChange={e => setAddName(e.target.value)} placeholder="e.g. Boerewors" autoFocus
+                style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>SERVING SIZE</p>
+                <input type="number" value={addServing} onChange={e => setAddServing(e.target.value)}
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>UNIT</p>
+                <select value={addServingUnit} onChange={e => setAddServingUnit(e.target.value)}
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}>
+                  <option value="g">g</option><option value="ml">ml</option><option value="oz">oz</option>
+                  <option value="cup">cup</option><option value="piece">piece</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>CALORIES *</p>
+                <input type="number" value={addCalories} onChange={e => setAddCalories(e.target.value)} placeholder="0"
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>PROTEIN (G)</p>
+                <input type="number" value={addProtein} onChange={e => setAddProtein(e.target.value)} placeholder="0"
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>CARBS (G)</p>
+                <input type="number" value={addCarbs} onChange={e => setAddCarbs(e.target.value)} placeholder="0"
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>FAT (G)</p>
+                <input type="number" value={addFat} onChange={e => setAddFat(e.target.value)} placeholder="0"
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>QUANTITY</p>
+                <input type="number" value={addQuantity} onChange={e => setAddQuantity(e.target.value)} min="0.1" step="0.1"
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <p style={{ margin: '0 0 6px', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>MEAL</p>
+                <select value={addMealType} onChange={e => setAddMealType(e.target.value as MealType)}
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border-2)', borderRadius: 'var(--r)', padding: '0.65rem 0.875rem', color: 'var(--text)', fontSize: '0.875rem', fontFamily: 'var(--font)', outline: 'none', boxSizing: 'border-box' }}>
+                  {MEAL_ORDER.map(mt => <option key={mt} value={mt}>{MEAL_LABELS[mt]}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+              <button onClick={handleManualAdd} style={{
+                flex: 1, padding: '0.75rem', borderRadius: 'var(--r)',
+                background: 'var(--cta-bg)', color: 'var(--cta-fg)',
+                border: 'none', fontSize: '0.7rem', fontWeight: 510, letterSpacing: '0.06em',
+                cursor: 'pointer', fontFamily: 'var(--font)',
+              }}>SAVE & LOG</button>
+              <button onClick={() => { setMode('idle'); setAddError(''); }} style={{
+                flex: 1, padding: '0.75rem', borderRadius: 'var(--r)',
+                background: 'var(--surface)', color: 'var(--text-4)',
+                border: '1px solid rgba(216,234,255,0.08)', fontSize: '0.7rem', fontWeight: 510, letterSpacing: '0.06em',
+                cursor: 'pointer', fontFamily: 'var(--font)',
+              }}>CANCEL</button>
+            </div>
+          </div>
         </div>
       )}
 
