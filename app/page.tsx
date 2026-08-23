@@ -471,7 +471,7 @@ export default function TodayPage() {
       `}</style>
 
       <VitruvianBackground score={score} />
-      <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingTop: '4.5rem', paddingBottom: '130px', position: 'relative', zIndex: 1 }}>
+      <div style={{ minHeight: '100dvh', background: 'transparent', paddingTop: '4.5rem', paddingBottom: '130px', position: 'relative', zIndex: 1 }}>
 
         {/* ── Page header ── */}
         <div style={{ padding: `0 ${PAD}px 20px` }}>

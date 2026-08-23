@@ -160,9 +160,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ── Base ── */
-html { background: var(--bg); }
+html { background: var(--color-void); }
 body {
-  background: var(--color-void);
+  background: transparent;
   color: var(--text-3);
   font-family: var(--font);
   font-size: 14px;
