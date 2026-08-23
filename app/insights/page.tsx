@@ -106,7 +106,7 @@ export default function InsightsPage() {
           {/* ── 2×2 stat bento ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: GAP }}>
             {summaries.map((s, i) => (
-              <div key={s.label} style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '16px 18px' }}>
+              <div key={s.label} style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: '16px 18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{s.icon}</span>
                   <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>{s.label}</span>
@@ -123,7 +123,7 @@ export default function InsightsPage() {
           </p>
 
           {/* ── Patterns card ── */}
-          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', overflow: 'hidden' }}>
             {insights.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center' }}>
                 <p style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 8px' }}>Not enough data yet</p>
@@ -135,7 +135,7 @@ export default function InsightsPage() {
                 style={{
                   padding: '18px 20px',
                   borderBottom: idx < insights.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                  borderLeft: '2px solid rgba(255,255,255,0.25)',
+                  paddingLeft: '22px',
                 }}
               >
                 <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 500, letterSpacing: '-0.011em', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>{item.text}</p>
@@ -146,7 +146,7 @@ export default function InsightsPage() {
 
           {/* ── Empty insights placeholder ── */}
           {insights.length === 0 && (
-            <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '20px 20px 18px' }}>
+            <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: '20px 20px 18px' }}>
               <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', margin: '0 0 14px' }}>What to expect</p>
               {[
                 'Correlation between workout days and calorie intake',

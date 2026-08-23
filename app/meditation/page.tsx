@@ -81,7 +81,7 @@ export default function MeditationPage() {
             onClick={() => router.push(`/meditation/${suggested.id}`)}
             style={{
               width: '100%', background: 'var(--color-carbon)', borderRadius: 24,
-              border: 'none', padding: '20px 20px 18px',
+              border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: '20px 20px 18px',
               cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent',
               position: 'relative', overflow: 'hidden',
             }}
@@ -162,11 +162,11 @@ export default function MeditationPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '48px 20px', textAlign: 'center', background: 'var(--color-carbon)', borderRadius: 20, border: 'none' }}>
+          <div style={{ padding: '48px 20px', textAlign: 'center', background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)' }}>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>No sessions in this category</p>
           </div>
         ) : (
-          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', overflow: 'hidden' }}>
             {filtered.map((s, idx) => {
               const done = loggedIds.has(s.id);
               return (

@@ -87,7 +87,7 @@ export default function BodyPage() {
       <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
         {/* ── Hero weight card (Weight log screen style) ── */}
-        <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: 20, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: 20, overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', marginBottom: 10 }}>Current weight</p>
@@ -139,7 +139,7 @@ export default function BodyPage() {
         </div>
 
         {/* ── Log input card ── */}
-        <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: 20 }}>
+        <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: 20 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 16 }}>
             {todayLogged ? 'Update today’s weight' : 'Log weight'}
           </p>
@@ -176,7 +176,7 @@ export default function BodyPage() {
 
         {/* ── Recent logs ── */}
         {entries.length > 0 && (
-          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', overflow: 'hidden' }}>
             <div style={{ padding: '16px 18px 12px' }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', margin: 0 }}>Recent logs</p>
             </div>
@@ -222,7 +222,7 @@ export default function BodyPage() {
 
         {/* Empty state */}
         {entries.length === 0 && (
-          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '40px 24px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: '40px 24px', textAlign: 'center' }}>
             <p style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', marginBottom: 8 }}>No weight logged yet</p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', lineHeight: 1.6 }}>
               Weigh in each morning for accurate trends.

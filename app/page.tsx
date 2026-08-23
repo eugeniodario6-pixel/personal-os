@@ -264,9 +264,10 @@ function ScoreSparkline({ scores }: { scores: DailyScore[] }) {
 // ── Bento card ───────────────────────────────────────────────────────────────
 function BentoCard({ children, onClick, elevated, style }: { children: React.ReactNode; onClick?: () => void; elevated?: boolean; style?: React.CSSProperties }) {
   const base: React.CSSProperties = {
-    background: 'var(--surface)',
+    background: 'var(--color-carbon)',
     borderRadius: 20,
     border: 'none',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
     padding: 18,
     position: 'relative',
     overflow: 'hidden',
@@ -531,7 +532,8 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/nutrition')}
               style={{
-                background: 'var(--surface)', borderRadius: 20, border: 'none',
+                background: 'var(--color-carbon)', borderRadius: 20, border: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                 display: 'flex', flexDirection: 'column', gap: 0,
               }}
@@ -554,7 +556,8 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/habits')}
               style={{
-                background: 'var(--surface)', borderRadius: 20, border: 'none',
+                background: 'var(--color-carbon)', borderRadius: 20, border: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                 display: 'flex', flexDirection: 'column', gap: 0,
               }}
@@ -582,9 +585,10 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/fitness')}
               style={{
-                background: workoutsToday > 0 ? '#0f1f0f' : 'var(--color-carbon)',
+                background: 'var(--color-carbon)',
                 borderRadius: 20,
-                border: workoutsToday > 0 ? '1px solid rgba(120,220,100,0.14)' : '1px solid rgba(255,255,255,0.06)',
+                border: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                 display: 'flex', flexDirection: 'column', gap: 0,
               }}
@@ -597,7 +601,7 @@ export default function TodayPage() {
                 {workoutsToday > 0 ? `workout${workoutsToday > 1 ? 's' : ''} today` : 'none logged'}
               </span>
               <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginTop: 14 }}>
-                <div style={{ height: '100%', width: workoutsToday > 0 ? '100%' : '0%', background: workoutsToday > 0 ? '#78dc64' : 'transparent', borderRadius: 99, transition: 'width 0.8s' }} />
+                <div style={{ height: '100%', width: workoutsToday > 0 ? '100%' : '0%', background: workoutsToday > 0 ? '#1f58f2' : 'transparent', borderRadius: 99, transition: 'width 0.8s' }} />
               </div>
             </button>
 
@@ -605,9 +609,10 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/meditation')}
               style={{
-                background: medDone ? '#0f0f1f' : 'var(--color-carbon)',
+                background: 'var(--color-carbon)',
                 borderRadius: 20,
-                border: medDone ? '1px solid rgba(100,120,255,0.14)' : '1px solid rgba(255,255,255,0.06)',
+                border: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                 display: 'flex', flexDirection: 'column', gap: 0,
               }}
@@ -620,7 +625,7 @@ export default function TodayPage() {
                 {medDone ? 'complete' : 'not yet'}
               </span>
               <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', marginTop: 14 }}>
-                <div style={{ height: '100%', width: medDone ? '100%' : '0%', background: medDone ? '#6478ff' : 'transparent', borderRadius: 99, transition: 'width 0.8s' }} />
+                <div style={{ height: '100%', width: medDone ? '100%' : '0%', background: medDone ? '#1f58f2' : 'transparent', borderRadius: 99, transition: 'width 0.8s' }} />
               </div>
             </button>
           </div>
@@ -631,10 +636,10 @@ export default function TodayPage() {
               <div
                 onClick={() => nudge && router.push(nudge.path)}
                 style={{
-                  background: 'var(--surface)',
+                  background: 'var(--color-carbon)',
                   borderRadius: 20,
-                  borderLeft: allDone ? '2px solid #78dc64' : '2px solid rgba(255,65,5,0.8)',
                   border: 'none',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                   padding: '16px 18px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   cursor: nudge ? 'pointer' : 'default',
@@ -664,7 +669,8 @@ export default function TodayPage() {
                 key={label}
                 onClick={() => router.push('/nutrition')}
                 style={{
-                  background: 'var(--surface)', borderRadius: 18, border: 'none',
+                  background: 'var(--color-carbon)', borderRadius: 18, border: 'none',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                   padding: '14px 14px 12px', textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                   display: 'flex', flexDirection: 'column', gap: 0,
                 }}
@@ -682,7 +688,7 @@ export default function TodayPage() {
           </div>
 
           {/* ROW E — Score breakdown donut */}
-          <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: 'none', padding: 18 }}>
+          <div className="ba" style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: 18 }}>
             <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(216,234,255,0.30)', margin: '0 0 16px' }}>Score breakdown</p>
             <ScoreDonut pillars={pillars} total={score} />
           </div>
@@ -696,7 +702,7 @@ export default function TodayPage() {
 
           {/* ROW G — Apple Health */}
           {healthData && healthData.available && (
-            <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: 'none', padding: 18 }}>
+            <div className="ba" style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: 18 }}>
               <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 16px' }}>Apple Health</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                 {healthData.steps > 0 && (
@@ -743,7 +749,7 @@ export default function TodayPage() {
 
           {/* ROW H — Suggested meditation */}
           {suggested && !medDone && (
-            <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: 'none', padding: 18 }}>
+            <div className="ba" style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div
                   style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}

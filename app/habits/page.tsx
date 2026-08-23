@@ -163,7 +163,7 @@ function HabitBlock({ label, icon, list, done, last7, historyMap, onToggle, onDe
       </div>
 
       {/* Card */}
-      <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', overflow: 'hidden' }}>
         {list.map((h, idx) => (
           <HabitItem
             key={h.id}
@@ -254,7 +254,7 @@ export default function HabitsPage() {
       {/* Progress bar */}
       {habits.length > 0 && mode === 'list' && (
         <div style={{ padding: '0 16px 16px' }}>
-          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '16px 18px' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: '16px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Progress</span>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.50)' }}>{doneCount}/{habits.length}</span>
@@ -274,7 +274,7 @@ export default function HabitsPage() {
           <div style={{ padding: '0 16px 12px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               {[['Streak', maxStreak + 'd', 'Best streak'], ['Done', doneCount.toString(), 'Today'], ['Rate', score + '%', 'Completion']].map(([lbl, val, sub]) => (
-                <div key={lbl} style={{ background: 'var(--color-carbon)', borderRadius: 18, border: 'none', padding: '14px 14px 12px' }}>
+                <div key={lbl} style={{ background: 'var(--color-carbon)', borderRadius: 18, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: '14px 14px 12px' }}>
                   <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', display: 'block', marginBottom: 6 }}>{lbl}</span>
                   <span style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: '#fff', lineHeight: 1, display: 'block' }}>{val}</span>
                   <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', display: 'block', marginTop: 3 }}>{sub}</span>
@@ -287,7 +287,7 @@ export default function HabitsPage() {
 
       {/* Add form */}
       {mode === 'add' && (
-        <div style={{ margin: '0 16px 16px', background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: 20 }}>
+        <div style={{ margin: '0 16px 16px', background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', padding: 20 }}>
           <p style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', marginBottom: 20 }}>New habit</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {addError && (
@@ -322,7 +322,7 @@ export default function HabitsPage() {
       {mode === 'list' && (
         <div style={{ margin: '0 16px', display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 4 }}>
           {habits.length === 0 ? (
-            <div style={{ padding: '40px 24px', textAlign: 'center', background: 'var(--color-carbon)', borderRadius: 20, border: 'none' }}>
+            <div style={{ padding: '40px 24px', textAlign: 'center', background: 'var(--color-carbon)', borderRadius: 20, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)' }}>
               <p style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', marginBottom: 8 }}>No habits yet</p>
               <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', lineHeight: 1.6, marginBottom: 20 }}>Athletes who track daily habits hit their goals 2× more often.</p>
               <button onClick={() => setMode('add')} style={{ background: '#fff', color: '#000', border: 'none', borderRadius: 99, padding: '12px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Add your first habit</button>
