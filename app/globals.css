@@ -9,9 +9,9 @@
 
 :root {
   /* ── Atlantic surface stack ── */
-  --color-void:      #000000;   /* page canvas — true black */
-  --color-carbon:    #080809;   /* primary cards — near black */
-  --color-graphite:  #0a0a0c;   /* slightly elevated cards */
+  --color-void:      #000000;   /* page canvas — pure black */
+  --color-carbon:    #1a1a1e;   /* primary cards — visible on pure black */
+  --color-graphite:  #1c1c20;   /* slightly elevated cards */
   --color-slate:     #1a1a1c;   /* elevated panels */
   --color-iron:      #252528;   /* muted dividers */
   --color-steel:     #3a3a3e;   /* tertiary text */
