@@ -151,9 +151,9 @@ export async function getProfile(): Promise<Profile | null> {
     user_id: data.user_id,
     calorie_target: data.calorie_target,
     macro_targets: {
-      protein: data.macro_protein,
-      carbs: data.macro_carbs,
-      fat: data.macro_fat,
+      protein: data.macro_targets?.protein ?? data.macro_protein ?? 0,
+      carbs: data.macro_targets?.carbs ?? data.macro_carbs ?? 0,
+      fat: data.macro_targets?.fat ?? data.macro_fat ?? 0,
     },
     weight_goal: data.weight_goal,
     starting_weight: data.starting_weight ?? null,
@@ -176,9 +176,7 @@ export async function upsertProfile(p: Omit<Profile, 'id' | 'user_id'>): Promise
   await supabase.from('profile').upsert({
     user_id: userId,
     calorie_target: p.calorie_target,
-    macro_protein: p.macro_targets.protein,
-    macro_carbs: p.macro_targets.carbs,
-    macro_fat: p.macro_targets.fat,
+    macro_targets: { protein: p.macro_targets.protein, carbs: p.macro_targets.carbs, fat: p.macro_targets.fat },
     weight_goal: p.weight_goal,
     starting_weight: p.starting_weight,
     units: p.units,
