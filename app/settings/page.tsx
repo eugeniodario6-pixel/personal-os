@@ -1,35 +1,62 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProfile, upsertProfile } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptic';
+import { useTheme } from '@/components/ThemeProvider';
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="label" style={{ marginBottom: 6 }}>{label}</p>
+      {children}
+      {hint && <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', marginTop: 6 }}>{hint}</p>}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ margin: '0 20px 12px', background: '#141414', boxShadow: 'rgba(255,255,255,0.06) 0px 0px 0px 1px inset', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+        <p className="label">{title}</p>
+      </div>
+      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [calTarget,       setCalTarget]       = useState('1800');
-  const [protein,         setProtein]         = useState('176');
-  const [fat,             setFat]             = useState('');
-  const [carbs,           setCarbs]           = useState('');
-  const [startingWeight,  setStartingWeight]  = useState('');
-  const [weightGoal,      setWeightGoal]      = useState('');
-  const [units,           setUnits]           = useState<'metric' | 'imperial'>('metric');
-  const [nonNumeric,      setNonNumeric]       = useState(false);
-  const [saved,           setSaved]           = useState(false);
-  const [loading,         setLoading]         = useState(true);
+  const [calTarget, setCalTarget]         = useState('2000');
+  const [protein, setProtein]             = useState('150');
+  const [carbs, setCarbs]                 = useState('200');
+  const [fat, setFat]                     = useState('65');
+  const [startingWeight, setStartingWeight] = useState('');
+  const [weightGoal, setWeightGoal]       = useState('');
+  const [units, setUnits]                 = useState<'metric' | 'imperial'>('metric');
+  const [nonNumeric, setNonNumeric]       = useState(false);
+  const [saved, setSaved]                 = useState(false);
+  const [loading, setLoading]             = useState(true);
+  const { theme, toggle: toggleTheme }    = useTheme();
 
   const load = useCallback(async () => {
-    const p = await getProfile();
-    if (p) {
-      setCalTarget(String(p.calorie_target));
-      setProtein(String(p.protein_target_g ?? p.macro_targets.protein));
-      setFat(String(p.macro_targets.fat));
-      setCarbs(String(p.macro_targets.carbs));
-      setStartingWeight(p.starting_weight != null ? String(p.starting_weight) : '');
-      setWeightGoal(p.weight_goal != null ? String(p.weight_goal) : '');
-      setUnits(p.units);
-      setNonNumeric(p.non_numeric_mode);
+    const prof = await getProfile();
+    if (prof) {
+      setCalTarget(String(prof.calorie_target));
+      setProtein(String(prof.macro_targets.protein));
+      setCarbs(String(prof.macro_targets.carbs));
+      setFat(String(prof.macro_targets.fat));
+      setStartingWeight(prof.starting_weight != null ? String(prof.starting_weight) : '');
+      setWeightGoal(prof.weight_goal != null ? String(prof.weight_goal) : '');
+      setUnits(prof.units);
+      setNonNumeric(prof.non_numeric_mode);
     }
     setLoading(false);
   }, []);
@@ -38,115 +65,166 @@ export default function SettingsPage() {
 
   const save = async () => {
     haptic('medium');
-    const cal    = parseInt(calTarget) || 1800;
-    const prot   = parseFloat(protein) || 176;
+    const cal  = parseInt(calTarget) || 1800;
+    const prot = parseInt(protein) || 176;
     const carbPct = 0.05;
-    const carbG  = carbs ? parseFloat(carbs) : Math.round(cal * carbPct / 4);
-    const fatG   = fat ? parseFloat(fat) : Math.round((cal - prot * 4 - carbG * 4) / 9);
+    const carbG = Math.round(cal * carbPct / 4);
+    const fatG  = Math.round((cal - prot * 4 - carbG * 4) / 9);
     await upsertProfile({
       calorie_target: cal,
-      macro_targets: { protein: prot, carbs: carbG, fat: fatG },
+      macro_targets: { protein: prot, carbs: parseInt(carbs) || carbG, fat: parseInt(fat) || fatG },
       starting_weight: startingWeight ? parseFloat(startingWeight) : null,
       weight_goal: weightGoal ? parseFloat(weightGoal) : null,
-      units, non_numeric_mode: nonNumeric,
+      units,
+      non_numeric_mode: nonNumeric,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      height_cm: null, current_weight_kg: startingWeight ? parseFloat(startingWeight) : null,
-      ideal_weight_lbs: null, protein_target_g: prot, carb_percent: carbPct,
+      height_cm: null,
+      current_weight_kg: startingWeight ? parseFloat(startingWeight) : null,
+      ideal_weight_lbs: null,
+      protein_target_g: prot,
+      carb_percent: carbPct,
       score_weights: { protein: 0.4, calories: 0.3, carbs: 0.2, fat: 0.1 },
-      carb_target_g: null, fat_target_g: null,
+      carb_target_g: null,
+      fat_target_g: null,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const signOut = async () => { haptic('light'); await supabase.auth.signOut(); router.push('/login'); };
+  const signOut = async () => {
+    haptic('light');
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
-  if (loading) return <div className="loading-state">Loading…</div>;
+  if (loading) return (
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <p style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '-0.011em' }}>Loading…</p>
+    </div>
+  );
 
   return (
-    <div className="page">
+    <div style={{ minHeight: '100dvh', background: '#000000', paddingTop: '4rem', paddingBottom: '8rem' }}>
 
-      <div className="page-head">
-        <div className="page-head-left">
-          <span className="label" style={{ color: 'var(--text-ghost)' }}>SETTINGS</span>
-          <span className="page-title">Preferences</span>
-        </div>
+      {/* ── Header ── */}
+      <div style={{ padding: '20px 20px 16px', marginBottom: 16 }}>
+        <p style={{ fontSize: 12, letterSpacing: '0.01em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 6 }}>Preferences</p>
+        <h1 style={{ fontSize: 40, fontWeight: 510, letterSpacing: '-0.022em', lineHeight: 1.1, color: '#ffffff', margin: 0 }}>Settings</h1>
       </div>
 
-      {/* Nutrition targets */}
-      <div className="section-label"><span className="label">Nutrition targets</span></div>
-      <div className="section">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-          <div>
-            <p className="label" style={{ marginBottom: '0.4rem' }}>Daily calorie target</p>
-            <input type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)} placeholder="1800" />
-          </div>
-          <div>
-            <p className="label" style={{ marginBottom: '0.4rem' }}>Protein target (g)</p>
-            <input type="number" value={protein} onChange={e => setProtein(e.target.value)} placeholder="176" />
-          </div>
-          <div>
-            <p className="label" style={{ marginBottom: '0.4rem' }}>Fat target (g)</p>
-            <input type="number" value={fat} onChange={e => setFat(e.target.value)} placeholder="auto" />
-            <p className="label-xs" style={{ marginTop: '0.35rem' }}>Leave blank to auto-compute from calories</p>
-          </div>
-          <div>
-            <p className="label" style={{ marginBottom: '0.4rem' }}>Carbs target (g)</p>
-            <input type="number" value={carbs} onChange={e => setCarbs(e.target.value)} placeholder="auto" />
-            <p className="label-xs" style={{ marginTop: '0.35rem' }}>Leave blank to use 5% of calories</p>
-          </div>
+      {/* ── Daily Goals ── */}
+      <Section title="Daily goals">
+        <Field label="Calorie target (kcal)">
+          <input
+            type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)}
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
+          />
+        </Field>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          {[
+            { label: 'Protein (g)', val: protein, set: setProtein },
+            { label: 'Carbs (g)',   val: carbs,   set: setCarbs },
+            { label: 'Fat (g)',     val: fat,     set: setFat },
+          ].map(m => (
+            <Field key={m.label} label={m.label}>
+              <input
+                type="number" value={m.val} onChange={e => m.set(e.target.value)}
+                style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
+              />
+            </Field>
+          ))}
         </div>
-      </div>
+        <Field label="Starting weight (kg)" hint="Your baseline — set once, track progress from here">
+          <input
+            type="number" value={startingWeight} onChange={e => setStartingWeight(e.target.value)} placeholder="e.g. 85"
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
+          />
+        </Field>
+        <Field label="Weight goal (kg)">
+          <input
+            type="number" value={weightGoal} onChange={e => setWeightGoal(e.target.value)} placeholder="Optional"
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
+          />
+        </Field>
+        <Field label="Units">
+          <select
+            value={units} onChange={e => setUnits(e.target.value as 'metric' | 'imperial')}
+            style={{ background: 'var(--surface-2)', border: '1px solid rgba(216,234,255,0.08)', borderRadius: 14 }}
+          >
+            <option value="metric">Metric</option>
+            <option value="imperial">Imperial</option>
+          </select>
+        </Field>
+      </Section>
 
-      {/* Body */}
-      <div className="section-label"><span className="label">Body</span></div>
-      <div className="section">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+      {/* ── Display ── */}
+      <Section title="Display">
+        {/* Dark / Light mode toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p className="label" style={{ marginBottom: '0.4rem' }}>Starting weight (kg)</p>
-            <input type="number" value={startingWeight} onChange={e => setStartingWeight(e.target.value)} placeholder="e.g. 92" />
-            <p className="label-xs" style={{ marginTop: '0.35rem' }}>Your baseline — set once, track from here</p>
+            <p style={{ fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 2px' }}>
+              {theme === 'dark' ? '🌙 Dark mode' : '☀️ Light mode'}
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', margin: 0 }}>Follows system by default</p>
           </div>
-          <div>
-            <p className="label" style={{ marginBottom: '0.4rem' }}>Weight goal (kg) — optional</p>
-            <input type="number" value={weightGoal} onChange={e => setWeightGoal(e.target.value)} placeholder="Leave blank to skip" />
-          </div>
-          <div>
-            <p className="label" style={{ marginBottom: '0.4rem' }}>Units</p>
-            <select value={units} onChange={e => setUnits(e.target.value as 'metric' | 'imperial')}>
-              <option value="metric">Metric</option>
-              <option value="imperial">Imperial</option>
-            </select>
-          </div>
+          <button
+            onClick={() => { haptic('light'); toggleTheme(); }}
+            style={{
+              width: 44, height: 24, borderRadius: 9999, flexShrink: 0,
+              background: theme === 'dark' ? 'var(--text)' : 'var(--surface-3)',
+              border: 'none', cursor: 'pointer', position: 'relative',
+              transition: 'background 0.2s',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3, left: theme === 'dark' ? 23 : 3,
+              width: 18, height: 18, borderRadius: '50%',
+              background: theme === 'dark' ? 'var(--invert)' : 'var(--text-3)',
+              transition: 'left 0.2s, background 0.2s',
+            }} />
+          </button>
         </div>
-      </div>
 
-      {/* Display */}
-      <div className="section-label"><span className="label">Display</span></div>
-      <button
-        className="toggle-row t-fast"
-        onClick={() => { haptic('light'); setNonNumeric(n => !n); }}
-        style={{ width: '100%', border: 'none', background: 'var(--bg)' }}
-      >
-        <div style={{ textAlign: 'left' }}>
-          <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>Non-numeric mode</p>
-          <p className="label-xs" style={{ marginTop: '0.2rem' }}>Hides calorie and weight numbers app-wide</p>
+        {/* Non-numeric mode toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em', color: 'var(--text)', margin: '0 0 2px' }}>Non-numeric mode</p>
+            <p style={{ fontSize: 12, color: 'var(--text-3)', letterSpacing: '-0.01em', margin: 0 }}>Hides calorie and weight numbers app-wide</p>
+          </div>
+          <button
+            onClick={() => { haptic('light'); setNonNumeric(!nonNumeric); }}
+            style={{
+              width: 44, height: 24, borderRadius: 9999, flexShrink: 0,
+              background: nonNumeric ? 'var(--text)' : 'var(--surface-3)',
+              border: 'none', cursor: 'pointer', position: 'relative',
+              transition: 'background 0.2s',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3, left: nonNumeric ? 23 : 3,
+              width: 18, height: 18, borderRadius: '50%',
+              background: nonNumeric ? 'var(--invert)' : 'var(--text-3)',
+              transition: 'left 0.2s, background 0.2s',
+            }} />
+          </button>
         </div>
-        <span className={`toggle-pill${nonNumeric ? ' on' : ''}`}>{nonNumeric ? 'ON' : 'OFF'}</span>
-      </button>
+      </Section>
 
-      {/* Actions */}
-      <div className="section" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <button
-          className="btn btn-primary btn-block"
-          onClick={save}
-          style={{ background: saved ? 'var(--positive)' : undefined }}
-        >
+      {/* ── Save ── */}
+      <div style={{ margin: '0 16px 12px' }}>
+        <button onClick={save} className="btn btn-primary btn-block">
           {saved ? 'Saved ✓' : 'Save settings'}
         </button>
-        <button className="btn btn-ghost btn-block" onClick={signOut}>Sign out</button>
       </div>
 
+      {/* ── Account ── */}
+      <Section title="Account">
+        <button onClick={signOut} className="btn btn-ghost btn-block">
+          Sign out →
+        </button>
+      </Section>
     </div>
   );
 }

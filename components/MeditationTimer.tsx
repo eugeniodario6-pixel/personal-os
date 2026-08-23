@@ -85,10 +85,10 @@ export default function MeditationTimer({ session }: MeditationTimerProps) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '2rem', padding: '2rem' }}>
       <div style={{ textAlign: 'center', width: '100%' }}>
         <p className="label" style={{ marginBottom: '0.5rem' }}>{session.category}</p>
-        <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{session.name}</h1>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: 510, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{session.name}</h1>
       </div>
       <div style={{ textAlign: 'center', border: state === 'running' ? '2px solid var(--text)' : '2px solid var(--border-strong)', padding: '2rem 3rem', background: state === 'done' ? 'var(--surface-2)' : 'var(--bg)' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '4rem', fontWeight: 700, letterSpacing: '-0.02em', color: state === 'done' ? 'var(--positive)' : 'var(--text)', lineHeight: 1 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '4rem', fontWeight: 510, letterSpacing: '-0.022em', color: state === 'done' ? 'var(--positive)' : 'var(--text)', lineHeight: 1 }}>
           {state === 'done' ? 'DONE' : formatTime(minutes, seconds)}
         </div>
         <div className="label" style={{ marginTop: '0.5rem', color: state === 'done' ? 'var(--text-ghost)' : 'var(--text-muted)' }}>

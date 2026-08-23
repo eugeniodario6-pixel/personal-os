@@ -7,12 +7,12 @@ import { getExercises, type Exercise } from '@/lib/db';
 // Phase-specific types preserve their phase colors via phase-* classes;
 // other colors mapped to tokens.
 const TYPE_COLOR: Record<string, string> = {
-  Strength:    'var(--accent-dim)',
+  Strength:    'rgba(228,242,34,0.4)',
   Power:       'var(--accent)',
-  Conditioning:'var(--negative)',
-  Agility:     'var(--positive)',
-  Mobility:    'var(--positive)',
-  Flexibility: 'var(--text-muted)',
+  Conditioning:'var(--color-coral-red)',
+  Agility:     'var(--color-pulse-green)',
+  Mobility:    'var(--color-pulse-green)',
+  Flexibility: 'var(--text-3)',
   Bodyweight:  'var(--text)',
   Skill:       'var(--accent)',
 };
@@ -37,10 +37,10 @@ export default function ExercisesPage() {
       {/* Exercise detail header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' as const }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' as const }}>
             <span
               className="badge badge-fill"
-              style={{ color: TYPE_COLOR[selected.type] ?? 'var(--text-ghost)' }}
+              style={{ color: TYPE_COLOR[selected.type] ?? 'var(--text-4)' }}
             >
               <span>{selected.type.toUpperCase()}</span>
             </span>
@@ -50,13 +50,13 @@ export default function ExercisesPage() {
           </div>
           <h1 className="page-title">{selected.name.toUpperCase()}</h1>
         </div>
-        <button onClick={() => setSelected(null)} className="btn btn-primary btn-sm" style={{ marginLeft: '1rem', flexShrink: 0 }}>
+        <button onClick={() => setSelected(null)} className="btn btn-primary btn-sm" style={{ marginLeft: 16, flexShrink: 0 }}>
           ← BACK
         </button>
       </div>
 
       {/* Meta grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', borderBottom: '2px solid var(--border-strong)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', borderBottom: '1px solid var(--border)' }}>
         {[
           ['TARGET', selected.primary_target],
           ['EQUIPMENT', selected.equipment],
@@ -65,16 +65,16 @@ export default function ExercisesPage() {
         ].map(([k, v]) => (
           <div key={k} className="stat-cell" style={{ borderBottom: '1px solid var(--border)' }}>
             <p className="label" style={{ marginBottom: '0.25rem' }}>{k}</p>
-            <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{v}</p>
+            <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 510, color: 'var(--text)' }}>{v}</p>
           </div>
         ))}
       </div>
 
       {/* Default prescription */}
       {selected.default_prescription && (
-        <div className="section" style={{ background: 'var(--surface)' }}>
-          <p className="label" style={{ marginBottom: '0.3rem' }}>DEFAULT PRESCRIPTION</p>
-          <p style={{ margin: 0, fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }} className="phase-build">{selected.default_prescription}</p>
+        <div className="section" style={{ background: 'var(--color-obsidian)' }}>
+          <p className="label" style={{ marginBottom: 5 }}>DEFAULT PRESCRIPTION</p>
+          <p style={{ margin: 0, fontSize: '0.8rem' }} className="phase-build">{selected.default_prescription}</p>
         </div>
       )}
 
@@ -83,7 +83,7 @@ export default function ExercisesPage() {
         <div className="section">
           <div className="card-dark" style={{ borderLeft: '2px solid var(--accent)' }}>
             <p className="label" style={{ marginBottom: '0.4rem', color: 'var(--accent)' }}>CUES</p>
-            <p className="body" style={{ margin: 0, fontFamily: 'var(--font-mono)' }}>{selected.cues}</p>
+            <p className="body" style={{ margin: 0 }}>{selected.cues}</p>
           </div>
         </div>
       )}
@@ -91,8 +91,8 @@ export default function ExercisesPage() {
       {/* How-to */}
       {selected.how_to && (
         <div className="section">
-          <p className="label" style={{ marginBottom: '0.5rem' }}>HOW TO</p>
-          <p className="body" style={{ margin: 0, fontFamily: 'var(--font-mono)', lineHeight: 1.7 }}>{selected.how_to}</p>
+          <p className="label" style={{ marginBottom: 8 }}>HOW TO</p>
+          <p className="body" style={{ margin: 0, lineHeight: 1.7 }}>{selected.how_to}</p>
         </div>
       )}
     </div>
@@ -103,9 +103,9 @@ export default function ExercisesPage() {
       {/* Header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <p className="label" style={{ marginBottom: '0.3rem' }}>FITNESS</p>
+          <p className="label" style={{ marginBottom: 5 }}>FITNESS</p>
           <h1 className="page-title">EXERCISE LIBRARY</h1>
-          <p className="body-sm" style={{ marginTop: '0.2rem', fontFamily: 'var(--font-mono)' }}>
+          <p className="body-sm" style={{ marginTop: 3 }}>
             {exercises.length} EXERCISES
           </p>
         </div>
@@ -134,20 +134,20 @@ export default function ExercisesPage() {
       {/* Exercise list */}
       {loading ? (
         <div className="section">
-          <p className="label">LOADING...</p>
+          <p style={{ fontSize: 13, color: 'var(--text-4)', letterSpacing: '-0.011em' }}>Loading…</p>
         </div>
       ) : (
         filtered.map(ex => (
           <div key={ex.id} className="row" onClick={() => setSelected(ex)}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>{ex.name}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                <span style={{ fontWeight: 510, color: 'var(--text)', fontSize: '0.8rem' }}>{ex.name}</span>
                 {ex.is_main_lift && (
                   <span className="badge phase-build">MAIN</span>
                 )}
               </div>
               <div style={{ display: 'flex', gap: '0.6rem' }}>
-                <span className="label" style={{ color: TYPE_COLOR[ex.type] ?? 'var(--text-muted)' }}>{ex.type}</span>
+                <span className="label" style={{ color: TYPE_COLOR[ex.type] ?? 'var(--text-3)' }}>{ex.type}</span>
                 <span className="label">{ex.primary_target}</span>
               </div>
             </div>
