@@ -167,9 +167,12 @@ async function getUserId(): Promise<string> {
 }
 
 // Clear cache on sign-out so next login gets a fresh userId
-supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT') clearUserIdCache();
-});
+// Guard: only run in browser (not during Next.js SSR/prerender)
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') clearUserIdCache();
+  });
+}
 
 // ── Profile ────────────────────────────────────────────────────────────────
 
