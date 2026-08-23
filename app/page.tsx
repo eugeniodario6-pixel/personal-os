@@ -20,10 +20,23 @@ import ScoreSilhouette from '@/components/ScoreSilhouette';
 import { requestHealthKitPermissions, getHealthData, type HealthData } from '@/lib/healthkit';
 
 // ── Score logic ────────────────────────────────────────────────────────────────
-function calcScore(calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean) {
-  const cal = calPct >= 85 && calPct <= 110 ? 30 : calPct >= 70 ? 20 : calPct > 0 ? 10 : 0;
-  const hab = Math.round(habitPct * 40) / 100;
-  return Math.min(Math.round(cal + hab + (hasWorkout ? 20 : 0) + (hasMed ? 10 : 0)), 100);
+function calcScore(
+  calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean,
+  protein: number, proteinTarget: number, streakDays: number
+) {
+  // Eat: 25pts — calories ±15% AND protein ±10%
+  const calOk = calPct >= 85 && calPct <= 115;
+  const protOk = proteinTarget > 0 && protein >= proteinTarget * 0.9 && protein <= proteinTarget * 1.1;
+  const eatScore = calOk && protOk ? 25 : calOk || protOk ? 12 : 0;
+  // Move: 25pts binary
+  const moveScore = hasWorkout ? 25 : 0;
+  // Habits: 25pts proportional
+  const habitScore = Math.round(habitPct * 25) / 100;
+  // Mind: 15pts binary
+  const mindScore = hasMed ? 15 : 0;
+  // Streak: 10pts
+  const streakBonus = streakDays >= 7 ? 10 : streakDays >= 5 ? 6 : streakDays >= 3 ? 3 : 0;
+  return Math.min(Math.round(eatScore + moveScore + habitScore + mindScore + streakBonus), 100);
 }
 
 function scoreLabel(s: number) {
@@ -44,21 +57,27 @@ interface PillarBreakdown {
 
 function getScoreBreakdown(
   calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean,
-  yesterdayCalPct: number, yesterdayHabitPct: number, yesterdayHadWorkout: boolean, yesterdayHadMed: boolean
+  yesterdayCalPct: number, yesterdayHabitPct: number, yesterdayHadWorkout: boolean, yesterdayHadMed: boolean,
+  protein: number, proteinTarget: number, streakDays: number
 ): PillarBreakdown[] {
-  const eatScore = calPct >= 85 && calPct <= 110 ? 30 : calPct >= 70 ? 20 : calPct > 0 ? 10 : 0;
-  const habitScore = Math.round(habitPct * 40) / 100;
-  const moveScore = hasWorkout ? 20 : 0;
-  const mindScore = hasMed ? 10 : 0;
-  const yEat = yesterdayCalPct >= 85 && yesterdayCalPct <= 110 ? 30 : yesterdayCalPct >= 70 ? 20 : yesterdayCalPct > 0 ? 10 : 0;
-  const yHabit = Math.round(yesterdayHabitPct * 40) / 100;
-  const yMove = yesterdayHadWorkout ? 20 : 0;
-  const yMind = yesterdayHadMed ? 10 : 0;
+  const calOk = calPct >= 85 && calPct <= 115;
+  const protOk = proteinTarget > 0 && protein >= proteinTarget * 0.9 && protein <= proteinTarget * 1.1;
+  const eatScore = calOk && protOk ? 25 : calOk || protOk ? 12 : 0;
+  const habitScore = Math.round(habitPct * 25) / 100;
+  const moveScore = hasWorkout ? 25 : 0;
+  const mindScore = hasMed ? 15 : 0;
+  const streakBonus = streakDays >= 7 ? 10 : streakDays >= 5 ? 6 : streakDays >= 3 ? 3 : 0;
+  const yCalOk = yesterdayCalPct >= 85 && yesterdayCalPct <= 115;
+  const yEat = yCalOk ? 25 : yCalOk ? 12 : 0;
+  const yHabit = Math.round(yesterdayHabitPct * 25) / 100;
+  const yMove = yesterdayHadWorkout ? 25 : 0;
+  const yMind = yesterdayHadMed ? 15 : 0;
   return [
-    { name: 'Eat', score: eatScore, maxScore: 30, delta: eatScore - yEat, reason: calPct <= 0 ? 'Nothing logged' : calPct < 70 ? `${Math.round(calPct)}% of target` : calPct > 110 ? 'Over target' : 'On track' },
-    { name: 'Habits', score: Math.round(habitScore), maxScore: 40, delta: Math.round(habitScore - yHabit), reason: habitPct <= 0 ? 'No habits done' : habitPct < 50 ? 'Less than half done' : habitPct < 100 ? `${Math.round(habitPct)}% complete` : 'All done' },
-    { name: 'Move', score: moveScore, maxScore: 20, delta: moveScore - yMove, reason: hasWorkout ? 'Workout logged' : 'No workout yet' },
-    { name: 'Mind', score: mindScore, maxScore: 10, delta: mindScore - yMind, reason: hasMed ? 'Meditation done' : 'Not yet' },
+    { name: 'Eat', score: eatScore, maxScore: 25, delta: eatScore - yEat, reason: calPct <= 0 ? 'Nothing logged' : !calOk && !protOk ? `${Math.round(calPct)}% of target` : calOk && !protOk ? 'Calories ✓ / Protein short' : !calOk && protOk ? 'Protein ✓ / Calories off' : 'On track' },
+    { name: 'Habits', score: Math.round(habitScore), maxScore: 25, delta: Math.round(habitScore - yHabit), reason: habitPct <= 0 ? 'No habits done' : habitPct < 50 ? 'Less than half done' : habitPct < 100 ? `${Math.round(habitPct)}% complete` : 'All done' },
+    { name: 'Move', score: moveScore, maxScore: 25, delta: moveScore - yMove, reason: hasWorkout ? 'Workout logged' : 'No workout yet' },
+    { name: 'Mind', score: mindScore, maxScore: 15, delta: mindScore - yMind, reason: hasMed ? 'Meditation done' : 'Not yet' },
+    { name: 'Streak', score: streakBonus, maxScore: 10, delta: 0, reason: streakDays >= 7 ? `${streakDays}-day streak` : streakDays >= 3 ? `${streakDays}-day streak` : streakDays > 0 ? `${streakDays} day streak` : 'No streak yet' },
   ];
 }
 
@@ -73,35 +92,39 @@ function getScoreExplanation(
   // Find the biggest gap pillar and produce a plain-English sentence
   const gaps: { label: string; missing: number; sentence: string }[] = [];
 
-  // Eat gap (max 30 pts)
+  // Eat gap (max 25 pts)
+  const calOk = calPct >= 85 && calPct <= 115;
+  const protOk = proteinTarget > 0 && protein >= proteinTarget * 0.9 && protein <= proteinTarget * 1.1;
   if (calPct <= 0) {
-    gaps.push({ label: 'Eat', missing: 30, sentence: "You haven't logged any food — that's the biggest drag on your score." });
-  } else if (calPct < 70) {
+    gaps.push({ label: 'Eat', missing: 25, sentence: "You haven't logged any food — that's the biggest drag on your score." });
+  } else if (!calOk && !protOk) {
     const proteinGap = Math.round(proteinTarget - protein);
     if (proteinGap > 10 && protein < proteinTarget * 0.7) {
-      gaps.push({ label: 'Eat', missing: 20, sentence: `Protein is ${proteinGap}g short — that's holding your score down.` });
+      gaps.push({ label: 'Eat', missing: 25, sentence: `Protein is ${proteinGap}g short and calories are off — fixing both unlocks full Eat points.` });
     } else {
-      gaps.push({ label: 'Eat', missing: 20, sentence: `Calories are at ${Math.round(calPct)}% of target — log more to lift your score.` });
+      gaps.push({ label: 'Eat', missing: 25, sentence: `Calories are at ${Math.round(calPct)}% of target — log more to lift your score.` });
     }
+  } else if (!calOk || !protOk) {
+    gaps.push({ label: 'Eat', missing: 13, sentence: !calOk ? `Calories at ${Math.round(calPct)}% — hit the target to unlock full Eat points.` : `Protein short — hit your target to max out Eat points.` });
   }
 
-  // Habits gap (max 40 pts)
+  // Habits gap (max 25 pts)
   if (habitPct <= 0) {
-    gaps.push({ label: 'Habits', missing: 40, sentence: "No habits done yet — completing them is worth the most points." });
+    gaps.push({ label: 'Habits', missing: 25, sentence: "No habits done yet — completing them is worth the most points." });
   } else if (habitPct < 50) {
-    gaps.push({ label: 'Habits', missing: Math.round(40 * (1 - habitPct / 100)), sentence: `Less than half your habits done — finishing them would add the most points.` });
+    gaps.push({ label: 'Habits', missing: Math.round(25 * (1 - habitPct / 100)), sentence: `Less than half your habits done — finishing them would add the most points.` });
   } else if (habitPct < 100) {
-    gaps.push({ label: 'Habits', missing: Math.round(40 * (1 - habitPct / 100)), sentence: `${Math.round(100 - habitPct)}% of habits still to go — knock them out to push your score up.` });
+    gaps.push({ label: 'Habits', missing: Math.round(25 * (1 - habitPct / 100)), sentence: `${Math.round(100 - habitPct)}% of habits still to go — knock them out to push your score up.` });
   }
 
-  // Move gap (max 20 pts)
+  // Move gap (max 25 pts)
   if (!hasWorkout) {
-    gaps.push({ label: 'Move', missing: 20, sentence: "Log a workout to unlock 20 points — even a short session counts." });
+    gaps.push({ label: 'Move', missing: 25, sentence: "Log a workout to unlock 25 points — even a short session counts." });
   }
 
-  // Mind gap (max 10 pts)
+  // Mind gap (max 15 pts)
   if (!hasMed) {
-    gaps.push({ label: 'Mind', missing: 10, sentence: "Log your meditation to close the loop and hit 10 more points." });
+    gaps.push({ label: 'Mind', missing: 15, sentence: "Log your meditation to close the loop and hit 15 more points." });
   }
 
   if (gaps.length === 0) return "You're on track — all pillars are complete.";
@@ -389,8 +412,15 @@ export default function TodayPage() {
   const calPct    = calorieTarget > 0 ? (calories / calorieTarget) * 100 : 0;
   const habitDone = habits.filter(h => h.done).length;
   const habitPct  = habits.length > 0 ? (habitDone / habits.length) * 100 : 0;
-  const score     = calcScore(calPct, habitPct, workoutsToday > 0, medDone);
-  const pillars   = getScoreBreakdown(calPct, habitPct, workoutsToday > 0, medDone, yesterdayCalPct, yesterdayHabitPct, yesterdayHadWorkout, yesterdayHadMed);
+  // Compute streak: consecutive days ending yesterday where score >= 70
+  const sortedScores = [...allScores].sort((a, b) => b.date.localeCompare(a.date));
+  let streakDays = 0;
+  for (const s of sortedScores) {
+    if (s.total_score >= 70) streakDays++;
+    else break;
+  }
+  const score     = calcScore(calPct, habitPct, workoutsToday > 0, medDone, protein, proteinTarget, streakDays);
+  const pillars   = getScoreBreakdown(calPct, habitPct, workoutsToday > 0, medDone, yesterdayCalPct, yesterdayHabitPct, yesterdayHadWorkout, yesterdayHadMed, protein, proteinTarget, streakDays);
   const nudge     = getDataAwareNudge(calPct, habitPct, workoutsToday > 0, medDone, calorieTarget, calories, protein, proteinTarget, workoutDaysGap);
   const allDone   = calPct >= 85 && habitPct >= 100 && workoutsToday > 0 && medDone;
   const remaining = Math.max(0, calorieTarget - calories);
