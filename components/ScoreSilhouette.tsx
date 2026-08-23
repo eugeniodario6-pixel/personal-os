@@ -31,9 +31,14 @@ export function VitruvianBackground({ score }: { score: number }) {
       <svg
         viewBox="0 0 361.89 362.32"
         style={{
-          width: '100vmax',
-          height: '100vmax',
-          opacity: 0.07,
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '160vw',
+          height: '160vw',
+          maxWidth: 'none',
+          opacity: 0.09,
           display: 'block',
           flexShrink: 0,
         }}
