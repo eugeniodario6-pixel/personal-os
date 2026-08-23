@@ -105,7 +105,7 @@ function LogEntry({ log, onDelete, expanded, onToggleExpand }: {
   const breakdown = scoreFoodQuality(log.food);
   const { label: qLabel, color: qColor } = qualityLabel(breakdown.score);
   return (
-    <div style={{ padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ padding: '12px 0', borderBottom: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -145,7 +145,7 @@ function FoodRow({ food, onSelect }: { food: FoodItem | FoodResult; onSelect: ()
     <button onClick={() => { haptic('light'); onSelect(); }} style={{
       display: 'flex', width: '100%', alignItems: 'center',
       padding: '14px 0', background: 'transparent', border: 'none',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      borderBottom: 'none',
       cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent',
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -182,7 +182,7 @@ function FoodLogPanel({ selected, onLog, onCancel }: {
   const pFat  = Math.round(selected.fat      * r * 10) / 10;
 
   return (
-    <div style={{ background: '#111113', borderRadius: 20, padding: 20, margin: '0 16px 16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ background: 'var(--color-carbon)', borderRadius: 20, padding: 20, margin: '0 16px 16px', border: 'none' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
         <p style={{ margin: 0, fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em', color: '#fff', flex: 1, marginRight: 12, lineHeight: 1.3 }}>
           {selected.name}
@@ -395,7 +395,7 @@ function NutritionContent() {
         {/* ── Macro bento row ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: GAP }}>
           {/* Calories — big card */}
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 18 }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: 18 }}>
             <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 10px' }}>Calories</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
               <span style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1, color: '#fff' }}>
@@ -410,7 +410,7 @@ function NutritionContent() {
           </div>
 
           {/* Protein */}
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 18 }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: 18 }}>
             <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 10px' }}>Protein</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
               <span style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1, color: '#fff' }}>
@@ -431,7 +431,7 @@ function NutritionContent() {
             { label: 'Carbs', val: Math.round(totals.carbs), target: carbTarget, unit: 'g' },
             { label: 'Fat', val: Math.round(totals.fat), target: fatTarget, unit: 'g' },
           ].map(({ label, val, target: t, unit }) => (
-            <div key={label} style={{ background: '#111113', borderRadius: 18, border: '1px solid rgba(255,255,255,0.06)', padding: '14px 16px' }}>
+            <div key={label} style={{ background: 'var(--color-carbon)', borderRadius: 18, border: 'none', padding: '14px 16px' }}>
               <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 8px' }}>{label}</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
                 <span style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff' }}>{val}</span>
@@ -455,7 +455,7 @@ function NutritionContent() {
               key={btn.mode}
               onClick={() => { setMode(mode === btn.mode ? 'idle' : btn.mode); setSelectedFood(null); setResults([]); setAddError(''); }}
               style={{
-                background: mode === btn.mode ? '#fff' : '#111113',
+                background: mode === btn.mode ? '#fff' : 'var(--color-carbon)',
                 color: mode === btn.mode ? '#000' : 'rgba(255,255,255,0.60)',
                 border: mode === btn.mode ? 'none' : '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 14, padding: '14px 10px',
@@ -475,7 +475,7 @@ function NutritionContent() {
 
         {/* ── Recents drawer ── */}
         {mode === 'recents' && !selectedFood && (
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '0 18px' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '0 18px' }}>
             {recentFoods.length === 0 ? (
               <p style={{ padding: '24px 0', textAlign: 'center', fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>No recent foods — use Search to add</p>
             ) : recentFoods.map(food => (
@@ -491,7 +491,7 @@ function NutritionContent() {
               <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && doSearch()}
                 placeholder="Search food…" autoFocus
                 style={{
-                  flex: 1, background: '#111113', border: '1px solid rgba(255,255,255,0.10)',
+                  flex: 1, background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.10)',
                   borderRadius: 14, padding: '14px 16px',
                   color: '#fff', fontSize: 15, outline: 'none',
                 }}
@@ -506,7 +506,7 @@ function NutritionContent() {
             </div>
             {searchError && <p style={{ fontSize: 13, color: '#ff6b6b', margin: 0 }}>{searchError}</p>}
             {results.length > 0 && (
-              <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '0 18px' }}>
+              <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '0 18px' }}>
                 {results.map((r, i) => <FoodRow key={i} food={r} onSelect={() => setSelectedFood(r)} />)}
               </div>
             )}
@@ -515,7 +515,7 @@ function NutritionContent() {
 
         {/* ── Manual entry ── */}
         {mode === 'manual' && (
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: 20 }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: 20 }}>
             <p style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 18px' }}>Add manually</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {addError && (
@@ -585,7 +585,7 @@ function NutritionContent() {
           const mealTotals = calcTotals(mealLogs);
           const mealCal = Math.round(mealTotals.calories);
           return (
-            <div key={mt} style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+            <div key={mt} style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
               {/* Meal header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: mealLogs.length > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

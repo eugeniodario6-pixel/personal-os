@@ -67,7 +67,7 @@ export default function HabitSwipeCard({ habits, onToggle }: Props) {
   const allDone = pending.length === 0;
 
   return (
-    <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 18 }}>
+    <div style={{ background: 'var(--surface)', borderRadius: 20, border: 'none', padding: 18 }}>
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -122,7 +122,7 @@ export default function HabitSwipeCard({ habits, onToggle }: Props) {
               position: 'absolute', inset: 0,
               background: 'rgba(216,234,255,0.04)',
               borderRadius: 16,
-              border: '1px solid rgba(216,234,255,0.06)',
+              border: 'none',
               transform: 'scale(0.94) translateY(8px)',
               zIndex: 0,
             }} />
@@ -132,7 +132,7 @@ export default function HabitSwipeCard({ habits, onToggle }: Props) {
           <div
             style={{
               position: 'absolute', inset: 0,
-              background: '#18181b',
+              background: 'var(--color-carbon)',
               borderRadius: 16,
               border: dismissed === 'right'
                 ? '1px solid rgba(120,220,100,0.5)'

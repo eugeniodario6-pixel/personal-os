@@ -10,8 +10,8 @@
 :root {
   /* ── Atlantic surface stack ── */
   --color-void:      #000000;   /* page canvas — true black */
-  --color-carbon:    #111113;   /* primary cards — bento dark */
-  --color-graphite:  #141416;   /* slightly elevated cards */
+  --color-carbon:    #0d0d0f;   /* primary cards — matches nav bar */
+  --color-graphite:  #0f0f11;   /* slightly elevated cards */
   --color-slate:     #1a1a1c;   /* elevated panels */
   --color-iron:      #252528;   /* muted dividers */
   --color-steel:     #3a3a3e;   /* tertiary text */
@@ -185,23 +185,23 @@ body {
 .card {
   background: var(--color-carbon);
   border-radius: var(--r);
-  border: 1px solid rgba(216,234,255,0.08);
+  
   padding: var(--inner);
 }
 .card-2 {
   background: var(--color-graphite);
   border-radius: var(--r);
-  border: 1px solid rgba(216,234,255,0.08);
+  
   padding: var(--inner);
 }
 .card-sm {
   background: var(--color-carbon);
   border-radius: var(--r-sm);
-  border: 1px solid rgba(216,234,255,0.08);
+  
   padding: 14px;
 }
-.card-dark { background: var(--color-graphite); border-radius: var(--r-sm); padding: 12px; border: 1px solid rgba(216,234,255,0.06); }
-.panel { background: var(--color-graphite); border-radius: var(--r-sm); border: 1px solid rgba(216,234,255,0.08); padding: 12px; }
+.card-dark { background: var(--color-graphite); border-radius: var(--r-sm); padding: 12px;  }
+.panel { background: var(--color-graphite); border-radius: var(--r-sm);  padding: 12px; }
 
 /* Legacy box-shadow cards */
 .card   { box-shadow: none; }
@@ -215,17 +215,17 @@ body {
 
 /* ── Bento dark cards — Awwwards reference aesthetic ── */
 .bento-card {
-  background: #111113;
+  background: var(--color-carbon);
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.06);
+  
   padding: 18px;
   position: relative;
   overflow: hidden;
 }
 .bento-card-sm {
-  background: #111113;
+  background: var(--color-carbon);
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.06);
+  
   padding: 16px;
   position: relative;
   overflow: hidden;
@@ -233,7 +233,7 @@ body {
 .bento-card-dark {
   background: #0a0a0c;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.05);
+  
   padding: 18px;
   position: relative;
   overflow: hidden;

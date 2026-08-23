@@ -156,7 +156,7 @@ function Sparkline({ values, color = LIME, height = 48 }: { values: number[]; co
 // ─── Section card ───────────────────────────────────────────────────────────────
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ background: '#111113', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, padding: '18px 18px 14px', ...style }}>
+    <div style={{ background: 'var(--color-carbon)', border: 'none', borderRadius: 20, padding: '18px 18px 14px', ...style }}>
       {children}
     </div>
   );
@@ -542,7 +542,7 @@ export default function ProgressPage() {
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
           <h1 style={{ margin: 0, fontSize: 40, fontWeight: 700, letterSpacing: '-0.03em', color: '#fff', lineHeight: 1 }}>Progress</h1>
           {/* Period toggle */}
-          <div style={{ display: 'flex', background: '#111113', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 99, padding: 3, gap: 3 }}>
+          <div style={{ display: 'flex', background: 'var(--color-carbon)', border: 'none', borderRadius: 99, padding: 3, gap: 3 }}>
             {(['7', '30'] as Period[]).map(p => (
               <button key={p} onClick={() => setPeriod(p)} style={{ padding: '5px 14px', borderRadius: 99, border: 'none', background: period === p ? '#fff' : 'transparent', color: period === p ? '#000' : TEXT3, fontSize: '0.7rem', fontWeight: period === p ? 700 : 400, cursor: 'pointer', fontFamily: 'var(--font)', letterSpacing: '-0.01em', transition: 'all 0.15s' }}>
                 {p}d

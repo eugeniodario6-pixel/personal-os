@@ -80,8 +80,8 @@ export default function MeditationPage() {
           <button
             onClick={() => router.push(`/meditation/${suggested.id}`)}
             style={{
-              width: '100%', background: '#111113', borderRadius: 24,
-              border: '1px solid rgba(255,255,255,0.06)', padding: '20px 20px 18px',
+              width: '100%', background: 'var(--color-carbon)', borderRadius: 24,
+              border: 'none', padding: '20px 20px 18px',
               cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent',
               position: 'relative', overflow: 'hidden',
             }}
@@ -158,15 +158,15 @@ export default function MeditationPage() {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
             {[1,2,3,4].map(i => (
-              <div key={i} style={{ height: 72, borderRadius: 18, background: '#111113', opacity: 0.6 - i * 0.1 }} />
+              <div key={i} style={{ height: 72, borderRadius: 18, background: 'var(--color-carbon)', opacity: 0.6 - i * 0.1 }} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '48px 20px', textAlign: 'center', background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ padding: '48px 20px', textAlign: 'center', background: 'var(--color-carbon)', borderRadius: 20, border: 'none' }}>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>No sessions in this category</p>
           </div>
         ) : (
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
             {filtered.map((s, idx) => {
               const done = loggedIds.has(s.id);
               return (

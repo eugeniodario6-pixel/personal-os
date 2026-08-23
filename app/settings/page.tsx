@@ -23,8 +23,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 // ─── Section card ─────────────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 10 }}>
-      <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden', marginBottom: 10 }}>
+      <div style={{ padding: '12px 20px', borderBottom: 'none' }}>
         <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: 0 }}>{title}</p>
       </div>
       <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -132,7 +132,7 @@ export default function SettingsPage() {
 
         {/* ── Targets bento strip ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '16px 18px', gridColumn: '1/-1' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '16px 18px', gridColumn: '1/-1' }}>
             <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 14px' }}>Daily Calorie Target</p>
             <input
               type="number" value={calTarget} onChange={e => setCalTarget(e.target.value)}
@@ -148,7 +148,7 @@ export default function SettingsPage() {
             { label: 'Carbs', unit: 'g', val: carbs, set: setCarbs },
             { label: 'Fat', unit: 'g', val: fat, set: setFat },
           ].map(m => (
-            <div key={m.label} style={{ background: '#111113', borderRadius: 18, border: '1px solid rgba(255,255,255,0.06)', padding: '14px 14px 12px' }}>
+            <div key={m.label} style={{ background: 'var(--color-carbon)', borderRadius: 18, border: 'none', padding: '14px 14px 12px' }}>
               <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 8px' }}>{m.label}</p>
               <input
                 type="number" value={m.val} onChange={e => m.set(e.target.value)}

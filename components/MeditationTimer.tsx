@@ -96,7 +96,7 @@ export default function MeditationTimer({ session }: MeditationTimerProps) {
         </div>
       </div>
       {state === 'running' && (
-        <div style={{ width: '100%', maxWidth: '320px', height: '6px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div style={{ width: '100%', maxWidth: '320px', height: '6px', background: 'var(--surface)', border: 'none' }}>
           <div style={{ height: '100%', background: 'var(--text)', width: `${progress * 100}%` }} />
         </div>
       )}

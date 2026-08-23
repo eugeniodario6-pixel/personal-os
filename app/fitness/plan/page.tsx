@@ -62,7 +62,7 @@ function ExerciseCard({ ex, prescribed, pr, lastSet, currentWeight, children }: 
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ borderBottom: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 20px', gap: '0.75rem' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' as const }}>
@@ -94,7 +94,7 @@ function ExerciseCard({ ex, prescribed, pr, lastSet, currentWeight, children }: 
               {pr && (
                 <span style={{
                   fontFamily: 'inherit', fontSize: '0.6rem', letterSpacing: '0.04em',
-                  color: 'rgba(255,255,255,0.50)', background: '#111113',
+                  color: 'rgba(255,255,255,0.50)', background: 'var(--color-carbon)',
                   border: '1px solid rgba(255,255,255,0.08)',
                   padding: '0.2rem 0.5rem', borderRadius: 8,
                 }}>
@@ -104,8 +104,8 @@ function ExerciseCard({ ex, prescribed, pr, lastSet, currentWeight, children }: 
               {lastSet && lastSet.actual_weight != null && lastSet.reps != null && (
                 <span style={{
                   fontFamily: 'inherit', fontSize: '0.6rem', letterSpacing: '0.04em',
-                  color: 'rgba(255,255,255,0.35)', background: '#111113',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  color: 'rgba(255,255,255,0.35)', background: 'var(--color-carbon)',
+                  border: 'none',
                   padding: '0.2rem 0.5rem', borderRadius: 8,
                 }}>
                   LAST: {lastSet.actual_weight}kg × {lastSet.reps}
@@ -138,7 +138,7 @@ function ExerciseCard({ ex, prescribed, pr, lastSet, currentWeight, children }: 
         <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {ex.cues && (
             <div style={{
-              background: '#111113', borderRadius: 10,
+              background: 'var(--color-carbon)', borderRadius: 10,
               padding: '0.75rem 1rem', borderLeft: '2px solid var(--c-400)',
             }}>
               <p style={{ margin: '0 0 0.35rem', fontSize: '0.55rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.35)', fontFamily: 'inherit' }}>CUES</p>
@@ -198,7 +198,7 @@ function Input({ value, onChange, placeholder, type = 'text', min, max, step }: 
       min={min} max={max} step={step}
       onChange={e => onChange(e.target.value)}
       style={{
-        width: '100%', background: '#111113', border: '1px solid rgba(255,255,255,0.08)',
+        width: '100%', background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 10, padding: '0.55rem 0.75rem',
         color: '#fff', fontSize: '0.875rem', fontFamily: 'inherit',
         outline: 'none', boxSizing: 'border-box',
@@ -400,7 +400,7 @@ export default function PlanPage() {
         </p>
       </div>
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
-        <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 12 }}>
+        <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden', marginBottom: 12 }}>
           {LIFTS.map((l, idx) => {
             const ex = getExerciseByName(l.key);
             return (
@@ -500,7 +500,7 @@ export default function PlanPage() {
                                 return { ...prev, [l.key]: u };
                               })}
                               style={{
-                                background: '#111113', border: '1px solid rgba(255,255,255,0.08)',
+                                background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.08)',
                                 borderRadius: 8, padding: '0.4rem 0.5rem',
                                 color: '#fff', fontSize: '0.8rem', fontFamily: 'inherit',
                                 outline: 'none', width: '100%', boxSizing: 'border-box',
@@ -512,7 +512,7 @@ export default function PlanPage() {
                     </div>
                   </ExerciseCard>
                 : (
-                  <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: 'none' }}>
                     <p style={{ margin: 0, fontWeight: 600, color: '#fff', fontSize: '0.875rem' }}>{l.key.toUpperCase()}</p>
                   </div>
                 )
@@ -560,7 +560,7 @@ export default function PlanPage() {
           <BackBtn onClick={() => setActiveSession(null)} />
         </div>
 
-        <div style={{ margin: '20px', background: '#111113', borderRadius: 16, padding: '16px 20px' }}>
+        <div style={{ margin: '20px', background: 'var(--color-carbon)', borderRadius: 16, padding: '16px 20px' }}>
           {label('PRESCRIBED')}
           <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: '#fff', lineHeight: 1.5 }}>
             {plan?.cardio_detail}
@@ -662,7 +662,7 @@ export default function PlanPage() {
                 <input type="number" value={simpleFields[key as keyof typeof simpleFields] as string}
                   onChange={e => sf(key, e.target.value)}
                   style={{
-                    width: '100%', background: '#111113', border: '1px solid rgba(255,255,255,0.08)',
+                    width: '100%', background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 8, padding: '0.4rem 0.5rem',
                     color: '#fff', fontSize: '0.8rem', fontFamily: 'inherit',
                     outline: 'none', boxSizing: 'border-box',
@@ -725,7 +725,7 @@ export default function PlanPage() {
 
         {/* ── Week + Phase hero row ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '16px 18px' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '16px 18px' }}>
             <p style={{ margin: '0 0 6px', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', fontWeight: 500 }}>Week</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
               <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>{week}</span>
@@ -742,7 +742,7 @@ export default function PlanPage() {
               </span>
             )}
           </div>
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '16px 18px' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '16px 18px' }}>
             <p style={{ margin: '0 0 6px', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', fontWeight: 500 }}>Sessions</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
               <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>{sessions.length}</span>
@@ -758,8 +758,8 @@ export default function PlanPage() {
         {plan && (
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
-            background: '#111113', borderRadius: 20,
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--color-carbon)', borderRadius: 20,
+            border: 'none',
             overflow: 'hidden', marginBottom: '16px',
           }}>
             {LIFTS.map((l, i) => {
@@ -799,7 +799,7 @@ export default function PlanPage() {
       </div>
 
       {/* ── Session list ── */}
-      <div style={{ margin: '0 16px', background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+      <div style={{ margin: '0 16px', background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
         {SESSION_TYPES.map((type, idx) => {
           const done = sessionDone(type);
           const meta = SESSION_META[type];
@@ -840,7 +840,7 @@ export default function PlanPage() {
       </div>
 
       {/* ── Week nav ── */}
-      <div style={{ margin: '12px 16px 0', display: 'grid', gridTemplateColumns: '1fr auto 1fr', background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+      <div style={{ margin: '12px 16px 0', display: 'grid', gridTemplateColumns: '1fr auto 1fr', background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
         <button onClick={() => setWeek(w => Math.max(1, w - 1))}
           disabled={week <= 1}
           style={{
@@ -852,7 +852,7 @@ export default function PlanPage() {
         </button>
         <button onClick={() => setWeek(currentWeek)}
           style={{
-            background: 'none', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)',
+            background: 'none', borderLeft: 'none', borderRight: '1px solid rgba(255,255,255,0.06)',
             padding: '14px 16px', fontSize: 12, fontWeight: 700,
             color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
           }}>

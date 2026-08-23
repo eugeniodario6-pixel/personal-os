@@ -266,7 +266,7 @@ function BentoCard({ children, onClick, elevated, style }: { children: React.Rea
   const base: React.CSSProperties = {
     background: 'var(--surface)',
     borderRadius: 20,
-    border: '1px solid var(--border)',
+    border: 'none',
     padding: 18,
     position: 'relative',
     overflow: 'hidden',
@@ -531,7 +531,7 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/nutrition')}
               style={{
-                background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)',
+                background: 'var(--surface)', borderRadius: 20, border: 'none',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                 display: 'flex', flexDirection: 'column', gap: 0,
               }}
@@ -554,7 +554,7 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/habits')}
               style={{
-                background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)',
+                background: 'var(--surface)', borderRadius: 20, border: 'none',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                 display: 'flex', flexDirection: 'column', gap: 0,
               }}
@@ -582,7 +582,7 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/fitness')}
               style={{
-                background: workoutsToday > 0 ? '#0f1f0f' : '#111113',
+                background: workoutsToday > 0 ? '#0f1f0f' : 'var(--color-carbon)',
                 borderRadius: 20,
                 border: workoutsToday > 0 ? '1px solid rgba(120,220,100,0.14)' : '1px solid rgba(255,255,255,0.06)',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
@@ -605,7 +605,7 @@ export default function TodayPage() {
             <button
               onClick={() => router.push('/meditation')}
               style={{
-                background: medDone ? '#0f0f1f' : '#111113',
+                background: medDone ? '#0f0f1f' : 'var(--color-carbon)',
                 borderRadius: 20,
                 border: medDone ? '1px solid rgba(100,120,255,0.14)' : '1px solid rgba(255,255,255,0.06)',
                 padding: 18, textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
@@ -634,7 +634,7 @@ export default function TodayPage() {
                   background: 'var(--surface)',
                   borderRadius: 20,
                   borderLeft: allDone ? '2px solid #78dc64' : '2px solid rgba(255,65,5,0.8)',
-                  border: '1px solid var(--border)',
+                  border: 'none',
                   padding: '16px 18px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   cursor: nudge ? 'pointer' : 'default',
@@ -664,7 +664,7 @@ export default function TodayPage() {
                 key={label}
                 onClick={() => router.push('/nutrition')}
                 style={{
-                  background: 'var(--surface)', borderRadius: 18, border: '1px solid var(--border)',
+                  background: 'var(--surface)', borderRadius: 18, border: 'none',
                   padding: '14px 14px 12px', textAlign: 'left', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                   display: 'flex', flexDirection: 'column', gap: 0,
                 }}
@@ -682,7 +682,7 @@ export default function TodayPage() {
           </div>
 
           {/* ROW E — Score breakdown donut */}
-          <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 18 }}>
+          <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: 'none', padding: 18 }}>
             <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(216,234,255,0.30)', margin: '0 0 16px' }}>Score breakdown</p>
             <ScoreDonut pillars={pillars} total={score} />
           </div>
@@ -696,7 +696,7 @@ export default function TodayPage() {
 
           {/* ROW G — Apple Health */}
           {healthData && healthData.available && (
-            <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 18 }}>
+            <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: 'none', padding: 18 }}>
               <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)', margin: '0 0 16px' }}>Apple Health</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                 {healthData.steps > 0 && (
@@ -743,7 +743,7 @@ export default function TodayPage() {
 
           {/* ROW H — Suggested meditation */}
           {suggested && !medDone && (
-            <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', padding: 18 }}>
+            <div className="ba" style={{ background: 'var(--surface)', borderRadius: 20, border: 'none', padding: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div
                   style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}

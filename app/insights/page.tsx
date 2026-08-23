@@ -73,7 +73,7 @@ export default function InsightsPage() {
           <h1 style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#fff', margin: 0 }}>Insights</h1>
 
           {/* Period toggle */}
-          <div style={{ display: 'flex', background: '#111113', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 99, padding: 3, gap: 3 }}>
+          <div style={{ display: 'flex', background: 'var(--color-carbon)', border: 'none', borderRadius: 99, padding: 3, gap: 3 }}>
             {(['week', 'month'] as const).map(p => (
               <button
                 key={p}
@@ -97,7 +97,7 @@ export default function InsightsPage() {
       {loading ? (
         <div style={{ padding: `0 ${PAD}px`, display: 'flex', flexDirection: 'column', gap: GAP }}>
           {[1,2,3,4].map(i => (
-            <div key={i} style={{ height: 80, borderRadius: 20, background: '#111113', opacity: 0.6 - i * 0.1 }} />
+            <div key={i} style={{ height: 80, borderRadius: 20, background: 'var(--color-carbon)', opacity: 0.6 - i * 0.1 }} />
           ))}
         </div>
       ) : (
@@ -106,7 +106,7 @@ export default function InsightsPage() {
           {/* ── 2×2 stat bento ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: GAP }}>
             {summaries.map((s, i) => (
-              <div key={s.label} style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '16px 18px' }}>
+              <div key={s.label} style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '16px 18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{s.icon}</span>
                   <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.30)' }}>{s.label}</span>
@@ -123,7 +123,7 @@ export default function InsightsPage() {
           </p>
 
           {/* ── Patterns card ── */}
-          <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', overflow: 'hidden' }}>
             {insights.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center' }}>
                 <p style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 8px' }}>Not enough data yet</p>
@@ -146,7 +146,7 @@ export default function InsightsPage() {
 
           {/* ── Empty insights placeholder ── */}
           {insights.length === 0 && (
-            <div style={{ background: '#111113', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)', padding: '20px 20px 18px' }}>
+            <div style={{ background: 'var(--color-carbon)', borderRadius: 20, border: 'none', padding: '20px 20px 18px' }}>
               <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', margin: '0 0 14px' }}>What to expect</p>
               {[
                 'Correlation between workout days and calorie intake',
