@@ -209,7 +209,7 @@ export default function HabitsPage() {
   const save = async () => {
     setAddError('');
     if (!addName.trim()) { setAddError('Name required'); return; }
-    await addHabit({ name: addName.trim(), active: true, stacked_after_habit_id: addAfter !== '' ? Number(addAfter) : null, streak_freeze_available: 0, created_at: new Date().toISOString() });
+    await addHabit({ name: addName.trim(), active: true, routine: 'morning', stacked_after_habit_id: addAfter !== '' ? Number(addAfter) : null, streak_freeze_available: 0, created_at: new Date().toISOString() });
     setAddName(''); setAddAfter('');
     await load(); setMode('list');
   };

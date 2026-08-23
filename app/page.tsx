@@ -20,23 +20,40 @@ import ScoreSilhouette from '@/components/ScoreSilhouette';
 import { requestHealthKitPermissions, getHealthData, type HealthData } from '@/lib/healthkit';
 
 // ── Score logic ────────────────────────────────────────────────────────────────
+// Streak bonus per pillar (max 10 each)
+function streakBonus(streak: number): number {
+  if (streak >= 30) return 10;
+  if (streak >= 14) return 8;
+  if (streak >= 7)  return 5;
+  if (streak >= 3)  return 2;
+  return 0;
+}
+
 function calcScore(
-  calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean,
+  calPct: number, morningPct: number, eveningPct: number,
+  hasWorkout: boolean, workoutIntensity: 'low'|'moderate'|'high', workoutDuration: number,
   protein: number, proteinTarget: number, streakDays: number
 ) {
-  // Eat: 25pts — calories ±15% AND protein ±10%
-  const calOk = calPct >= 85 && calPct <= 115;
-  const protOk = proteinTarget > 0 && protein >= proteinTarget * 0.9 && protein <= proteinTarget * 1.1;
-  const eatScore = calOk && protOk ? 25 : calOk || protOk ? 12 : 0;
-  // Move: 25pts binary
-  const moveScore = hasWorkout ? 25 : 0;
-  // Habits: 25pts proportional
-  const habitScore = Math.round(habitPct * 25) / 100;
-  // Mind: 15pts binary
-  const mindScore = hasMed ? 15 : 0;
-  // Streak: 10pts
-  const streakBonus = streakDays >= 7 ? 10 : streakDays >= 5 ? 6 : streakDays >= 3 ? 3 : 0;
-  return Math.min(Math.round(eatScore + moveScore + habitScore + mindScore + streakBonus), 100);
+  // Nutrition: 25pts — proportional within 10% threshold
+  const calOk = calPct >= 90 && calPct <= 110;
+  const protOk = proteinTarget > 0 && protein >= proteinTarget * 0.9;
+  const nutritionScore = calOk && protOk ? 25 : calOk || protOk ? Math.round(25 * 0.6) : calPct > 0 ? Math.round(25 * (calPct / 100) * 0.4) : 0;
+
+  // Training: 25pts partial — intensity × duration
+  const intensityMult = workoutIntensity === 'high' ? 1.0 : workoutIntensity === 'moderate' ? 0.85 : 0.65;
+  const durationPct   = Math.min(workoutDuration / 45, 1);
+  const trainingScore = hasWorkout ? Math.round(intensityMult * durationPct * 25) : 0;
+
+  // Morning: 25pts proportional
+  const morningScore = Math.round(morningPct * 25 / 100);
+
+  // Evening: 25pts proportional
+  const eveningScore = Math.round(eveningPct * 25 / 100);
+
+  // Streak bonus (per overall streak, applied once)
+  const bonus = streakBonus(streakDays);
+
+  return nutritionScore + trainingScore + morningScore + eveningScore + bonus;
 }
 
 function scoreLabel(s: number) {
@@ -56,28 +73,25 @@ interface PillarBreakdown {
 }
 
 function getScoreBreakdown(
-  calPct: number, habitPct: number, hasWorkout: boolean, hasMed: boolean,
-  yesterdayCalPct: number, yesterdayHabitPct: number, yesterdayHadWorkout: boolean, yesterdayHadMed: boolean,
+  calPct: number, morningPct: number, eveningPct: number,
+  hasWorkout: boolean, workoutIntensity: 'low'|'moderate'|'high', workoutDuration: number,
   protein: number, proteinTarget: number, streakDays: number
 ): PillarBreakdown[] {
-  const calOk = calPct >= 85 && calPct <= 115;
-  const protOk = proteinTarget > 0 && protein >= proteinTarget * 0.9 && protein <= proteinTarget * 1.1;
-  const eatScore = calOk && protOk ? 25 : calOk || protOk ? 12 : 0;
-  const habitScore = Math.round(habitPct * 25) / 100;
-  const moveScore = hasWorkout ? 25 : 0;
-  const mindScore = hasMed ? 15 : 0;
-  const streakBonus = streakDays >= 7 ? 10 : streakDays >= 5 ? 6 : streakDays >= 3 ? 3 : 0;
-  const yCalOk = yesterdayCalPct >= 85 && yesterdayCalPct <= 115;
-  const yEat = yCalOk ? 25 : yesterdayCalPct >= 70 ? 12 : 0;
-  const yHabit = Math.round(yesterdayHabitPct * 25) / 100;
-  const yMove = yesterdayHadWorkout ? 25 : 0;
-  const yMind = yesterdayHadMed ? 15 : 0;
+  const calOk  = calPct >= 90 && calPct <= 110;
+  const protOk = proteinTarget > 0 && protein >= proteinTarget * 0.9;
+  const nutritionScore = calOk && protOk ? 25 : calOk || protOk ? 15 : calPct > 0 ? Math.round(25 * (calPct / 100) * 0.4) : 0;
+  const intensityMult  = workoutIntensity === 'high' ? 1.0 : workoutIntensity === 'moderate' ? 0.85 : 0.65;
+  const durationPct    = Math.min(workoutDuration / 45, 1);
+  const trainingScore  = hasWorkout ? Math.round(intensityMult * durationPct * 25) : 0;
+  const morningScore   = Math.round(morningPct * 25 / 100);
+  const eveningScore   = Math.round(eveningPct * 25 / 100);
+  const bonus          = streakBonus(streakDays);
   return [
-    { name: 'Eat', score: eatScore, maxScore: 25, delta: eatScore - yEat, reason: calPct <= 0 ? 'Nothing logged' : !calOk && !protOk ? `${Math.round(calPct)}% of target` : calOk && !protOk ? 'Calories ✓ / Protein short' : !calOk && protOk ? 'Protein ✓ / Calories off' : 'On track' },
-    { name: 'Habits', score: Math.round(habitScore), maxScore: 25, delta: Math.round(habitScore - yHabit), reason: habitPct <= 0 ? 'No habits done' : habitPct < 50 ? 'Less than half done' : habitPct < 100 ? `${Math.round(habitPct)}% complete` : 'All done' },
-    { name: 'Move', score: moveScore, maxScore: 25, delta: moveScore - yMove, reason: hasWorkout ? 'Workout logged' : 'No workout yet' },
-    { name: 'Mind', score: mindScore, maxScore: 15, delta: mindScore - yMind, reason: hasMed ? 'Meditation done' : 'Not yet' },
-    { name: 'Streak', score: streakBonus, maxScore: 10, delta: 0, reason: streakDays >= 7 ? `${streakDays}-day streak` : streakDays >= 3 ? `${streakDays}-day streak` : streakDays > 0 ? `${streakDays} day streak` : 'No streak yet' },
+    { name: 'Nutrition', score: nutritionScore, maxScore: 25, delta: 0, reason: calPct <= 0 ? 'Nothing logged' : !calOk && !protOk ? `${Math.round(calPct)}% of target` : calOk && !protOk ? 'Calories ✓ · protein short' : !calOk && protOk ? 'Protein ✓ · calories off' : 'On target' },
+    { name: 'Training',  score: trainingScore,  maxScore: 25, delta: 0, reason: !hasWorkout ? 'No workout yet' : trainingScore >= 25 ? 'Full session' : 'Partial session' },
+    { name: 'Morning',   score: morningScore,   maxScore: 25, delta: 0, reason: morningPct >= 100 ? 'All done' : morningPct > 0 ? `${Math.round(morningPct)}% complete` : 'Not started' },
+    { name: 'Evening',   score: eveningScore,   maxScore: 25, delta: 0, reason: eveningPct >= 100 ? 'All done' : eveningPct > 0 ? `${Math.round(eveningPct)}% complete` : 'Not started' },
+    { name: 'Streak',    score: bonus,          maxScore: 10, delta: 0, reason: streakDays >= 30 ? `${streakDays}-day streak 🔥` : streakDays >= 7 ? `${streakDays}-day streak` : streakDays >= 3 ? `${streakDays}-day streak` : streakDays > 0 ? `${streakDays} day` : 'No streak yet' },
   ];
 }
 
@@ -409,18 +423,27 @@ export default function TodayPage() {
     await load();
   };
 
-  const calPct    = calorieTarget > 0 ? (calories / calorieTarget) * 100 : 0;
-  const habitDone = habits.filter(h => h.done).length;
-  const habitPct  = habits.length > 0 ? (habitDone / habits.length) * 100 : 0;
-  // Compute streak: consecutive days ending yesterday where score >= 70
+  const calPct      = calorieTarget > 0 ? (calories / calorieTarget) * 100 : 0;
+  const morningHabits = habits.filter(h => h.routine === 'morning');
+  const eveningHabits = habits.filter(h => h.routine === 'evening');
+  const morningDone   = morningHabits.filter(h => h.done).length;
+  const eveningDone   = eveningHabits.filter(h => h.done).length;
+  const morningPct    = morningHabits.length > 0 ? (morningDone / morningHabits.length) * 100 : 100;
+  const eveningPct    = eveningHabits.length > 0 ? (eveningDone / eveningHabits.length) * 100 : 100;
+  const habitDone     = habits.filter(h => h.done).length;
+  const habitPct      = habits.length > 0 ? (habitDone / habits.length) * 100 : 0;
+  // Training partial scoring defaults (full session equivalent until we track per-workout intensity here)
+  const bestIntensity: 'low'|'moderate'|'high' = 'moderate';
+  const bestDuration = 45;
+  // Streak: consecutive days where total_score >= 70
   const sortedScores = [...allScores].sort((a, b) => b.date.localeCompare(a.date));
   let streakDays = 0;
   for (const s of sortedScores) {
     if (s.total_score >= 70) streakDays++;
     else break;
   }
-  const score     = calcScore(calPct, habitPct, workoutsToday > 0, medDone, protein, proteinTarget, streakDays);
-  const pillars   = getScoreBreakdown(calPct, habitPct, workoutsToday > 0, medDone, yesterdayCalPct, yesterdayHabitPct, yesterdayHadWorkout, yesterdayHadMed, protein, proteinTarget, streakDays);
+  const score   = calcScore(calPct, morningPct, eveningPct, workoutsToday > 0, bestIntensity, bestDuration, protein, proteinTarget, streakDays);
+  const pillars = getScoreBreakdown(calPct, morningPct, eveningPct, workoutsToday > 0, bestIntensity, bestDuration, protein, proteinTarget, streakDays);
   const nudge     = getDataAwareNudge(calPct, habitPct, workoutsToday > 0, medDone, calorieTarget, calories, protein, proteinTarget, workoutDaysGap);
   const allDone   = calPct >= 85 && habitPct >= 100 && workoutsToday > 0 && medDone;
   const remaining = Math.max(0, calorieTarget - calories);
