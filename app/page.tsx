@@ -584,59 +584,98 @@ export default function TodayPage() {
           </div>
 
           {/* Row 4: Habits list (full-width) */}
-          {habits.length > 0 && (
-            <div className="bento-card-anim">
-              <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: 0 }}>Daily habits</p>
-                  <button
-                    onClick={() => router.push('/habits')}
-                    style={{ fontSize: 12, color: 'var(--text-4)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '-0.01em' }}
-                  >
-                    Manage →
-                  </button>
+          {habits.length > 0 && (() => {
+            const morningHabits = habits.filter(h => h.schedule?.time === 'morning');
+            const eveningHabits = habits.filter(h => h.schedule?.time === 'evening');
+            const otherHabits = habits.filter(h => h.schedule?.time !== 'morning' && h.schedule?.time !== 'evening');
+            const renderHabitRow = (h: typeof habits[0]) => (
+              <button
+                key={h.id}
+                onClick={() => toggle(h.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  width: '100%', padding: '10px 0',
+                  background: h.done ? 'rgba(255,255,255,0.02)' : 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid var(--border)',
+                  cursor: 'pointer', textAlign: 'left',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: 5, flexShrink: 0,
+                  border: `1px solid var(--border-2)`,
+                  background: h.done ? 'var(--text)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s',
+                }}>
+                  {h.done && <span style={{ fontSize: 10, color: 'var(--invert)', fontWeight: 510 }}>✓</span>}
                 </div>
-                <div>
-                  {habits.map(h => (
+                <span style={{
+                  flex: 1, fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em',
+                  color: h.done ? 'var(--text-5)' : 'var(--text)',
+                  textDecoration: h.done ? 'line-through' : 'none',
+                  transition: 'color 0.2s',
+                }}>
+                  {h.name}
+                </span>
+                {h.streak > 1 && (
+                  <span style={{ fontSize: 11, color: 'var(--text-4)', flexShrink: 0 }}>{h.streak}d</span>
+                )}
+              </button>
+            );
+            const renderBlockHeader = (icon: string, label: string, group: typeof habits) => {
+              const done = group.filter(h => h.done).length;
+              const allDone = group.length > 0 && done === group.length;
+              return (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0 4px' }}>
+                  <span style={{ fontSize: 12, fontWeight: 510, color: 'var(--text-3)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{icon} {label}</span>
+                  <span style={{ fontSize: 11, color: allDone ? 'var(--color-cobalt, #4DA3FF)' : 'var(--text-4)' }}>{done}/{group.length}</span>
+                </div>
+              );
+            };
+            const hasSections = morningHabits.length > 0 || eveningHabits.length > 0;
+            return (
+              <div className="bento-card-anim">
+                <div style={{ background: 'var(--color-carbon)', borderRadius: 'var(--r)', border: '1px solid rgba(216,234,255,0.08)', padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                    <p style={{ fontSize: 13, fontWeight: 510, color: 'var(--text-2)', margin: 0 }}>Daily habits</p>
                     <button
-                      key={h.id}
-                      onClick={() => toggle(h.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        width: '100%', padding: '10px 0',
-                        background: h.done ? 'rgba(255,255,255,0.02)' : 'transparent',
-                        border: 'none',
-                        borderBottom: '1px solid var(--border)',
-                        cursor: 'pointer', textAlign: 'left',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
+                      onClick={() => router.push('/habits')}
+                      style={{ fontSize: 12, color: 'var(--text-4)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '-0.01em' }}
                     >
-                      <div style={{
-                        width: 22, height: 22, borderRadius: 5, flexShrink: 0,
-                        border: `1px solid var(--border-2)`,
-                        background: h.done ? 'var(--text)' : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.15s',
-                      }}>
-                        {h.done && <span style={{ fontSize: 10, color: 'var(--invert)', fontWeight: 510 }}>✓</span>}
-                      </div>
-                      <span style={{
-                        flex: 1, fontSize: 14, fontWeight: 400, letterSpacing: '-0.011em',
-                        color: h.done ? 'var(--text-5)' : 'var(--text)',
-                        textDecoration: h.done ? 'line-through' : 'none',
-                        transition: 'color 0.2s',
-                      }}>
-                        {h.name}
-                      </span>
-                      {h.streak > 1 && (
-                        <span style={{ fontSize: 11, color: 'var(--text-4)', flexShrink: 0 }}>{h.streak}d</span>
-                      )}
+                      Manage →
                     </button>
-                  ))}
+                  </div>
+                  <div>
+                    {hasSections ? (
+                      <>
+                        {morningHabits.length > 0 && (
+                          <div style={{ marginBottom: eveningHabits.length > 0 ? 12 : 0 }}>
+                            {renderBlockHeader('☀️', 'Morning', morningHabits)}
+                            {morningHabits.map(renderHabitRow)}
+                          </div>
+                        )}
+                        {eveningHabits.length > 0 && (
+                          <div>
+                            {renderBlockHeader('🌙', 'Evening', eveningHabits)}
+                            {eveningHabits.map(renderHabitRow)}
+                          </div>
+                        )}
+                        {otherHabits.length > 0 && (
+                          <div style={{ marginTop: 12 }}>
+                            {otherHabits.map(renderHabitRow)}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      habits.map(renderHabitRow)
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* HealthKit card — only shows when data is available (native app) */}
           {healthData && healthData.available && (
