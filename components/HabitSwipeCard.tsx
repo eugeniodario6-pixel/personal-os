@@ -159,21 +159,21 @@ export default function HabitSwipeCard({ habits, onToggle }: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{
                 fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-                color: '#ff4105',
+                color: 'rgba(255,255,255,0.50)',
                 opacity: !isRight && intensity > 0.2 ? intensity : 0,
                 transition: 'opacity 0.1s',
                 fontFamily: 'var(--font-mono)',
-                border: '1px solid #ff4105',
                 borderRadius: 6, padding: '3px 8px',
+                background: 'rgba(255,255,255,0.06)',
               }}>SKIP</div>
               <div style={{
                 fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-                color: '#78dc64',
+                color: '#1f58f2',
                 opacity: isRight && intensity > 0.2 ? intensity : 0,
                 transition: 'opacity 0.1s',
                 fontFamily: 'var(--font-mono)',
-                border: '1px solid #78dc64',
                 borderRadius: 6, padding: '3px 8px',
+                background: 'rgba(31,88,242,0.12)',
               }}>DONE</div>
             </div>
 
@@ -218,9 +218,9 @@ export default function HabitSwipeCard({ habits, onToggle }: Props) {
             }}
             style={{
               flex: 1, height: 44, borderRadius: 12,
-              background: 'rgba(255,65,5,0.08)',
-              border: '1px solid rgba(255,65,5,0.20)',
-              color: '#ff4105', fontSize: 18,
+              background: 'rgba(255,255,255,0.06)',
+              border: 'none',
+              color: 'rgba(255,255,255,0.40)', fontSize: 18,
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
               transition: 'background 0.15s',
             }}
@@ -238,9 +238,9 @@ export default function HabitSwipeCard({ habits, onToggle }: Props) {
             }}
             style={{
               flex: 1, height: 44, borderRadius: 12,
-              background: 'rgba(120,220,100,0.08)',
-              border: '1px solid rgba(120,220,100,0.20)',
-              color: '#78dc64', fontSize: 18,
+              background: 'rgba(31,88,242,0.12)',
+              border: 'none',
+              color: '#1f58f2', fontSize: 18,
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
               transition: 'background 0.15s',
             }}
@@ -256,9 +256,9 @@ export default function HabitSwipeCard({ habits, onToggle }: Props) {
             {done.map(h => (
               <span key={h.id} style={{
                 fontSize: 11, padding: '4px 10px',
-                background: 'rgba(31,88,242,0.10)',
-                border: '1px solid rgba(31,88,242,0.20)',
-                borderRadius: 99, color: 'rgba(216,234,255,0.50)',
+                background: 'rgba(31,88,242,0.12)',
+                border: 'none',
+                borderRadius: 99, color: 'rgba(216,234,255,0.45)',
                 textDecoration: 'line-through',
               }}>
                 {h.name}

@@ -296,7 +296,7 @@ export default function MeditationPlayerPage() {
             <>
               {/* Pre-session mood check-in */}
               {!preMoodLogged && !preMoodSkipped && (
-                <div style={{ background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ background: 'var(--color-carbon)', border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>How are you feeling?</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     {MOODS.map((emoji, i) => (
@@ -371,7 +371,7 @@ export default function MeditationPlayerPage() {
             <>
               {/* Post-session mood check-in */}
               {!moodLogged && !moodSkipped && (
-                <div style={{ background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ background: 'var(--color-carbon)', border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)', borderRadius: 20, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <p style={{ margin: 0, fontSize: '0.55rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>How do you feel?</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     {MOODS.map((emoji, i) => (

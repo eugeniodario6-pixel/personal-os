@@ -82,7 +82,7 @@ export default function QuickLogSheet({ open, onClose, onLogged }: Props) {
         position: 'fixed', bottom: 0, left: 0, right: 0,
         zIndex: 401,
         background: 'var(--color-carbon)',
-        boxShadow: 'var(--color-graphite) 0px 0px 0px 1px inset, var(--shadow-xl)',
+        boxShadow: '0 -4px 32px rgba(0,0,0,0.80), 0 1px 3px rgba(0,0,0,0.80)',
         borderRadius: '16px 16px 0 0',
         paddingBottom: 'env(safe-area-inset-bottom)',
         animation: 'sheet-up 0.22s cubic-bezier(0.4,0,0.2,1)',
@@ -121,9 +121,9 @@ export default function QuickLogSheet({ open, onClose, onLogged }: Props) {
                   flex: '0 0 auto',
                   padding: '4px 12px',
                   borderRadius: 9999,
-                  border: `1px solid ${meal === m ? 'var(--accent)' : 'var(--border)'}`,
-                  background: meal === m ? 'rgba(228,242,34,0.08)' : 'transparent',
-                  color: meal === m ? 'var(--accent)' : 'var(--text-3)',
+                  border: 'none',
+                  background: meal === m ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
+                  color: meal === m ? '#fff' : 'rgba(255,255,255,0.40)',
                   fontSize: 12, fontWeight: 400, letterSpacing: '-0.01em',
                   cursor: 'pointer',
                   WebkitTapHighlightColor: 'transparent',
@@ -151,7 +151,7 @@ export default function QuickLogSheet({ open, onClose, onLogged }: Props) {
                     display: 'flex', width: '100%', alignItems: 'center',
                     padding: '11px 16px',
                     background: 'transparent', border: 'none',
-                    borderBottom: '1px solid var(--border)',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
                     cursor: 'pointer', textAlign: 'left',
                     WebkitTapHighlightColor: 'transparent',
                     transition: 'background 0.1s',
@@ -223,7 +223,7 @@ export default function QuickLogSheet({ open, onClose, onLogged }: Props) {
                 ].map(({ label, val }) => (
                   <div key={label} style={{ textAlign: 'center' }}>
                     <p className="label" style={{ marginBottom: 4 }}>{label}</p>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 510, letterSpacing: '-0.011em', color: 'var(--accent)' }}>{val}</p>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, letterSpacing: '-0.011em', color: '#fff' }}>{val}</p>
                   </div>
                 ))}
               </div>

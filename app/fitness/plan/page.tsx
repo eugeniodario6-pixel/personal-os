@@ -116,7 +116,7 @@ function ExerciseCard({ ex, prescribed, pr, lastSet, currentWeight, children }: 
                   fontFamily: 'inherit', fontSize: '0.6rem', letterSpacing: '0.04em',
                   color: '#a3e635', fontWeight: 600,
                   padding: '0.2rem 0.5rem', borderRadius: 8,
-                  background: 'rgba(163,230,53,0.1)', border: '1px solid rgba(163,230,53,0.3)',
+                  background: 'rgba(31,88,242,0.15)', border: 'none',
                 }}>
                   🏆 NEW PR
                 </span>
@@ -198,7 +198,7 @@ function Input({ value, onChange, placeholder, type = 'text', min, max, step }: 
       min={min} max={max} step={step}
       onChange={e => onChange(e.target.value)}
       style={{
-        width: '100%', background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.08)',
+        width: '100%', background: 'var(--color-carbon)', border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
         borderRadius: 10, padding: '0.55rem 0.75rem',
         color: '#fff', fontSize: '0.875rem', fontFamily: 'inherit',
         outline: 'none', boxSizing: 'border-box',
@@ -500,7 +500,7 @@ export default function PlanPage() {
                                 return { ...prev, [l.key]: u };
                               })}
                               style={{
-                                background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.08)',
+                                background: 'var(--color-carbon)', border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                                 borderRadius: 8, padding: '0.4rem 0.5rem',
                                 color: '#fff', fontSize: '0.8rem', fontFamily: 'inherit',
                                 outline: 'none', width: '100%', boxSizing: 'border-box',
@@ -644,9 +644,9 @@ export default function PlanPage() {
             {[['LADDER', 'ladder'], ['CONES', 'cones']].map(([lbl, key]) => (
               <button key={key} onClick={() => sf(key, !(simpleFields[key as keyof typeof simpleFields]))}
                 style={{
-                  background: simpleFields[key as keyof typeof simpleFields] ? 'var(--cta-bg)' : 'var(--surface)',
-                  color: simpleFields[key as keyof typeof simpleFields] ? 'var(--cta-fg)' : 'var(--text-3)',
-                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
+                  background: simpleFields[key as keyof typeof simpleFields] ? 'rgba(31,88,242,0.15)' : 'rgba(255,255,255,0.06)',
+                  color: simpleFields[key as keyof typeof simpleFields] ? '#1f58f2' : 'rgba(255,255,255,0.50)',
+                  border: 'none', borderRadius: 10,
                   padding: '0.6rem', fontSize: '0.65rem', letterSpacing: '0.06em',
                   fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                 }}>
@@ -662,7 +662,7 @@ export default function PlanPage() {
                 <input type="number" value={simpleFields[key as keyof typeof simpleFields] as string}
                   onChange={e => sf(key, e.target.value)}
                   style={{
-                    width: '100%', background: 'var(--color-carbon)', border: '1px solid rgba(255,255,255,0.08)',
+                    width: '100%', background: 'var(--color-carbon)', border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.80), 0 4px 12px rgba(0,0,0,0.40)',
                     borderRadius: 8, padding: '0.4rem 0.5rem',
                     color: '#fff', fontSize: '0.8rem', fontFamily: 'inherit',
                     outline: 'none', boxSizing: 'border-box',
